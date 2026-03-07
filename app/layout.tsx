@@ -9,6 +9,7 @@ export const metadata: Metadata = {
   title: { default: 'Automatic IA Lab — Generador de Sitios Web', template: '%s · Automatic IA Lab' },
   description: 'Creá sitios web profesionales para tu negocio en minutos, sin saber programar.',
   icons: { icon: '/favicon.ico' },
+  verification: { google: 'C1f6_LmId69To22LmPBUOUV_Ys0Gwiu0jdJCbFdkaP0' },
   openGraph: {
     type: 'website',
     locale: 'es_AR',
