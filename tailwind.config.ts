@@ -44,19 +44,19 @@ const config: Config = {
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',
 
-        // Static brand palette (indigo)
+        // Static brand palette (electric blue / cyan — Automatic IA Lab)
         brand: {
-          50:  '#eef2ff',
-          100: '#e0e7ff',
-          200: '#c7d2fe',
-          300: '#a5b4fc',
-          400: '#818cf8',
-          500: '#6366f1',
-          600: '#4f46e5',
-          700: '#4338ca',
-          800: '#3730a3',
-          900: '#312e81',
-          950: '#1e1b4b',
+          50:  '#e6f5ff',
+          100: '#ccebff',
+          200: '#99d6ff',
+          300: '#66c2ff',
+          400: '#33adff',
+          500: '#0099ff',
+          600: '#007acc',
+          700: '#005c99',
+          800: '#003d66',
+          900: '#001f33',
+          950: '#000f1a',
         },
 
         // Neutral surface system
@@ -115,9 +115,9 @@ const config: Config = {
         'card':     '0 4px 16px 0 rgba(0,0,0,0.08), 0 1px 4px 0 rgba(0,0,0,0.04)',
         'elevated': '0 12px 40px 0 rgba(0,0,0,0.12), 0 4px 12px 0 rgba(0,0,0,0.06)',
         'modal':    '0 24px 64px 0 rgba(0,0,0,0.20), 0 8px 24px 0 rgba(0,0,0,0.10)',
-        'brand':    '0 8px 24px 0 rgba(99,102,241,0.28)',
-        'brand-lg': '0 16px 48px 0 rgba(99,102,241,0.32)',
-        'glow':     '0 0 0 3px rgba(99,102,241,0.15)',
+        'brand':    '0 8px 24px 0 rgba(0,153,255,0.28)',
+        'brand-lg': '0 16px 48px 0 rgba(0,153,255,0.32)',
+        'glow':     '0 0 0 3px rgba(0,153,255,0.15)',
         'inner-sm': 'inset 0 1px 2px 0 rgba(0,0,0,0.06)',
       },
 
@@ -190,20 +190,20 @@ const config: Config = {
           '50%': { transform: 'translateY(-12px)' },
         },
         glowPulse: {
-          '0%, 100%': { boxShadow: '0 0 0 0 rgba(99,102,241,0.4)' },
-          '50%': { boxShadow: '0 0 0 12px rgba(99,102,241,0)' },
+          '0%, 100%': { boxShadow: '0 0 0 0 rgba(0,153,255,0.4)' },
+          '50%': { boxShadow: '0 0 0 12px rgba(0,153,255,0)' },
         },
       },
 
       backgroundImage: {
         'gradient-radial':   'radial-gradient(var(--tw-gradient-stops))',
         'gradient-conic':    'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
-        'gradient-brand':    'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-        'gradient-brand-r':  'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)',
+        'gradient-brand':    'linear-gradient(135deg, #0066cc 0%, #00ccff 100%)',
+        'gradient-brand-r':  'linear-gradient(135deg, #00ccff 0%, #0066cc 100%)',
         'gradient-dark':     'linear-gradient(180deg, #0f172a 0%, #1e293b 100%)',
         'shimmer-gradient':  'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.08) 50%, transparent 100%)',
-        'grid-pattern':      "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%236366f1' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")",
-        'dot-pattern':       "url(\"data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='1' cy='1' r='1' fill='%236366f1' fill-opacity='0.06'/%3E%3C/svg%3E\")",
+        'grid-pattern':      "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%230099ff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")",
+        'dot-pattern':       "url(\"data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='1' cy='1' r='1' fill='%230099ff' fill-opacity='0.06'/%3E%3C/svg%3E\")",
       },
 
       transitionTimingFunction: {

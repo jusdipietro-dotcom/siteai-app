@@ -11,21 +11,21 @@
     --foreground: 222 47% 11%;
     --card: 0 0% 100%;
     --card-foreground: 222 47% 11%;
-    --primary: 239 84% 67%;
+    --primary: 204 100% 50%;
     --primary-foreground: 0 0% 100%;
-    --primary-50: 238 100% 97%;
-    --primary-100: 238 100% 94%;
-    --primary-200: 238 96% 88%;
-    --primary-500: 239 84% 67%;
-    --primary-600: 243 75% 59%;
-    --primary-700: 245 68% 52%;
+    --primary-50: 204 100% 95%;
+    --primary-100: 204 100% 90%;
+    --primary-200: 204 100% 80%;
+    --primary-500: 204 100% 50%;
+    --primary-600: 204 100% 40%;
+    --primary-700: 204 100% 30%;
     --muted: 210 40% 96%;
     --muted-foreground: 215 25% 47%;
     --accent: 210 40% 96%;
     --accent-foreground: 222 47% 11%;
     --border: 214 32% 91%;
     --input: 214 32% 91%;
-    --ring: 239 84% 67%;
+    --ring: 204 100% 50%;
     --radius: 0.75rem;
   }
 
@@ -140,15 +140,15 @@
 
 @layer components {
   .gradient-text {
-    @apply bg-gradient-to-r from-brand-500 via-violet-500 to-purple-600 bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-brand-400 via-brand-500 to-cyan-400 bg-clip-text text-transparent;
   }
   .gradient-text-warm {
     @apply bg-gradient-to-r from-orange-400 via-pink-500 to-rose-500 bg-clip-text text-transparent;
   }
-  .gradient-brand { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); }
-  .gradient-brand-r { background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%); }
-  .gradient-brand-subtle { background: linear-gradient(135deg, rgba(99,102,241,0.08) 0%, rgba(139,92,246,0.08) 100%); }
-  .gradient-dark-hero { background: linear-gradient(180deg, #080d1a 0%, #0f172a 60%, #160d2e 100%); }
+  .gradient-brand { background: linear-gradient(135deg, #0066cc 0%, #00ccff 100%); }
+  .gradient-brand-r { background: linear-gradient(135deg, #00ccff 0%, #0066cc 100%); }
+  .gradient-brand-subtle { background: linear-gradient(135deg, rgba(0,153,255,0.08) 0%, rgba(0,204,255,0.08) 100%); }
+  .gradient-dark-hero { background: linear-gradient(180deg, #040c18 0%, #071422 60%, #040c18 100%); }
 
   .glass {
     -webkit-backdrop-filter: blur(12px) saturate(180%);
@@ -195,7 +195,7 @@
   }
 
   .glow-brand {
-    box-shadow: 0 0 0 1px rgba(99,102,241,0.15), 0 8px 32px rgba(99,102,241,0.2);
+    box-shadow: 0 0 0 1px rgba(0,153,255,0.15), 0 8px 32px rgba(0,153,255,0.2);
   }
 
   .bg-checker {
