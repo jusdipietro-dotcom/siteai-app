@@ -44,6 +44,8 @@ COPY --from=builder /app/next.config.js ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next
 COPY --from=builder /app/prisma ./prisma
 
+# Copiar archivos estáticos públicos (logo, imágenes, etc.)
+COPY --from=builder /app/public ./public
 RUN mkdir -p public/uploads && chown -R nextjs:nodejs public/uploads
 
 USER nextjs
