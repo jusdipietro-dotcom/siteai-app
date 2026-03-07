@@ -46,4 +46,4 @@ ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
 # Migra la DB y arranca el server
-CMD ["sh", "-c", "node_modules/.bin/prisma migrate deploy && node_modules/.bin/next start"]
+CMD ["sh", "-c", "node_modules/.bin/prisma migrate deploy; node_modules/.bin/next start -p 3000 -H 0.0.0.0"]
