@@ -6,19 +6,19 @@ import { GlobalKeyboardShortcuts } from '@/components/shared/GlobalKeyboardShort
 import { Providers } from '@/components/providers/Providers'
 
 export const metadata: Metadata = {
-  title: { default: 'SiteAI — Generador de Sitios Web', template: '%s · SiteAI' },
+  title: { default: 'Automatic IA Lab — Generador de Sitios Web', template: '%s · Automatic IA Lab' },
   description: 'Creá sitios web profesionales para tu negocio en minutos, sin saber programar.',
   icons: { icon: '/favicon.ico' },
   openGraph: {
     type: 'website',
     locale: 'es_AR',
-    siteName: 'SiteAI',
-    title: 'SiteAI — Generador de Sitios Web',
+    siteName: 'Automatic IA Lab',
+    title: 'Automatic IA Lab — Generador de Sitios Web',
     description: 'Creá sitios web profesionales para tu negocio en minutos, sin saber programar.',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'SiteAI — Generador de Sitios Web',
+    title: 'Automatic IA Lab — Generador de Sitios Web',
     description: 'Creá sitios web profesionales para tu negocio en minutos, sin saber programar.',
   },
 }

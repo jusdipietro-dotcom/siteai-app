@@ -4,7 +4,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard, BookTemplate, Settings, HelpCircle,
-  Plus, Zap, LogOut, Search, Image, ChevronLeft, ChevronRight,
+  Plus, LogOut, Search, Image, ChevronLeft, ChevronRight,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useUIStore } from '@/store/useUIStore'
@@ -56,11 +56,9 @@ export function DashboardSidebar() {
               exit={{ opacity: 0, x: -10 }}
               className="flex items-center gap-2.5 flex-1 min-w-0"
             >
-              <div className="h-8 w-8 gradient-brand rounded-xl flex items-center justify-center shrink-0">
-                <Zap className="h-4 w-4 text-white" />
-              </div>
+              <img src="/logo.png" alt="Automatic IA Lab" className="h-8 w-8 object-contain rounded-xl shrink-0" />
               <div className="min-w-0">
-                <p className="text-sm font-bold text-white truncate">SiteAI</p>
+                <p className="text-sm font-bold text-white truncate">Automatic IA Lab</p>
                 <p className="text-[10px] text-white/40 truncate">Website Builder</p>
               </div>
             </motion.div>
@@ -70,9 +68,9 @@ export function DashboardSidebar() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="h-8 w-8 gradient-brand rounded-xl flex items-center justify-center mx-auto"
+              className="flex items-center justify-center mx-auto"
             >
-              <Zap className="h-4 w-4 text-white" />
+              <img src="/logo.png" alt="Automatic IA Lab" className="h-8 w-8 object-contain rounded-xl" />
             </motion.div>
           )}
         </AnimatePresence>

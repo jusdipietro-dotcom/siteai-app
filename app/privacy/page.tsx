@@ -1,7 +1,6 @@
 import Link from 'next/link'
-import { Zap } from 'lucide-react'
 
-export const metadata = { title: 'Política de privacidad — SiteAI' }
+export const metadata = { title: 'Política de privacidad — Automatic IA Lab' }
 
 const sections = [
   {
@@ -32,7 +31,7 @@ const sections = [
   {
     title: '6. Tus derechos',
     content:
-      'Tenés derecho a acceder, rectificar y eliminar tus datos personales en cualquier momento. Para ejercer estos derechos, contactanos desde el panel de configuración de tu cuenta o enviando un email a privacidad@siteai.app.',
+      'Tenés derecho a acceder, rectificar y eliminar tus datos personales en cualquier momento. Para ejercer estos derechos, contactanos desde el panel de configuración de tu cuenta o enviando un email a automaticialab@gmail.com.',
   },
   {
     title: '7. Retención de datos',
@@ -53,12 +52,8 @@ export default function PrivacyPage() {
       <header className="bg-white border-b border-surface-100">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 py-4 flex items-center gap-4">
           <Link href="/" className="flex items-center gap-2 group">
-            <div className="w-8 h-8 gradient-brand rounded-xl flex items-center justify-center shadow-brand">
-              <Zap className="w-4 h-4 text-white" />
-            </div>
-            <span className="text-lg font-bold text-surface-900">
-              Site<span className="text-brand-500">AI</span>
-            </span>
+            <img src="/logo.png" alt="Automatic IA Lab" className="w-8 h-8 object-contain rounded-xl" />
+            <span className="text-lg font-bold text-surface-900">Automatic IA Lab</span>
           </Link>
         </div>
       </header>

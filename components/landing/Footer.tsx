@@ -1,5 +1,4 @@
 import Link from 'next/link'
-import { Zap } from 'lucide-react'
 
 const links: Record<string, { label: string; href: string }[]> = {
   Producto: [
@@ -29,12 +28,8 @@ export function Footer() {
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 gradient-brand rounded-xl flex items-center justify-center shadow-brand">
-                <Zap className="w-4 h-4 text-white" />
-              </div>
-              <span className="text-lg font-bold text-white">
-                Site<span className="text-brand-400">AI</span>
-              </span>
+              <img src="/logo.png" alt="Automatic IA Lab" className="w-8 h-8 object-contain rounded-xl" />
+              <span className="text-lg font-bold text-white">Automatic IA Lab</span>
             </div>
             <p className="text-sm text-surface-500 leading-relaxed max-w-xs">
               Generador de sitios web con IA para negocios locales de Argentina. Sin código, sin diseñadores.
@@ -59,7 +54,7 @@ export function Footer() {
 
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-8 border-t border-surface-800">
           <p className="text-sm text-surface-600">
-            © {new Date().getFullYear()} SiteAI · AUTOMATIC IA LAB · Buenos Aires, Argentina
+            © {new Date().getFullYear()} Automatic IA Lab · Buenos Aires, Argentina
           </p>
           <p className="text-sm text-surface-600">
             Hecho con IA para negocios locales

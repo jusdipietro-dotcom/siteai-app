@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Zap, Menu, X, ChevronRight } from 'lucide-react'
+import { Menu, X, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
@@ -38,12 +38,8 @@ export function Navbar() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 group">
-            <div className="w-8 h-8 gradient-brand rounded-xl flex items-center justify-center shadow-brand group-hover:scale-105 transition-transform">
-              <Zap className="w-4 h-4 text-white" />
-            </div>
-            <span className="text-lg font-bold text-surface-900 tracking-tight">
-              Site<span className="gradient-text">AI</span>
-            </span>
+            <img src="/logo.png" alt="Automatic IA Lab" className="w-8 h-8 object-contain rounded-xl group-hover:scale-105 transition-transform" />
+            <span className="text-lg font-bold text-surface-900 tracking-tight">Automatic IA Lab</span>
           </Link>
 
           {/* Desktop nav */}

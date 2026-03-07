@@ -1,18 +1,17 @@
 import Link from 'next/link'
-import { Zap } from 'lucide-react'
 
-export const metadata = { title: 'Términos de uso — SiteAI' }
+export const metadata = { title: 'Términos de uso — Automatic IA Lab' }
 
 const sections = [
   {
     title: '1. Aceptación de los términos',
     content:
-      'Al acceder y utilizar SiteAI, aceptás estos términos de uso en su totalidad. Si no estás de acuerdo con alguna parte, no debés utilizar el servicio.',
+      'Al acceder y utilizar Automatic IA Lab, aceptás estos términos de uso en su totalidad. Si no estás de acuerdo con alguna parte, no debés utilizar el servicio.',
   },
   {
     title: '2. Descripción del servicio',
     content:
-      'SiteAI es una plataforma de generación de sitios web con inteligencia artificial destinada a negocios locales. El servicio incluye la creación, edición y publicación de sitios web mediante templates y contenido generado automáticamente.',
+      'Automatic IA Lab es una plataforma de generación de sitios web con inteligencia artificial destinada a negocios locales. El servicio incluye la creación, edición y publicación de sitios web mediante templates y contenido generado automáticamente.',
   },
   {
     title: '3. Cuenta de usuario',
@@ -22,7 +21,7 @@ const sections = [
   {
     title: '4. Contenido del usuario',
     content:
-      'Sos el único responsable del contenido que subís o publicás a través de SiteAI. No debés subir contenido que infrinja derechos de terceros, sea ilegal, difamatorio o engañoso.',
+      'Sos el único responsable del contenido que subís o publicás a través de Automatic IA Lab. No debés subir contenido que infrinja derechos de terceros, sea ilegal, difamatorio o engañoso.',
   },
   {
     title: '5. Planes y pagos',
@@ -32,7 +31,7 @@ const sections = [
   {
     title: '6. Limitación de responsabilidad',
     content:
-      'SiteAI se provee "tal cual". No garantizamos disponibilidad ininterrumpida del servicio. No somos responsables por pérdidas de datos, ingresos o cualquier daño indirecto derivado del uso o imposibilidad de uso del servicio.',
+      'Automatic IA Lab se provee "tal cual". No garantizamos disponibilidad ininterrumpida del servicio. No somos responsables por pérdidas de datos, ingresos o cualquier daño indirecto derivado del uso o imposibilidad de uso del servicio.',
   },
   {
     title: '7. Modificaciones',
@@ -53,12 +52,8 @@ export default function TermsPage() {
       <header className="bg-white border-b border-surface-100">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 py-4 flex items-center gap-4">
           <Link href="/" className="flex items-center gap-2 group">
-            <div className="w-8 h-8 gradient-brand rounded-xl flex items-center justify-center shadow-brand">
-              <Zap className="w-4 h-4 text-white" />
-            </div>
-            <span className="text-lg font-bold text-surface-900">
-              Site<span className="text-brand-500">AI</span>
-            </span>
+            <img src="/logo.png" alt="Automatic IA Lab" className="w-8 h-8 object-contain rounded-xl" />
+            <span className="text-lg font-bold text-surface-900">Automatic IA Lab</span>
           </Link>
         </div>
       </header>

@@ -1,5 +1,4 @@
 import Link from 'next/link'
-import { Zap } from 'lucide-react'
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -12,11 +11,9 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
         {/* Logo */}
         <Link href="/" className="relative flex items-center gap-3 group w-fit">
-          <div className="h-10 w-10 gradient-brand rounded-2xl flex items-center justify-center shadow-brand group-hover:scale-105 transition-transform">
-            <Zap className="h-5 w-5 text-white" />
-          </div>
+          <img src="/logo.png" alt="Automatic IA Lab" className="h-10 w-10 object-contain rounded-2xl group-hover:scale-105 transition-transform" />
           <div>
-            <p className="text-lg font-bold text-white">SiteAI</p>
+            <p className="text-lg font-bold text-white">Automatic IA Lab</p>
             <p className="text-xs text-white/40">Website Builder</p>
           </div>
         </Link>
@@ -29,7 +26,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
               <span className="gradient-text">en minutos.</span>
             </h2>
             <p className="text-white/50 text-base leading-relaxed">
-              Creá tu sitio web profesional sin necesidad de programar. Más de 500 negocios ya confían en SiteAI.
+              Creá tu sitio web profesional sin necesidad de programar. Más de 500 negocios ya confían en Automatic IA Lab.
             </p>
           </div>
 
@@ -64,7 +61,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           </div>
         </div>
 
-        <p className="relative text-xs text-white/20">© {new Date().getFullYear()} SiteAI · Todos los derechos reservados</p>
+        <p className="relative text-xs text-white/20">© {new Date().getFullYear()} Automatic IA Lab · Todos los derechos reservados</p>
       </div>
 
       {/* Right side – form */}
@@ -72,10 +69,8 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <div className="w-full max-w-md">
           {/* Mobile logo */}
           <Link href="/" className="flex items-center gap-2.5 mb-10 lg:hidden">
-            <div className="h-9 w-9 gradient-brand rounded-xl flex items-center justify-center">
-              <Zap className="h-[18px] w-[18px] text-white" />
-            </div>
-            <p className="text-lg font-bold text-white">SiteAI</p>
+            <img src="/logo.png" alt="Automatic IA Lab" className="h-9 w-9 object-contain rounded-xl" />
+            <p className="text-lg font-bold text-white">Automatic IA Lab</p>
           </Link>
 
           {children}
