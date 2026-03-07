@@ -5,18 +5,18 @@ const links: Record<string, { label: string; href: string }[]> = {
     { label: 'Características', href: '/#features' },
     { label: 'Templates', href: '/#templates' },
     { label: 'Precios', href: '/#pricing' },
-    { label: 'Changelog', href: '#' },
+    { label: 'Novedades', href: '/#features' },
   ],
   Soporte: [
-    { label: 'Documentación', href: '#' },
-    { label: 'FAQ', href: '#' },
-    { label: 'Contacto', href: '#' },
-    { label: 'Estado del servicio', href: '#' },
+    { label: 'Documentación', href: '/help' },
+    { label: 'Preguntas frecuentes', href: '/#pricing' },
+    { label: 'Contacto', href: 'mailto:automaticialab@gmail.com' },
+    { label: 'Estado del servicio', href: 'https://automaticialab.com' },
   ],
   Legal: [
     { label: 'Términos de uso', href: '/terms' },
     { label: 'Privacidad', href: '/privacy' },
-    { label: 'Cookies', href: '#' },
+    { label: 'Política de cookies', href: '/privacy' },
   ],
 }
 
