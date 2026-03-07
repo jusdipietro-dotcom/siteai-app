@@ -39,7 +39,8 @@ RUN npm ci --omit=dev
 # Copiar el Prisma client compilado para Linux desde el builder
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
-# Copiar el build de Next.js
+# Copiar el build de Next.js y config
+COPY --from=builder /app/next.config.js ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next
 COPY --from=builder /app/prisma ./prisma
 
