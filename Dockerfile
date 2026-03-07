@@ -24,6 +24,9 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
+# OpenSSL requerido por Prisma en Alpine
+RUN apk add --no-cache openssl
+
 # Usuario sin privilegios
 RUN addgroup --system --gid 1001 nodejs && \
     adduser  --system --uid 1001 nextjs
@@ -46,4 +49,4 @@ ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
 # Migra la DB y arranca el server
-CMD ["sh", "-c", "node_modules/.bin/prisma db push --accept-data-loss && node_modules/.bin/next start -p 3000 -H 0.0.0.0"]
+CMD ["sh", "-c", "node_modules/.bin/prisma db push --accept-data-loss; node_modules/.bin/next start -p 3000 -H 0.0.0.0"]
