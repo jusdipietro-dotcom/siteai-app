@@ -29,6 +29,7 @@ RUN addgroup --system --gid 1001 nodejs && \
 
 # Solo dependencias de producción
 COPY package.json package-lock.json ./
+COPY prisma ./prisma
 RUN npm ci --omit=dev
 
 # Copiar el Prisma client compilado para Linux desde el builder
