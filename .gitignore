@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build
+.next/
+out/
+build/
+dist/
+
+# Env — NUNCA commitear secretos
+.env
+.env.local
+.env.*.local
+
+# Base de datos local
+prisma/dev.db
+prisma/dev.db-journal
+prisma/*.db
+*.sqlite
+.env.sqlite.bak
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Misc
+.vercel
+.turbo
