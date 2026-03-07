@@ -27,25 +27,17 @@ const CATEGORIES: { id: MediaCategory | 'all'; label: string; icon: React.ReactN
   { id: 'misc',     label: 'Varios',     icon: <Filter     className="h-4 w-4" /> },
 ]
 
-const UNSPLASH_UPLOADS = [
-  'https://images.unsplash.com/photo-1497366216548-37526070297c?w=1200&q=80',
-  'https://images.unsplash.com/photo-1497366811353-6870744d04b2?w=1200&q=80',
-  'https://images.unsplash.com/photo-1497366754035-f200968a6e72?w=1200&q=80',
-  'https://images.unsplash.com/photo-1556742031-c6961e8560b0?w=1200&q=80',
-  'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=1200&q=80',
-]
-
 // ─── Upload Drop Zone ─────────────────────────────────────────────────────────
 
-function UploadZone({ onUpload }: { onUpload: () => void }) {
+function UploadZone({ onFiles }: { onFiles: (files: FileList) => void }) {
   const [isDragging, setIsDragging] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault()
     setIsDragging(false)
-    const count = e.dataTransfer.files.length
-    if (count > 0) onUpload()
-  }, [onUpload])
+    if (e.dataTransfer.files.length > 0) onFiles(e.dataTransfer.files)
+  }, [onFiles])
 
   return (
     <div
@@ -59,6 +51,15 @@ function UploadZone({ onUpload }: { onUpload: () => void }) {
           : 'border-surface-200 bg-surface-50 hover:border-surface-300 hover:bg-surface-100'
       )}
     >
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        aria-label="Seleccionar imágenes"
+        className="hidden"
+        onChange={(e) => { if (e.target.files?.length) { onFiles(e.target.files); e.target.value = '' } }}
+      />
       <div className="flex flex-col items-center gap-3">
         <div className={cn(
           'h-12 w-12 rounded-2xl flex items-center justify-center transition-colors',
@@ -73,7 +74,7 @@ function UploadZone({ onUpload }: { onUpload: () => void }) {
           {!isDragging && (
             <button
               type="button"
-              onClick={onUpload}
+              onClick={() => inputRef.current?.click()}
               className="text-sm text-brand-600 hover:text-brand-700 font-medium transition-colors"
             >
               hacé clic para seleccionar
@@ -466,7 +467,7 @@ export default function MediaPage() {
   const [deleteTarget, setDeleteTarget] = useState<MediaFile | null>(null)
   const [deletingMultiple, setDeletingMultiple] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
-  const uploadIndexRef = useRef(0)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const filtered = getFiltered().filter((f) => !showFavoritesOnly || f.favorite)
 
@@ -482,18 +483,26 @@ export default function MediaPage() {
     setViewFile(file)
   }
 
-  const handleUpload = async () => {
+  const handleFiles = async (files: FileList) => {
     setIsUploading(true)
-    const categories: MediaCategory[] = ['hero', 'gallery', 'services', 'misc']
-    const cat = categories[Math.floor(Math.random() * categories.length)]
-    const url = UNSPLASH_UPLOADS[uploadIndexRef.current % UNSPLASH_UPLOADS.length]
-    uploadIndexRef.current += 1
-    const name = `imagen-${Date.now()}.jpg`
-
-    await new Promise((r) => setTimeout(r, 1400))
-    addMockFile(cat, name, url)
+    let uploaded = 0
+    for (const file of Array.from(files)) {
+      if (!file.type.startsWith('image/')) { toast.error(`${file.name}: solo se aceptan imágenes`); continue }
+      if (file.size > 5 * 1024 * 1024) { toast.error(`${file.name}: supera los 5 MB`); continue }
+      try {
+        const formData = new FormData()
+        formData.append('file', file)
+        const res = await fetch('/api/media', { method: 'POST', body: formData })
+        if (!res.ok) throw new Error()
+        const { url } = await res.json()
+        addMockFile('misc', file.name, url)
+        uploaded++
+      } catch {
+        toast.error(`Error al subir ${file.name}`)
+      }
+    }
     setIsUploading(false)
-    toast.success('Imagen subida correctamente')
+    if (uploaded > 0) toast.success(`${uploaded} imagen${uploaded > 1 ? 'es' : ''} subida${uploaded > 1 ? 's' : ''} correctamente`)
   }
 
   const handleDeleteConfirm = () => {
@@ -559,12 +568,21 @@ export default function MediaPage() {
             </motion.div>
           )}
 
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            aria-label="Subir imágenes"
+            className="hidden"
+            onChange={(e) => { if (e.target.files?.length) { handleFiles(e.target.files); e.target.value = '' } }}
+          />
           <Button
             variant="gradient"
             size="sm"
             leftIcon={isUploading ? undefined : <Upload className="h-4 w-4" />}
             loading={isUploading}
-            onClick={handleUpload}
+            onClick={() => fileInputRef.current?.click()}
             className="shadow-brand"
           >
             {isUploading ? 'Subiendo...' : 'Subir imagen'}
@@ -717,7 +735,7 @@ export default function MediaPage() {
                   </p>
                 </div>
                 {!search && !showFavoritesOnly && (
-                  <Button variant="primary" leftIcon={<Upload className="h-4 w-4" />} onClick={handleUpload} loading={isUploading}>
+                  <Button variant="primary" leftIcon={<Upload className="h-4 w-4" />} onClick={() => fileInputRef.current?.click()} loading={isUploading}>
                     Subir imagen
                   </Button>
                 )}
@@ -725,7 +743,7 @@ export default function MediaPage() {
             ) : viewMode === 'grid' ? (
               <div className="space-y-6">
                 {/* Upload drop zone */}
-                <UploadZone onUpload={handleUpload} />
+                <UploadZone onFiles={handleFiles} />
 
                 {/* Grid */}
                 <motion.div
@@ -750,7 +768,7 @@ export default function MediaPage() {
             ) : (
               <div className="space-y-6">
                 {/* Upload drop zone */}
-                <UploadZone onUpload={handleUpload} />
+                <UploadZone onFiles={handleFiles} />
 
                 {/* List */}
                 <div className="space-y-1.5">
