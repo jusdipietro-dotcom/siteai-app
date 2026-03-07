@@ -85,10 +85,15 @@ export default async function PublicSitePage({ params }: { params: { slug: strin
           .card { background: #fff; border: 1px solid #e8edf3; border-radius: 1.25rem; padding: 1.75rem; }
           .grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 1.5rem; }
           .grid-2 { display: grid; grid-template-columns: repeat(2,1fr); gap: 1.5rem; }
+          .grid-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 1.5rem; }
           @media (max-width: 768px) {
-            .grid-3, .grid-2 { grid-template-columns: 1fr; }
+            .grid-3 { grid-template-columns: 1fr; }
+            .grid-2 { grid-template-columns: 1fr; }
+            .grid-4 { grid-template-columns: repeat(2,1fr); }
             .hide-mobile { display: none !important; }
-            .section-pad { padding: 3rem 0; }
+            .section-pad { padding: 2.5rem 0; }
+            .section-pad-sm { padding: 2rem 0; }
+            .container { padding: 0 1rem; }
           }
           /* Navbar */
           .navbar { position: sticky; top: 0; background: rgba(255,255,255,0.96); backdrop-filter: blur(12px); border-bottom: 1px solid #e8edf3; z-index: 100; }
@@ -97,8 +102,18 @@ export default async function PublicSitePage({ params }: { params: { slug: strin
           .navbar-links { display: flex; gap: 2rem; }
           .navbar-links a { font-size: 0.875rem; color: #64748b; font-weight: 500; transition: color .15s; }
           .navbar-links a:hover { color: #0f172a; }
+          .hamburger { display: none; background: none; border: none; padding: 0.25rem; cursor: pointer; }
+          .hamburger span { display: block; width: 22px; height: 2px; background: #334155; margin: 5px 0; border-radius: 2px; transition: .25s; }
+          .mobile-menu { display: none; background: #fff; border-top: 1px solid #e8edf3; padding: 0.75rem 1rem 1rem; }
+          .mobile-menu.open { display: block; }
+          .mobile-menu a { display: block; padding: 0.65rem 0.5rem; font-size: 0.9rem; font-weight: 500; color: #475569; border-bottom: 1px solid #f1f5f9; }
+          .mobile-menu a:last-child { border-bottom: none; }
+          @media (max-width: 768px) {
+            .hamburger { display: block; }
+          }
           /* Hero */
           .hero { background: linear-gradient(135deg, ${color}ee 0%, ${color}88 100%); min-height: 88vh; display: flex; align-items: center; position: relative; overflow: hidden; }
+          @media (max-width: 768px) { .hero { min-height: 70vh; } }
           .hero::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(0,0,0,.28) 0%, rgba(0,0,0,.08) 100%); }
           .hero-content { position: relative; color: #fff; max-width: 700px; }
           .hero-badge { display: inline-block; background: rgba(255,255,255,0.2); padding: 0.375rem 1rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; margin-bottom: 1.25rem; backdrop-filter: blur(8px); }
@@ -118,7 +133,10 @@ export default async function PublicSitePage({ params }: { params: { slug: strin
           .about-section { background: #f8fafc; }
           .about-inner { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center; }
           .about-badge { display: inline-flex; align-items: center; gap: 0.5rem; background: ${color}18; color: ${color}; font-size: 0.75rem; font-weight: 700; padding: 0.4rem 0.875rem; border-radius: 9999px; margin-bottom: 1rem; }
-          @media (max-width: 768px) { .about-inner { grid-template-columns: 1fr; gap: 2rem; } }
+          @media (max-width: 768px) {
+            .about-inner { grid-template-columns: 1fr; gap: 2rem; }
+            .about-icons { grid-template-columns: 1fr 1fr !important; }
+          }
           /* Team */
           .team-member-card { text-align: center; }
           .team-avatar { width: 72px; height: 72px; border-radius: 50%; background: ${color}22; display: flex; align-items: center; justify-content: center; font-size: 1.75rem; font-weight: 800; color: ${color}; margin: 0 auto 1rem; }
@@ -171,8 +189,30 @@ export default async function PublicSitePage({ params }: { params: { slug: strin
                 Contactar
               </a>
             )}
+            <button className="hamburger" id="hamburger" aria-label="Menú" type="button">
+              <span /><span /><span />
+            </button>
+          </div>
+          <div className="mobile-menu" id="mobile-menu">
+            <a href="#inicio" onClick={undefined}>Inicio</a>
+            {has('services') && <a href="#servicios">Servicios</a>}
+            {has('about') && <a href="#nosotros">Nosotros</a>}
+            {has('testimonials') && <a href="#testimonios">Testimonios</a>}
+            {has('contact') && <a href="#contacto">Contacto</a>}
           </div>
         </nav>
+        <script dangerouslySetInnerHTML={{ __html: `
+          var btn = document.getElementById('hamburger');
+          var menu = document.getElementById('mobile-menu');
+          if(btn && menu) {
+            btn.addEventListener('click', function() {
+              menu.classList.toggle('open');
+            });
+            menu.querySelectorAll('a').forEach(function(a) {
+              a.addEventListener('click', function() { menu.classList.remove('open'); });
+            });
+          }
+        `}} />
 
         {/* ── Hero ── */}
         <section className="hero" id="inicio">
@@ -210,7 +250,7 @@ export default async function PublicSitePage({ params }: { params: { slug: strin
                     </a>
                   )}
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div className="about-icons" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                   {[
                     { emoji: '🏆', label: 'Calidad garantizada' },
                     { emoji: '⚡', label: 'Respuesta rápida' },
@@ -264,7 +304,7 @@ export default async function PublicSitePage({ params }: { params: { slug: strin
         {has('stats') && (
           <section className="section-pad-sm stats-section">
             <div className="container">
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem', textAlign: 'center' }}>
+              <div className="grid-4" style={{ textAlign: 'center' }}>
                 {[
                   { number: '+500', label: 'Clientes satisfechos' },
                   { number: '+10', label: 'Años de experiencia' },
