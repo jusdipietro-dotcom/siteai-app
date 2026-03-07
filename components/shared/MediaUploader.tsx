@@ -48,19 +48,26 @@ export function MediaUploader({
         toast.error('Solo se aceptan imágenes')
         return
       }
-      if (file.size > 10 * 1024 * 1024) {
-        toast.error('La imagen no puede superar los 10MB')
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('La imagen no puede superar los 5MB')
         return
       }
 
       setIsLoading(true)
-      // Mock upload — use object URL as preview
-      const url = URL.createObjectURL(file)
-      await new Promise((r) => setTimeout(r, 800))
-      const newFile = addMockFile(category, file.name, url)
-      onSelect?.(url, newFile.id)
-      toast.success('Imagen subida correctamente')
-      setIsLoading(false)
+      try {
+        const formData = new FormData()
+        formData.append('file', file)
+        const res = await fetch('/api/media', { method: 'POST', body: formData })
+        if (!res.ok) throw new Error('Upload failed')
+        const { url } = await res.json()
+        const newFile = addMockFile(category, file.name, url)
+        onSelect?.(url, newFile.id)
+        toast.success('Imagen subida correctamente')
+      } catch {
+        toast.error('Error al subir la imagen')
+      } finally {
+        setIsLoading(false)
+      }
     },
     [category, addMockFile, onSelect]
   )

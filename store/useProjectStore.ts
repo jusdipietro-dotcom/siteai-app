@@ -45,7 +45,7 @@ export const useProjectStore = create<ProjectStore>()((set, get) => ({
   },
 
   addProject: async (project) => {
-    set((state) => ({ projects: [project, ...state.projects] }))
+    set((state) => ({ projects: [project, ...state.projects], isLoaded: true }))
     try {
       const res = await fetch('/api/projects', {
         method: 'POST',

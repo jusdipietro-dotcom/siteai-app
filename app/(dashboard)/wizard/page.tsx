@@ -1370,11 +1370,11 @@ export default function WizardPage() {
       },
     }
 
-    addProject(newProject)
+    const saved = await addProject(newProject)
     reset()
     setIsSubmitting(false)
     toast.success('¡Sitio generado con éxito! Revisalo en el editor.')
-    router.push(`/projects/${newProject.id}/editor`)
+    router.push(`/projects/${saved.id}/editor`)
   }
 
   const stepProps = { data, setField, toggleSection, setColorTheme }

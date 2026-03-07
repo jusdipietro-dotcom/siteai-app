@@ -43,6 +43,8 @@ COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next
 COPY --from=builder /app/prisma ./prisma
 
+RUN mkdir -p public/uploads && chown -R nextjs:nodejs public/uploads
+
 USER nextjs
 EXPOSE 3000
 ENV PORT=3000
