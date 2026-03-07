@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     const bytes = await file.arrayBuffer()
     await writeFile(join(UPLOAD_DIR, filename), Buffer.from(bytes))
 
-    const url = `/uploads/${filename}`
+    const url = `/api/uploads/${filename}`
     return NextResponse.json({ url, filename }, { status: 201 })
   } catch (err) {
     console.error('[media upload]', err)
