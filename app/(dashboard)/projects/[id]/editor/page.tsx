@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useProjectStore } from '@/store/useProjectStore'
 import { useEditorStore } from '@/store/useEditorStore'
+import { useMediaStore } from '@/store/useMediaStore'
 import { ColorPresetSelector } from '@/components/shared/ColorPresetSelector'
 import { cn } from '@/lib/utils'
 import type { SectionConfig, SectionType, DevicePreview, ColorTheme } from '@/types'
@@ -55,6 +56,7 @@ export default function EditorPage() {
   const id = params.id as string
   const { projects, updateProject, toggleSection, reorderSections } = useProjectStore()
   const { device, setDevice, selectedSection, selectSection, sidebarTab, setSidebarTab, isDirty, isSaving, setIsSaving, markSaved } = useEditorStore()
+  const galleryImages = useMediaStore((s) => s.files.filter((f) => f.category === 'gallery').slice(0, 6))
 
   const project = projects.find((p) => p.id === id)
   const [sections, setSections] = useState<SectionConfig[]>(project?.sections ?? [])
@@ -336,6 +338,7 @@ export default function EditorPage() {
                   name={localName}
                   selectedSection={selectedSection}
                   onSelectSection={selectSection}
+                  galleryImages={galleryImages}
                 />
               </div>
             </motion.div>
@@ -519,10 +522,117 @@ function RightPanel({ section, project, onClose, onUpdate }: {
           </div>
         )}
 
-        {!['hero','contact','about','services','features'].includes(section.id) && (
-          <p className="text-sm text-surface-400 text-center py-6">
-            Seleccioná una sección con propiedades editables
-          </p>
+        {section.id === 'testimonials' && (
+          <div className="space-y-3">
+            <p className="text-xs text-surface-500">Testimonios ({bd.testimonials.length})</p>
+            {bd.testimonials.map((t: any, i: number) => (
+              <div key={t.id} className="bg-surface-50 rounded-xl p-3 space-y-2">
+                <input
+                  defaultValue={t.author}
+                  onBlur={(e) => { const u = [...bd.testimonials]; u[i] = { ...t, author: e.target.value }; onUpdate({ testimonials: u }) }}
+                  className="field-input text-xs" placeholder="Nombre del cliente"
+                />
+                <input
+                  defaultValue={t.role}
+                  onBlur={(e) => { const u = [...bd.testimonials]; u[i] = { ...t, role: e.target.value }; onUpdate({ testimonials: u }) }}
+                  className="field-input text-xs" placeholder="Cargo / empresa"
+                />
+                <textarea
+                  defaultValue={t.content}
+                  onBlur={(e) => { const u = [...bd.testimonials]; u[i] = { ...t, content: e.target.value }; onUpdate({ testimonials: u }) }}
+                  rows={2} className="field-textarea text-xs" placeholder="Testimonio"
+                />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {section.id === 'team' && (
+          <div className="space-y-3">
+            <p className="text-xs text-surface-500">Equipo ({bd.team.length})</p>
+            {bd.team.map((m: any, i: number) => (
+              <div key={m.id} className="bg-surface-50 rounded-xl p-3 space-y-2">
+                <input
+                  defaultValue={m.name}
+                  onBlur={(e) => { const u = [...bd.team]; u[i] = { ...m, name: e.target.value }; onUpdate({ team: u }) }}
+                  className="field-input text-xs" placeholder="Nombre"
+                />
+                <input
+                  defaultValue={m.role}
+                  onBlur={(e) => { const u = [...bd.team]; u[i] = { ...m, role: e.target.value }; onUpdate({ team: u }) }}
+                  className="field-input text-xs" placeholder="Cargo"
+                />
+                <textarea
+                  defaultValue={m.bio}
+                  onBlur={(e) => { const u = [...bd.team]; u[i] = { ...m, bio: e.target.value }; onUpdate({ team: u }) }}
+                  rows={2} className="field-textarea text-xs" placeholder="Biografía breve"
+                />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {section.id === 'faq' && (
+          <div className="space-y-3">
+            <p className="text-xs text-surface-500">Preguntas ({bd.faqs.length})</p>
+            {bd.faqs.map((faq: any, i: number) => (
+              <div key={faq.id} className="bg-surface-50 rounded-xl p-3 space-y-2">
+                <input
+                  defaultValue={faq.question}
+                  onBlur={(e) => { const u = [...bd.faqs]; u[i] = { ...faq, question: e.target.value }; onUpdate({ faqs: u }) }}
+                  className="field-input text-xs" placeholder="Pregunta"
+                />
+                <textarea
+                  defaultValue={faq.answer}
+                  onBlur={(e) => { const u = [...bd.faqs]; u[i] = { ...faq, answer: e.target.value }; onUpdate({ faqs: u }) }}
+                  rows={2} className="field-textarea text-xs" placeholder="Respuesta"
+                />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {section.id === 'gallery' && (
+          <div className="space-y-3">
+            <p className="text-xs text-surface-500">Las imágenes se toman de la categoría "Galería" en tu biblioteca de medios.</p>
+            <Button variant="outline" size="sm" className="w-full" onClick={() => window.open('/media', '_blank')} leftIcon={<ImageIcon className="h-3.5 w-3.5" />}>
+              Abrir biblioteca de medios
+            </Button>
+          </div>
+        )}
+
+        {section.id === 'stats' && (
+          <div className="space-y-2">
+            <p className="text-xs text-surface-500">Estadísticas visibles en la sección. Editá los valores directamente en el preview del sitio generado.</p>
+          </div>
+        )}
+
+        {section.id === 'cta' && (
+          <>
+            <FieldGroup label="Título del CTA">
+              <input defaultValue={bd.tagline} onBlur={(e) => onUpdate({ tagline: e.target.value })} title="Título CTA" placeholder="Tu llamado a la acción" className="field-input" />
+            </FieldGroup>
+            <FieldGroup label="Descripción">
+              <textarea defaultValue={bd.description} onBlur={(e) => onUpdate({ description: e.target.value })} rows={3} title="Descripción CTA" placeholder="Descripción del CTA" className="field-textarea" />
+            </FieldGroup>
+          </>
+        )}
+
+        {section.id === 'footer' && (
+          <>
+            <FieldGroup label="Email de contacto">
+              <input defaultValue={bd.contact.email} onBlur={(e) => onUpdate({ contact: { ...bd.contact, email: e.target.value } })} title="Email footer" placeholder="contacto@empresa.com" className="field-input" />
+            </FieldGroup>
+            <FieldGroup label="Teléfono">
+              <input defaultValue={bd.contact.phone} onBlur={(e) => onUpdate({ contact: { ...bd.contact, phone: e.target.value } })} title="Teléfono footer" placeholder="+54 11 1234-5678" className="field-input" />
+            </FieldGroup>
+            <FieldGroup label="Instagram">
+              <input defaultValue={bd.socials.instagram} onBlur={(e) => onUpdate({ socials: { ...bd.socials, instagram: e.target.value } })} title="Instagram" placeholder="@usuario" className="field-input" />
+            </FieldGroup>
+            <FieldGroup label="Facebook">
+              <input defaultValue={bd.socials.facebook} onBlur={(e) => onUpdate({ socials: { ...bd.socials, facebook: e.target.value } })} title="Facebook" placeholder="facebook.com/pagina" className="field-input" />
+            </FieldGroup>
+          </>
         )}
       </div>
     </div>
@@ -540,13 +650,14 @@ function FieldGroup({ label, children }: { label: string; children: React.ReactN
 }
 
 // ── Site Preview ───────────────────────────────────────────────────────────────
-function SitePreview({ project, sections, primaryColor, name, selectedSection, onSelectSection }: {
+function SitePreview({ project, sections, primaryColor, name, selectedSection, onSelectSection, galleryImages }: {
   project: any
   sections: SectionConfig[]
   primaryColor: string
   name: string
   selectedSection: SectionType | null
   onSelectSection: (id: SectionType | null) => void
+  galleryImages: any[]
 }) {
   const bd = project.businessData
   const enabled = sections.filter((s) => s.enabled).sort((a, b) => a.order - b.order)
@@ -588,14 +699,14 @@ function SitePreview({ project, sections, primaryColor, name, selectedSection, o
             </span>
           </div>
 
-          <PreviewSection section={section} bd={bd} name={name} color={primaryColor} />
+          <PreviewSection section={section} bd={bd} name={name} color={primaryColor} galleryImages={galleryImages} />
         </div>
       ))}
     </div>
   )
 }
 
-function PreviewSection({ section, bd, name, color }: { section: SectionConfig; bd: any; name: string; color: string }) {
+function PreviewSection({ section, bd, name, color, galleryImages }: { section: SectionConfig; bd: any; name: string; color: string; galleryImages: any[] }) {
   switch (section.id) {
     case 'hero':
       return (
@@ -698,9 +809,18 @@ function PreviewSection({ section, bd, name, color }: { section: SectionConfig; 
         <div className="px-8 py-12 bg-surface-50">
           <h2 className="text-xl font-bold text-center mb-8">Galería</h2>
           <div className="grid grid-cols-3 gap-3">
-            {[...Array(6)].map((_, i) => (
-              <div key={i} className="aspect-square rounded-xl bg-surface-200" />
-            ))}
+            {galleryImages.length > 0
+              ? galleryImages.map((img) => (
+                  <div key={img.id} className="aspect-square rounded-xl overflow-hidden">
+                    <img src={img.thumbnailUrl ?? img.url} alt={img.alt ?? ''} className="w-full h-full object-cover" />
+                  </div>
+                ))
+              : [...Array(6)].map((_, i) => (
+                  <div key={i} className="aspect-square rounded-xl bg-surface-200 flex items-center justify-center">
+                    <ImageIcon className="h-6 w-6 text-surface-300" />
+                  </div>
+                ))
+            }
           </div>
         </div>
       )
