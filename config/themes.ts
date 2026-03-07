@@ -68,14 +68,14 @@ export const colorPresets: ColorPreset[] = [
 ]
 
 export const typographyOptions: TypographyOption[] = [
-  { id: 'inter',     name: 'Inter',          category: 'sans',    previewClass: 'font-sans' },
-  { id: 'playfair',  name: 'Playfair Display', category: 'serif', previewClass: 'font-serif' },
-  { id: 'geist',     name: 'Geist',          category: 'sans',    previewClass: 'font-sans' },
-  { id: 'dm-sans',   name: 'DM Sans',        category: 'sans',    previewClass: 'font-sans' },
-  { id: 'lora',      name: 'Lora',           category: 'serif',   previewClass: 'font-serif' },
-  { id: 'manrope',   name: 'Manrope',        category: 'sans',    previewClass: 'font-sans' },
-  { id: 'fraunces',  name: 'Fraunces',       category: 'display', previewClass: 'font-serif' },
-  { id: 'space-grotesk', name: 'Space Grotesk', category: 'sans', previewClass: 'font-sans' },
+  { id: 'inter',         name: 'Inter',           category: 'sans',    previewClass: 'font-sans',  cssFamily: 'Inter',          googleUrl: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap' },
+  { id: 'playfair',      name: 'Playfair Display', category: 'serif',  previewClass: 'font-serif', cssFamily: 'Playfair Display', googleUrl: 'https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&display=swap' },
+  { id: 'geist',         name: 'Geist',           category: 'sans',    previewClass: 'font-sans',  cssFamily: 'Geist',           googleUrl: 'https://fonts.googleapis.com/css2?family=Geist:wght@400;600;700&display=swap' },
+  { id: 'dm-sans',       name: 'DM Sans',         category: 'sans',    previewClass: 'font-sans',  cssFamily: 'DM Sans',         googleUrl: 'https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700&display=swap' },
+  { id: 'lora',          name: 'Lora',            category: 'serif',   previewClass: 'font-serif', cssFamily: 'Lora',            googleUrl: 'https://fonts.googleapis.com/css2?family=Lora:wght@400;600;700&display=swap' },
+  { id: 'manrope',       name: 'Manrope',         category: 'sans',    previewClass: 'font-sans',  cssFamily: 'Manrope',         googleUrl: 'https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&display=swap' },
+  { id: 'fraunces',      name: 'Fraunces',        category: 'display', previewClass: 'font-serif', cssFamily: 'Fraunces',        googleUrl: 'https://fonts.googleapis.com/css2?family=Fraunces:wght@400;600;700&display=swap' },
+  { id: 'space-grotesk', name: 'Space Grotesk',   category: 'sans',    previewClass: 'font-sans',  cssFamily: 'Space Grotesk',   googleUrl: 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&display=swap' },
 ]
 
 export function getPresetById(id: ColorTheme): ColorPreset {

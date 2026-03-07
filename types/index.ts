@@ -158,6 +158,8 @@ export interface TypographyOption {
   name: string
   category: 'sans' | 'serif' | 'mono' | 'display'
   previewClass: string
+  cssFamily: string
+  googleUrl: string
 }
 
 // ─── Business Types ───────────────────────────────────────────────────────────

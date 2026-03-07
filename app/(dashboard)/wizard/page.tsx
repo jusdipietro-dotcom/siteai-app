@@ -1,5 +1,5 @@
 'use client'
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -476,6 +476,19 @@ function Step5({ data, setField }: { data: any; setField: any }) {
 // ─── Step 6: Style ────────────────────────────────────────────────────────────
 
 function Step6({ data, setField, setColorTheme }: { data: any; setField: any; setColorTheme: any }) {
+  useEffect(() => {
+    typographyOptions.forEach((font) => {
+      const id = `gfont-${font.id}`
+      if (!document.getElementById(id)) {
+        const link = document.createElement('link')
+        link.id = id
+        link.rel = 'stylesheet'
+        link.href = font.googleUrl
+        document.head.appendChild(link)
+      }
+    })
+  }, [])
+
   return (
     <div className="space-y-6">
       {/* Color presets */}
@@ -538,7 +551,7 @@ function Step6({ data, setField, setColorTheme }: { data: any; setField: any; se
                       : 'border-surface-200 bg-white text-surface-700 hover:border-surface-300'
                   )}
                 >
-                  <span className={font.previewClass}>{font.name}</span>
+                  <span style={{ fontFamily: font.cssFamily }}>{font.name}</span>
                   <span className="text-xs text-surface-400 capitalize">{font.category}</span>
                 </button>
               ))}
@@ -559,7 +572,7 @@ function Step6({ data, setField, setColorTheme }: { data: any; setField: any; se
                       : 'border-surface-200 bg-white text-surface-700 hover:border-surface-300'
                   )}
                 >
-                  <span className={font.previewClass}>{font.name}</span>
+                  <span style={{ fontFamily: font.cssFamily }}>{font.name}</span>
                   <span className="text-xs text-surface-400 capitalize">{font.category}</span>
                 </button>
               ))}
