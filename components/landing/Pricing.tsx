@@ -25,7 +25,7 @@ const plans = [
   },
   {
     name: 'Essential',
-    price: '12',
+    price: '12.000',
     description: 'Para negocios que quieren presencia online',
     cta: 'Elegir Essential',
     ctaVariant: 'gradient' as const,
@@ -45,7 +45,7 @@ const plans = [
   },
   {
     name: 'Professional',
-    price: '29',
+    price: '29.000',
     description: 'Para negocios que quieren el máximo impacto',
     cta: 'Elegir Professional',
     ctaVariant: 'gradient' as const,
@@ -126,7 +126,7 @@ export function Pricing() {
                 <p className="text-sm text-surface-500 mb-5">{plan.description}</p>
 
                 <div className="flex items-baseline gap-1 mb-6">
-                  <span className="text-sm text-surface-500">USD</span>
+                  <span className="text-sm text-surface-500">$</span>
                   <span className="text-5xl font-extrabold text-surface-900">{plan.price}</span>
                   <span className="text-sm text-surface-500">/ mes</span>
                 </div>
