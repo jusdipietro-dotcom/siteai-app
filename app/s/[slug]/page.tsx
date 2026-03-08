@@ -57,6 +57,8 @@ export default async function PublicSitePage({ params }: { params: { slug: strin
   const has = (id: string) => sectionEnabled(sections, id)
 
   const whatsappNum = bd.contact?.whatsapp?.replace(/\D/g, '')
+  const gaId = row.plan === 'professional' && bd.gaId ? (bd.gaId as string).trim() : null
+  const sitemapEnabled = bd.seo?.sitemapEnabled && row.hasPaid
 
   return (
     <html lang="es">
@@ -66,6 +68,15 @@ export default async function PublicSitePage({ params }: { params: { slug: strin
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+        {sitemapEnabled && (
+          <link rel="sitemap" type="application/xml" href={`https://sites.automaticialab.com/${params.slug}/sitemap.xml`} />
+        )}
+        {gaId && (
+          <>
+            <script async src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`} />
+            <script dangerouslySetInnerHTML={{ __html: `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','${gaId}');` }} />
+          </>
+        )}
         <style>{`
           *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
           html { scroll-behavior: smooth; }

@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
 
 const ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN!
 
@@ -21,6 +24,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Pago no configurado. Contactá soporte.' }, { status: 503 })
     }
 
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    }
+
     const { plan, projectId, payerEmail } = await req.json()
 
     const config = PLAN_CONFIG[plan]
@@ -32,6 +40,18 @@ export async function POST(req: NextRequest) {
     }
     if (!projectId) {
       return NextResponse.json({ error: 'projectId requerido' }, { status: 400 })
+    }
+
+    // Límite de proyectos activos: Essential=1, Professional=3
+    const paidCount = await prisma.project.count({
+      where: { userId: session.user.id, hasPaid: true, id: { not: projectId } },
+    })
+    const maxAllowed = plan === 'professional' ? 3 : 1
+    if (paidCount >= maxAllowed) {
+      return NextResponse.json(
+        { error: `Tu plan permite hasta ${maxAllowed} proyecto${maxAllowed > 1 ? 's' : ''} activo${maxAllowed > 1 ? 's' : ''}. Cancelá uno existente para continuar.` },
+        { status: 403 }
+      )
     }
 
     const configuredUrl = process.env.NEXT_PUBLIC_APP_URL ?? process.env.APP_URL
