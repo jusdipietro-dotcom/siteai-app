@@ -457,13 +457,13 @@ function Step5({ data, setField }: { data: any; setField: any }) {
             { key: 'twitter',   icon: <Twitter   className="h-3.5 w-3.5" />, placeholder: '@tunegocio' },
           ].map(({ key, icon, placeholder }) => (
             <div key={key} className="relative">
-              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-surface-400">{icon}</div>
+              <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-surface-400">{icon}</div>
               <input
                 value={(data.socials as any)[key] ?? ''}
                 onChange={(e) => setField('socials', { ...data.socials, [key]: e.target.value })}
                 placeholder={placeholder}
                 title={key}
-                className="field-input pl-8"
+                className="field-input !pl-8"
               />
             </div>
           ))}
