@@ -682,6 +682,26 @@ function RightPanel({ section, project, onClose, onUpdate, mediaFiles, addFile }
                   onBlur={(e) => { const u = [...bd.testimonials]; u[i] = { ...t, content: e.target.value }; onUpdate({ testimonials: u }) }}
                   rows={2} className="field-textarea text-xs" placeholder="Testimonio"
                 />
+                <div className="flex items-center gap-1 pt-0.5">
+                  <span className="text-[10px] text-surface-400 mr-1">Puntuación:</span>
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      title={`${star} estrella${star > 1 ? 's' : ''}`}
+                      onClick={() => { const u = [...bd.testimonials]; u[i] = { ...t, rating: star }; onUpdate({ testimonials: u }) }}
+                      className="transition-transform hover:scale-110"
+                    >
+                      <Star
+                        className="h-4 w-4"
+                        style={{
+                          fill: star <= (t.rating ?? 5) ? '#f59e0b' : 'transparent',
+                          color: star <= (t.rating ?? 5) ? '#f59e0b' : '#d1d5db',
+                        }}
+                      />
+                    </button>
+                  ))}
+                </div>
               </div>
             ))}
             <button
