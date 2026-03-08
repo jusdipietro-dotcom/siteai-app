@@ -463,7 +463,7 @@ function Step5({ data, setField }: { data: any; setField: any }) {
                 onChange={(e) => setField('socials', { ...data.socials, [key]: e.target.value })}
                 placeholder={placeholder}
                 title={key}
-                className="field-input !pl-8"
+                className="field-input-icon"
               />
             </div>
           ))}
