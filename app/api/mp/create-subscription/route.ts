@@ -42,8 +42,8 @@ export async function POST(req: NextRequest) {
     // MP redirige al back_url y agrega ?preapproval_id=XXX automáticamente
     const backUrl = `${baseUrl}/projects/${projectId}/checkout?mp_return=true`
 
-    // start_date: ahora mismo en formato ISO con offset explícito (requerido por MP)
-    const startDate = new Date().toISOString()
+    // start_date: 1 minuto en el futuro para evitar rechazo por latencia de red
+    const startDate = new Date(Date.now() + 60_000).toISOString()
 
     const body = {
       reason: config.title,
