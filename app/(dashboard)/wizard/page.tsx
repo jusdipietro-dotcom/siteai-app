@@ -863,7 +863,7 @@ function UploadSlot({ label, hint, aspect, selectedId, onSelect, gallery, catego
           if (controller.signal.aborted) return
           const url =
             `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}` +
-            `?width=800&height=450&nologo=true&model=turbo&seed=${seed}&enhance=false&private=true`
+            `?width=800&height=450&nologo=true&model=flux&seed=${seed}&private=true`
           try {
             const res = await fetch(url, { signal: controller.signal })
             if (res.status === 429) {
