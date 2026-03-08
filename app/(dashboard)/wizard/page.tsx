@@ -789,7 +789,7 @@ function getAIPrompts(businessType?: string): string[] {
 }
 
 function pollinationsUrl(prompt: string, seed: number): string {
-  return `/api/ai-image?prompt=${encodeURIComponent(prompt)}&seed=${seed}&w=1280&h=720`
+  return `/api/ai-image?prompt=${encodeURIComponent(prompt)}&seed=${seed}&w=800&h=450`
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -837,13 +837,13 @@ function UploadSlot({ label, hint, aspect, selectedId, onSelect, gallery, catego
     if (aiSeeds.length === 0) { setAIVisibleSeeds([]); return }
     setAIVisibleSeeds([aiSeeds[0]])
     const timers = aiSeeds.slice(1).map((seed, i) =>
-      setTimeout(() => setAIVisibleSeeds((prev) => [...prev, seed]), (i + 1) * 3000)
+      setTimeout(() => setAIVisibleSeeds((prev) => [...prev, seed]), (i + 1) * 15000)
     )
     return () => timers.forEach(clearTimeout)
   }, [aiSeeds])
 
   const handleGenerate = () => {
-    const seeds = Array.from({ length: 4 }, () => Math.floor(Math.random() * 99999))
+    const seeds = Array.from({ length: 2 }, () => Math.floor(Math.random() * 99999))
     setAISeeds(seeds)
     setAIVisibleSeeds([])
     setAILoaded({})

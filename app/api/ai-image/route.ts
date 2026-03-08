@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
 
   const pollinationsUrl =
     `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}` +
-    `?width=${w}&height=${h}&nologo=true&model=flux&seed=${seed}&private=false`
+    `?width=${w}&height=${h}&nologo=true&model=flux&seed=${seed}&private=true`
 
   const MAX_RETRIES = 4
   let lastError = ''
@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
     const currentSeed = parseInt(seed) + (attempt - 1) * 1000
     const urlForAttempt =
       `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}` +
-      `?width=${w}&height=${h}&nologo=true&model=flux&seed=${currentSeed}&private=false`
+      `?width=${w}&height=${h}&nologo=true&model=flux&seed=${currentSeed}&private=true`
 
     try {
       const res = await fetch(urlForAttempt, {
