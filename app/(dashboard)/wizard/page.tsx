@@ -812,10 +812,8 @@ function UploadSlot({ label, hint, aspect, selectedId, onSelect, gallery, catego
   const [dragging, setDragging] = useState(false)
   const [showGallery, setShowGallery] = useState(false)
   const [showAIPanel, setShowAIPanel] = useState(false)
-  const [aiSeeds, setAISeeds] = useState<number[]>([])
-  const [aiVisibleSeeds, setAIVisibleSeeds] = useState<number[]>([])
-  const [aiLoaded, setAILoaded] = useState<Record<number, boolean>>({})
-  const [aiError, setAIError] = useState<Record<number, boolean>>({})
+  const [aiItems, setAIItems] = useState<{ seed: number; prompt: string; status: 'loading' | 'loaded' | 'error'; blobUrl?: string }[]>([])
+  const aiGenRef = useRef(0)
   // Local cache of the last uploaded/selected file so the preview is never affected
   // by store race conditions (loadFiles overwriting files, stale gallery, etc.)
   const [localFile, setLocalFile] = useState<import('@/types').MediaFile | null>(null)
@@ -832,34 +830,79 @@ function UploadSlot({ label, hint, aspect, selectedId, onSelect, gallery, catego
 
   const canUseAI = aspect === 'video' && !!businessType
 
-  // Escalonar requests para evitar rate limit 429 en Pollinations (una cada 3s)
-  useEffect(() => {
-    if (aiSeeds.length === 0) { setAIVisibleSeeds([]); return }
-    setAIVisibleSeeds([aiSeeds[0]])
-    const timers = aiSeeds.slice(1).map((seed, i) =>
-      setTimeout(() => setAIVisibleSeeds((prev) => [...prev, seed]), (i + 1) * 15000)
-    )
-    return () => timers.forEach(clearTimeout)
-  }, [aiSeeds])
+  // Revocar blob URLs al desmontar para evitar memory leaks
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => () => { aiItems.forEach(item => { if (item.blobUrl) URL.revokeObjectURL(item.blobUrl) }) }, [])
 
   const handleGenerate = () => {
-    const seeds = Array.from({ length: 2 }, () => Math.floor(Math.random() * 99999))
-    setAISeeds(seeds)
-    setAIVisibleSeeds([])
-    setAILoaded({})
-    setAIError({})
+    aiItems.forEach(item => { if (item.blobUrl) URL.revokeObjectURL(item.blobUrl) })
+    const prompts = getAIPrompts(businessType)
+    const newItems = Array.from({ length: 2 }, (_, i) => ({
+      seed: Math.floor(Math.random() * 99999),
+      prompt: prompts[i % prompts.length],
+      status: 'loading' as const,
+    }))
+    const gen = ++aiGenRef.current
+    setAIItems(newItems)
     setShowAIPanel(true)
     setShowGallery(false)
+
+    // Fetches secuenciales desde el navegador (IP del usuario, sin rate limit del VPS)
+    const runFetches = async () => {
+      for (let i = 0; i < newItems.length; i++) {
+        const { seed, prompt } = newItems[i]
+        let blobUrl: string | null = null
+        for (let attempt = 0; attempt < 3; attempt++) {
+          const currentSeed = seed + attempt * 1000
+          const url =
+            `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}` +
+            `?width=800&height=450&nologo=true&model=flux&seed=${currentSeed}&private=true`
+          try {
+            const res = await fetch(url, { signal: AbortSignal.timeout(60_000) })
+            if (!res.ok) { await new Promise(r => setTimeout(r, 3000)); continue }
+            const ct = res.headers.get('content-type') ?? ''
+            if (!ct.startsWith('image/')) { await new Promise(r => setTimeout(r, 3000)); continue }
+            const blob = await res.blob()
+            if (blob.size === 0) { await new Promise(r => setTimeout(r, 3000)); continue }
+            blobUrl = URL.createObjectURL(blob)
+            break
+          } catch { if (attempt < 2) await new Promise(r => setTimeout(r, 3000)) }
+        }
+        setAIItems(prev => {
+          if (aiGenRef.current !== gen) return prev
+          return prev.map((item, idx) => idx === i
+            ? { ...item, status: blobUrl ? 'loaded' : 'error', blobUrl: blobUrl ?? undefined }
+            : item
+          )
+        })
+      }
+    }
+    runFetches()
   }
 
-  const handleSelectAI = (url: string, seed: number) => {
-    const id = `media-${generateId()}`
-    const aiFile: import('@/types').MediaFile = { id, name: `ia-generada-${seed}.jpg`, url, thumbnailUrl: url, type: 'image', category, size: 0, favorite: false, usedIn: [], createdAt: new Date().toISOString() }
-    addFile(aiFile)
-    setLocalFile(aiFile)
-    onSelect(id)
-    setShowAIPanel(false)
-    toast.success('Imagen de IA seleccionada')
+  const handleSelectAI = async (blobUrl: string, seed: number) => {
+    setUploading(true)
+    try {
+      const res = await fetch(blobUrl)
+      const blob = await res.blob()
+      const file = new File([blob], `ia-generada-${seed}.jpg`, { type: blob.type || 'image/jpeg' })
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('category', category)
+      const uploadRes = await fetch('/api/media', { method: 'POST', body: formData })
+      if (!uploadRes.ok) throw new Error()
+      const media = await uploadRes.json()
+      const newFile = { ...media, type: media.type ?? 'image', favorite: media.favorite ?? false, usedIn: [] }
+      addFile(newFile)
+      setLocalFile(newFile)
+      onSelect(media.id)
+      setShowAIPanel(false)
+      toast.success('Imagen de IA seleccionada')
+    } catch {
+      toast.error('Error al guardar la imagen de IA')
+    } finally {
+      setUploading(false)
+    }
   }
 
   const doUpload = async (file: File) => {
@@ -1063,7 +1106,7 @@ function UploadSlot({ label, hint, aspect, selectedId, onSelect, gallery, catego
 
       {/* Panel de generación con IA */}
       <AnimatePresence>
-        {showAIPanel && aiSeeds.length > 0 && (
+        {showAIPanel && aiItems.length > 0 && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
@@ -1085,71 +1128,42 @@ function UploadSlot({ label, hint, aspect, selectedId, onSelect, gallery, catego
                 </button>
               </div>
               <div className="grid grid-cols-2 gap-2">
-                {aiSeeds.map((seed, i) => {
-                  const prompts = getAIPrompts(businessType)
-                  const url = pollinationsUrl(prompts[i % prompts.length], seed)
-                  const isVisible = aiVisibleSeeds.includes(seed)
-                  const loaded = !!aiLoaded[seed]
-                  const hasError = !!aiError[seed]
-                  return (
-                    <button
-                      key={seed}
-                      type="button"
-                      onClick={() => !hasError && isVisible && handleSelectAI(url, seed)}
-                      disabled={!loaded || hasError || !isVisible}
-                      className="relative aspect-video rounded-xl overflow-hidden border-2 border-surface-200 hover:border-brand-400 transition-all group disabled:cursor-wait"
-                    >
-                      {/* Waiting state — seed todavía no visible para evitar rate limit */}
-                      {!isVisible && (
-                        <div className="absolute inset-0 bg-surface-100 flex flex-col items-center justify-center gap-2">
-                          <div className="h-5 w-5 rounded-full border-2 border-surface-300" />
-                          <span className="text-[10px] text-surface-400">En espera...</span>
-                        </div>
-                      )}
-                      {/* Loading state */}
-                      {isVisible && !loaded && !hasError && (
-                        <div className="absolute inset-0 bg-surface-100 flex flex-col items-center justify-center gap-2">
-                          <motion.div
-                            animate={{ rotate: 360 }}
-                            transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
-                            className="h-6 w-6 rounded-full border-2 border-brand-400 border-t-transparent"
-                          />
-                          <span className="text-[10px] text-surface-400">Generando...</span>
-                        </div>
-                      )}
-                      {/* Error state */}
-                      {hasError && (
-                        <div className="absolute inset-0 bg-surface-100 flex flex-col items-center justify-center gap-1 px-3 text-center">
-                          <span className="text-lg">⚠️</span>
-                          <span className="text-[10px] text-surface-500">No se pudo cargar</span>
-                        </div>
-                      )}
-                      {/* Image — solo cargar cuando el seed es visible */}
-                      {isVisible && !hasError && (
-                        <img
-                          src={url}
-                          alt={`Imagen IA ${i + 1}`}
-                          className={cn(
-                            'w-full h-full object-cover transition-opacity duration-500',
-                            loaded ? 'opacity-100' : 'opacity-0'
-                          )}
-                          onLoad={() => setAILoaded((prev) => ({ ...prev, [seed]: true }))}
-                          onError={() => {
-                            setAILoaded((prev) => ({ ...prev, [seed]: true }))
-                            setAIError((prev) => ({ ...prev, [seed]: true }))
-                          }}
+                {aiItems.map((item, i) => (
+                  <button
+                    key={item.seed}
+                    type="button"
+                    onClick={() => item.status === 'loaded' && item.blobUrl && handleSelectAI(item.blobUrl, item.seed)}
+                    disabled={item.status !== 'loaded'}
+                    className="relative aspect-video rounded-xl overflow-hidden border-2 border-surface-200 hover:border-brand-400 transition-all group disabled:cursor-wait"
+                  >
+                    {item.status === 'loading' && (
+                      <div className="absolute inset-0 bg-surface-100 flex flex-col items-center justify-center gap-2">
+                        <motion.div
+                          animate={{ rotate: 360 }}
+                          transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
+                          className="h-6 w-6 rounded-full border-2 border-brand-400 border-t-transparent"
                         />
-                      )}
-                      {isVisible && loaded && !hasError && (
+                        <span className="text-[10px] text-surface-400">Generando...</span>
+                      </div>
+                    )}
+                    {item.status === 'error' && (
+                      <div className="absolute inset-0 bg-surface-100 flex flex-col items-center justify-center gap-1 px-3 text-center">
+                        <span className="text-lg">⚠️</span>
+                        <span className="text-[10px] text-surface-500">No se pudo cargar</span>
+                      </div>
+                    )}
+                    {item.status === 'loaded' && item.blobUrl && (
+                      <>
+                        <img src={item.blobUrl} alt={`Imagen IA ${i + 1}`} className="w-full h-full object-cover" />
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/35 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
                           <span className="bg-white text-surface-800 text-xs font-semibold px-3 py-1.5 rounded-xl shadow-sm flex items-center gap-1.5">
                             <Check className="h-3.5 w-3.5 text-brand-500" /> Usar esta
                           </span>
                         </div>
-                      )}
-                    </button>
-                  )
-                })}
+                      </>
+                    )}
+                  </button>
+                ))}
               </div>
               <p className="text-[10px] text-surface-400 text-center">
                 Powered by <span className="font-medium">Pollinations.ai</span> · Modelo Flux · Gratuito
