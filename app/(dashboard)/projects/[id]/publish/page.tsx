@@ -102,7 +102,7 @@ export default function PublishPage() {
                   <p className="font-bold text-surface-900 flex items-center gap-1.5">
                     Professional <span className="text-[10px] gradient-brand text-white px-2 py-0.5 rounded-full font-bold">POPULAR</span>
                   </p>
-                  <p className="text-xs text-surface-500">Dominio propio + proyectos ilimitados</p>
+                  <p className="text-xs text-surface-500">Hasta 3 proyectos + SEO avanzado + Google Analytics</p>
                 </div>
                 <span className="text-2xl font-extrabold text-surface-900">ARS $29.000<span className="text-sm font-normal text-surface-400">/mes</span></span>
               </div>
