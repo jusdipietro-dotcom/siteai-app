@@ -17,8 +17,14 @@ export async function GET(req: NextRequest) {
   let lastError = ''
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    // Variar seed en cada reintento para evitar combinaciones (prompt, seed) que Pollinations rechaza
+    const currentSeed = parseInt(seed) + (attempt - 1) * 1000
+    const urlForAttempt =
+      `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}` +
+      `?width=${w}&height=${h}&nologo=true&model=flux&seed=${currentSeed}&private=false`
+
     try {
-      const res = await fetch(pollinationsUrl, {
+      const res = await fetch(urlForAttempt, {
         signal: AbortSignal.timeout(60_000),
         headers: { 'User-Agent': 'Mozilla/5.0' },
       })
