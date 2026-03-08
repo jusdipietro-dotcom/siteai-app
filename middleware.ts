@@ -18,12 +18,13 @@ export async function middleware(req: NextRequest) {
 
   // ── Subdomain routing: sites.automaticialab.com/{slug} → /s/{slug} ─────────
   if (hostname === 'sites.automaticialab.com' || hostname.startsWith('sites.automaticialab')) {
-    // Dejar pasar internals de Next.js y API routes sin modificar
+    // Dejar pasar internals de Next.js, API routes y archivos estáticos sin modificar
     if (
       pathname.startsWith('/_next') ||
       pathname.startsWith('/api') ||
       pathname === '/favicon.ico' ||
-      pathname === '/'
+      pathname === '/' ||
+      /\.(png|jpg|jpeg|gif|svg|ico|webp|woff|woff2|ttf|otf|css|js|json|txt|xml|pdf)$/.test(pathname)
     ) {
       return NextResponse.next()
     }
