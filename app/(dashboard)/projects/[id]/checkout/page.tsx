@@ -81,27 +81,38 @@ function CheckoutContent() {
     }
   }, [project?.hasPaid, id, step, router])
 
-  // Detectar retorno desde MercadoPago
+  // Detectar retorno desde MercadoPago (Checkout Pro devuelve payment_id, status, external_reference)
   useEffect(() => {
     const mpReturn = searchParams.get('mp_return')
-    const preapprovalId = searchParams.get('preapproval_id')
-
     if (mpReturn !== 'true') return
 
-    if (preapprovalId) {
-      setStep('verifying')
-      verifyPayment(preapprovalId)
-    } else {
+    const paymentId = searchParams.get('payment_id')
+    const mpStatus = searchParams.get('status')
+    const externalReference = searchParams.get('external_reference')
+
+    if (mpStatus === 'failure' || mpStatus === 'null') {
       toast.error('El pago no se completó. Podés intentar de nuevo.')
       setStep('payment')
+      return
     }
+
+    setStep('verifying')
+    verifyPayment(paymentId, mpStatus, externalReference)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const verifyPayment = async (preapprovalId: string) => {
+  const verifyPayment = async (
+    paymentId: string | null,
+    mpStatus: string | null,
+    externalReference: string | null
+  ) => {
     setProcessing(true)
     try {
-      const res = await fetch(`/api/mp/check-subscription?id=${preapprovalId}`)
+      const params = new URLSearchParams()
+      if (paymentId) params.set('payment_id', paymentId)
+      if (mpStatus) params.set('status', mpStatus)
+      if (externalReference) params.set('external_reference', externalReference)
+      const res = await fetch(`/api/mp/check-subscription?${params}`)
       const data = await res.json()
 
       if (data.status === 'authorized') {
@@ -146,7 +157,9 @@ function CheckoutContent() {
       if (data.init_point) {
         window.location.href = data.init_point
       } else {
-        toast.error(data.error ?? 'Error al iniciar el pago. Intentá de nuevo.')
+        const msg = data.error ?? 'Error al iniciar el pago. Intentá de nuevo.'
+        toast.error(msg, { duration: 8000 })
+        console.error('[Checkout] MP error:', data)
         setProcessing(false)
       }
     } catch {

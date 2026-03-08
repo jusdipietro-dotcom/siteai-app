@@ -6,6 +6,7 @@ interface ProjectStore {
   projects: Project[]
   isLoaded: boolean
   fetchProjects: () => Promise<void>
+  reloadProjects: () => Promise<void>
   addProject: (project: Project) => Promise<Project>
   updateProject: (id: string, updates: Partial<Project>) => void
   deleteProject: (id: string) => Promise<void>
@@ -41,6 +42,17 @@ export const useProjectStore = create<ProjectStore>()((set, get) => ({
       set({ projects, isLoaded: true })
     } catch (err) {
       console.error('[ProjectStore] fetchProjects error:', err)
+    }
+  },
+
+  reloadProjects: async () => {
+    try {
+      const res = await fetch('/api/projects')
+      if (!res.ok) return
+      const projects: Project[] = await res.json()
+      set({ projects, isLoaded: true })
+    } catch (err) {
+      console.error('[ProjectStore] reloadProjects error:', err)
     }
   },
 

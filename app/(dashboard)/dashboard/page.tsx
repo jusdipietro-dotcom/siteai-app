@@ -39,12 +39,12 @@ const stagger = {
 
 export default function DashboardPage() {
   const router = useRouter()
-  const { projects, deleteProject, duplicateProject, setProjectStatus } = useProjectStore()
+  const { projects, isLoaded, deleteProject, duplicateProject, setProjectStatus } = useProjectStore()
   const { openCommandPalette } = useUIStore()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<ProjectStatus | 'all'>('all')
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
-  const [isLoading] = useState(false)
+  const isLoading = !isLoaded
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
@@ -69,8 +69,7 @@ export default function DashboardPage() {
   const handleDelete = async () => {
     if (!deleteId) return
     setDeletingId(deleteId)
-    await new Promise((r) => setTimeout(r, 600))
-    deleteProject(deleteId)
+    await deleteProject(deleteId)
     toast.success('Proyecto eliminado')
     setDeleteId(null)
     setDeletingId(null)
@@ -87,11 +86,8 @@ export default function DashboardPage() {
       router.push(`/projects/${id}/checkout`)
       return
     }
-    setProjectStatus(id, 'generating')
-    toast.loading(`Publicando "${name}"...`, { id: `pub-${id}`, duration: 3000 })
-    await new Promise((r) => setTimeout(r, 3000))
     setProjectStatus(id, 'published')
-    toast.success(`"${name}" publicado`, { id: `pub-${id}` })
+    toast.success(`"${name}" publicado`)
   }
 
   return (

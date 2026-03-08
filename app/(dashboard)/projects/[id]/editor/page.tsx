@@ -751,6 +751,43 @@ function RightPanel({ section, project, onClose, onUpdate, mediaFiles, addFile }
           </div>
         )}
 
+        {section.id === 'pricing' && (
+          <div className="space-y-3">
+            <p className="text-xs text-surface-500">Planes / precios ({bd.services.length}). Cada servicio puede tener un precio.</p>
+            {bd.services.map((svc: any, i: number) => (
+              <div key={svc.id} className="bg-surface-50 rounded-xl p-3 space-y-2">
+                <input
+                  defaultValue={svc.name}
+                  onBlur={(e) => {
+                    const updated = [...bd.services]
+                    updated[i] = { ...svc, name: e.target.value }
+                    onUpdate({ services: updated })
+                  }}
+                  className="field-input text-xs" placeholder="Nombre del plan"
+                />
+                <input
+                  defaultValue={svc.price ?? ''}
+                  onBlur={(e) => {
+                    const updated = [...bd.services]
+                    updated[i] = { ...svc, price: e.target.value }
+                    onUpdate({ services: updated })
+                  }}
+                  className="field-input text-xs" placeholder="Precio (ej: $9.990/mes)"
+                />
+                <textarea
+                  defaultValue={svc.description}
+                  onBlur={(e) => {
+                    const updated = [...bd.services]
+                    updated[i] = { ...svc, description: e.target.value }
+                    onUpdate({ services: updated })
+                  }}
+                  rows={2} className="field-textarea text-xs" placeholder="Descripción / características"
+                />
+              </div>
+            ))}
+          </div>
+        )}
+
         {section.id === 'stats' && (
           <div className="space-y-2">
             <p className="text-xs text-surface-500">Estadísticas visibles en la sección. Editá los valores directamente en el preview del sitio generado.</p>
@@ -987,6 +1024,41 @@ function PreviewSection({ section, bd, name, color, galleryImages }: { section: 
         </div>
       )
     }
+    case 'pricing':
+      return (
+        <div className="px-8 py-12">
+          <h2 className="text-xl font-bold text-center mb-2">Precios</h2>
+          <p className="text-sm text-surface-500 text-center mb-8">Elegí el plan que mejor se adapta a vos</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl mx-auto">
+            {bd.services.slice(0, 3).map((svc: any, i: number) => (
+              <div
+                key={svc.id}
+                className={cn(
+                  'rounded-2xl border p-5 flex flex-col gap-3',
+                  i === 1
+                    ? 'border-2 shadow-lg scale-[1.03]'
+                    : 'border-surface-200'
+                )}
+                style={i === 1 ? { borderColor: color } : {}}
+              >
+                {i === 1 && (
+                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full self-start text-white" style={{ backgroundColor: color }}>
+                    Popular
+                  </span>
+                )}
+                <div>
+                  <p className="text-sm font-bold text-surface-900">{svc.name}</p>
+                  <p className="text-2xl font-extrabold mt-1" style={{ color }}>{svc.price || '—'}</p>
+                </div>
+                <p className="text-xs text-surface-500 flex-1">{svc.description}</p>
+                <div className="h-8 rounded-xl text-xs font-semibold text-white flex items-center justify-center" style={{ backgroundColor: color }}>
+                  Contratar
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )
     case 'stats':
       return (
         <div className="px-8 py-12" style={{ backgroundColor: color }}>
