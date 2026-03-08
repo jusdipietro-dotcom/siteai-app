@@ -13,37 +13,53 @@ export async function GET(req: NextRequest) {
     `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}` +
     `?width=${w}&height=${h}&nologo=true&model=flux&seed=${seed}&private=false`
 
-  try {
-    const res = await fetch(pollinationsUrl, {
-      signal: AbortSignal.timeout(120_000),
-      headers: { 'User-Agent': 'Mozilla/5.0' },
-    })
+  const MAX_RETRIES = 4
+  let lastError = ''
 
-    if (!res.ok) {
-      console.error('[ai-image] Pollinations error', res.status)
-      return new NextResponse(null, { status: 502 })
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const res = await fetch(pollinationsUrl, {
+        signal: AbortSignal.timeout(60_000),
+        headers: { 'User-Agent': 'Mozilla/5.0' },
+      })
+
+      if (!res.ok) {
+        lastError = `Pollinations HTTP ${res.status}`
+        console.warn(`[ai-image] attempt ${attempt} — ${lastError}`)
+        await new Promise((r) => setTimeout(r, attempt * 2000))
+        continue
+      }
+
+      const contentType = res.headers.get('Content-Type') ?? ''
+      if (!contentType.startsWith('image/')) {
+        lastError = `Non-image content-type: ${contentType}`
+        console.warn(`[ai-image] attempt ${attempt} — ${lastError}`)
+        await new Promise((r) => setTimeout(r, attempt * 2000))
+        continue
+      }
+
+      const buffer = await res.arrayBuffer()
+      if (buffer.byteLength === 0) {
+        lastError = 'Empty body'
+        console.warn(`[ai-image] attempt ${attempt} — ${lastError}`)
+        await new Promise((r) => setTimeout(r, attempt * 2000))
+        continue
+      }
+
+      console.log(`[ai-image] OK on attempt ${attempt}`)
+      return new NextResponse(buffer, {
+        headers: {
+          'Content-Type': contentType,
+          'Cache-Control': 'public, max-age=86400, immutable',
+        },
+      })
+    } catch (err) {
+      lastError = String(err)
+      console.warn(`[ai-image] attempt ${attempt} — fetch error:`, err)
+      if (attempt < MAX_RETRIES) await new Promise((r) => setTimeout(r, attempt * 2000))
     }
-
-    const contentType = res.headers.get('Content-Type') ?? ''
-    if (!contentType.startsWith('image/')) {
-      console.error('[ai-image] Non-image response:', contentType)
-      return new NextResponse(null, { status: 502 })
-    }
-
-    const buffer = await res.arrayBuffer()
-    if (buffer.byteLength === 0) {
-      console.error('[ai-image] Empty response body')
-      return new NextResponse(null, { status: 502 })
-    }
-
-    return new NextResponse(buffer, {
-      headers: {
-        'Content-Type': contentType,
-        'Cache-Control': 'public, max-age=86400, immutable',
-      },
-    })
-  } catch (err) {
-    console.error('[ai-image] fetch error', err)
-    return new NextResponse(null, { status: 504 })
   }
+
+  console.error('[ai-image] All retries failed:', lastError)
+  return new NextResponse(null, { status: 502 })
 }
