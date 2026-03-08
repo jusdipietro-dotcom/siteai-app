@@ -813,6 +813,7 @@ function UploadSlot({ label, hint, aspect, selectedId, onSelect, gallery, catego
   const [showGallery, setShowGallery] = useState(false)
   const [showAIPanel, setShowAIPanel] = useState(false)
   const [aiSeeds, setAISeeds] = useState<number[]>([])
+  const [aiVisibleSeeds, setAIVisibleSeeds] = useState<number[]>([])
   const [aiLoaded, setAILoaded] = useState<Record<number, boolean>>({})
   const [aiError, setAIError] = useState<Record<number, boolean>>({})
   // Local cache of the last uploaded/selected file so the preview is never affected
@@ -831,9 +832,20 @@ function UploadSlot({ label, hint, aspect, selectedId, onSelect, gallery, catego
 
   const canUseAI = aspect === 'video' && !!businessType
 
+  // Escalonar requests para evitar rate limit 429 en Pollinations (una cada 3s)
+  useEffect(() => {
+    if (aiSeeds.length === 0) { setAIVisibleSeeds([]); return }
+    setAIVisibleSeeds([aiSeeds[0]])
+    const timers = aiSeeds.slice(1).map((seed, i) =>
+      setTimeout(() => setAIVisibleSeeds((prev) => [...prev, seed]), (i + 1) * 3000)
+    )
+    return () => timers.forEach(clearTimeout)
+  }, [aiSeeds])
+
   const handleGenerate = () => {
     const seeds = Array.from({ length: 4 }, () => Math.floor(Math.random() * 99999))
     setAISeeds(seeds)
+    setAIVisibleSeeds([])
     setAILoaded({})
     setAIError({})
     setShowAIPanel(true)
@@ -1076,18 +1088,26 @@ function UploadSlot({ label, hint, aspect, selectedId, onSelect, gallery, catego
                 {aiSeeds.map((seed, i) => {
                   const prompts = getAIPrompts(businessType)
                   const url = pollinationsUrl(prompts[i % prompts.length], seed)
+                  const isVisible = aiVisibleSeeds.includes(seed)
                   const loaded = !!aiLoaded[seed]
                   const hasError = !!aiError[seed]
                   return (
                     <button
                       key={seed}
                       type="button"
-                      onClick={() => !hasError && handleSelectAI(url, seed)}
-                      disabled={!loaded || hasError}
+                      onClick={() => !hasError && isVisible && handleSelectAI(url, seed)}
+                      disabled={!loaded || hasError || !isVisible}
                       className="relative aspect-video rounded-xl overflow-hidden border-2 border-surface-200 hover:border-brand-400 transition-all group disabled:cursor-wait"
                     >
+                      {/* Waiting state — seed todavía no visible para evitar rate limit */}
+                      {!isVisible && (
+                        <div className="absolute inset-0 bg-surface-100 flex flex-col items-center justify-center gap-2">
+                          <div className="h-5 w-5 rounded-full border-2 border-surface-300" />
+                          <span className="text-[10px] text-surface-400">En espera...</span>
+                        </div>
+                      )}
                       {/* Loading state */}
-                      {!loaded && !hasError && (
+                      {isVisible && !loaded && !hasError && (
                         <div className="absolute inset-0 bg-surface-100 flex flex-col items-center justify-center gap-2">
                           <motion.div
                             animate={{ rotate: 360 }}
@@ -1104,8 +1124,8 @@ function UploadSlot({ label, hint, aspect, selectedId, onSelect, gallery, catego
                           <span className="text-[10px] text-surface-500">No se pudo cargar</span>
                         </div>
                       )}
-                      {/* Image */}
-                      {!hasError && (
+                      {/* Image — solo cargar cuando el seed es visible */}
+                      {isVisible && !hasError && (
                         <img
                           src={url}
                           alt={`Imagen IA ${i + 1}`}
@@ -1120,7 +1140,7 @@ function UploadSlot({ label, hint, aspect, selectedId, onSelect, gallery, catego
                           }}
                         />
                       )}
-                      {loaded && !hasError && (
+                      {isVisible && loaded && !hasError && (
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/35 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
                           <span className="bg-white text-surface-800 text-xs font-semibold px-3 py-1.5 rounded-xl shadow-sm flex items-center gap-1.5">
                             <Check className="h-3.5 w-3.5 text-brand-500" /> Usar esta
