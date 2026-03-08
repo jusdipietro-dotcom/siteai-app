@@ -699,16 +699,6 @@ function Step8({ data, toggleSection }: { data: any; toggleSection: any }) {
 
 // ─── Step 9: Images ───────────────────────────────────────────────────────────
 
-// URLs de Unsplash usadas para simular uploads reales
-const UPLOAD_POOL = [
-  'https://images.unsplash.com/photo-1497366216548-37526070297c?w=1200&q=80',
-  'https://images.unsplash.com/photo-1556742031-c6961e8560b0?w=1200&q=80',
-  'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=1200&q=80',
-  'https://images.unsplash.com/photo-1497366754035-f200968a6e72?w=1200&q=80',
-  'https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=1200&q=80',
-]
-let uploadPoolIdx = 0
-
 // ─── AI image generation via Pollinations.ai (free, no API key) ───────────────
 
 const AI_HERO_PROMPTS: Record<string, string[]> = {
@@ -799,7 +789,7 @@ function getAIPrompts(businessType?: string): string[] {
 }
 
 function pollinationsUrl(prompt: string, seed: number): string {
-  return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=1280&height=720&nologo=true&model=flux&seed=${seed}`
+  return `/api/ai-image?prompt=${encodeURIComponent(prompt)}&seed=${seed}&w=1280&h=720`
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -824,22 +814,37 @@ function UploadSlot({ label, hint, aspect, selectedId, onSelect, gallery, catego
   const [showAIPanel, setShowAIPanel] = useState(false)
   const [aiSeeds, setAISeeds] = useState<number[]>([])
   const [aiLoaded, setAILoaded] = useState<Record<number, boolean>>({})
+  const [aiError, setAIError] = useState<Record<number, boolean>>({})
+  // Local cache of the last uploaded/selected file so the preview is never affected
+  // by store race conditions (loadFiles overwriting files, stale gallery, etc.)
+  const [localFile, setLocalFile] = useState<import('@/types').MediaFile | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const selectedFile = gallery.find((f) => f.id === selectedId)
+  // localFile takes priority (immediate preview during upload / after selection)
+  // Falls back to gallery lookup only when there's no local preview
+  const selectedFile = localFile ?? gallery.find((f) => f.id === selectedId) ?? null
+
+  // Clear localFile when selection is removed (X button)
+  useEffect(() => {
+    if (!selectedId) setLocalFile(null)
+  }, [selectedId])
+
   const canUseAI = aspect === 'video' && !!businessType
 
   const handleGenerate = () => {
     const seeds = Array.from({ length: 4 }, () => Math.floor(Math.random() * 99999))
     setAISeeds(seeds)
     setAILoaded({})
+    setAIError({})
     setShowAIPanel(true)
     setShowGallery(false)
   }
 
   const handleSelectAI = (url: string, seed: number) => {
     const id = `media-${generateId()}`
-    addFile({ id, name: `ia-generada-${seed}.jpg`, url, thumbnailUrl: url, type: 'image', category, size: 0, favorite: false, usedIn: [], createdAt: new Date().toISOString() })
+    const aiFile: import('@/types').MediaFile = { id, name: `ia-generada-${seed}.jpg`, url, thumbnailUrl: url, type: 'image', category, size: 0, favorite: false, usedIn: [], createdAt: new Date().toISOString() }
+    addFile(aiFile)
+    setLocalFile(aiFile)
     onSelect(id)
     setShowAIPanel(false)
     toast.success('Imagen de IA seleccionada')
@@ -847,16 +852,38 @@ function UploadSlot({ label, hint, aspect, selectedId, onSelect, gallery, catego
 
   const doUpload = async (file: File) => {
     setUploading(true)
+
+    // 1. Mostrar preview inmediato via blob URL — no depende del store ni de la API
+    const blobUrl = URL.createObjectURL(file)
+    const tempId = `temp-${generateId()}`
+    const tempFile: import('@/types').MediaFile = {
+      id: tempId, name: file.name, url: blobUrl, thumbnailUrl: blobUrl,
+      type: 'image', category, size: file.size, favorite: false, usedIn: [],
+      createdAt: new Date().toISOString(),
+    }
+    setLocalFile(tempFile)
+    // No llamamos onSelect(tempId) aquí — evita que el store Zustand dispare
+    // un re-render síncrono antes de que React procese setLocalFile(tempFile)
+
     try {
       const formData = new FormData()
       formData.append('file', file)
+      formData.append('category', category)
       const res = await fetch('/api/media', { method: 'POST', body: formData })
       if (!res.ok) throw new Error('Upload failed')
       const media = await res.json()
-      addFile({ ...media, usedIn: [] })
+      // 2. Reemplazar con el archivo real del servidor
+      const newFile: import('@/types').MediaFile = { ...media, type: media.type ?? 'image', favorite: media.favorite ?? false, usedIn: [] }
+      addFile(newFile)
+      setLocalFile(newFile)
       onSelect(media.id)
+      // Diferir la revocación para que los state updates se procesen primero
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 500)
       toast.success('Imagen subida correctamente')
     } catch {
+      URL.revokeObjectURL(blobUrl)
+      setLocalFile(null)
+      onSelect(undefined)
       toast.error('Error al subir la imagen')
     } finally {
       setUploading(false)
@@ -1050,15 +1077,17 @@ function UploadSlot({ label, hint, aspect, selectedId, onSelect, gallery, catego
                   const prompts = getAIPrompts(businessType)
                   const url = pollinationsUrl(prompts[i % prompts.length], seed)
                   const loaded = !!aiLoaded[seed]
+                  const hasError = !!aiError[seed]
                   return (
                     <button
                       key={seed}
                       type="button"
-                      onClick={() => handleSelectAI(url, seed)}
-                      disabled={!loaded}
+                      onClick={() => !hasError && handleSelectAI(url, seed)}
+                      disabled={!loaded || hasError}
                       className="relative aspect-video rounded-xl overflow-hidden border-2 border-surface-200 hover:border-brand-400 transition-all group disabled:cursor-wait"
                     >
-                      {!loaded && (
+                      {/* Loading state */}
+                      {!loaded && !hasError && (
                         <div className="absolute inset-0 bg-surface-100 flex flex-col items-center justify-center gap-2">
                           <motion.div
                             animate={{ rotate: 360 }}
@@ -1068,17 +1097,30 @@ function UploadSlot({ label, hint, aspect, selectedId, onSelect, gallery, catego
                           <span className="text-[10px] text-surface-400">Generando...</span>
                         </div>
                       )}
-                      <img
-                        src={url}
-                        alt={`Imagen IA ${i + 1}`}
-                        className={cn(
-                          'w-full h-full object-cover transition-opacity duration-500',
-                          loaded ? 'opacity-100' : 'opacity-0'
-                        )}
-                        onLoad={() => setAILoaded((prev) => ({ ...prev, [seed]: true }))}
-                        onError={() => setAILoaded((prev) => ({ ...prev, [seed]: true }))}
-                      />
-                      {loaded && (
+                      {/* Error state */}
+                      {hasError && (
+                        <div className="absolute inset-0 bg-surface-100 flex flex-col items-center justify-center gap-1 px-3 text-center">
+                          <span className="text-lg">⚠️</span>
+                          <span className="text-[10px] text-surface-500">No se pudo cargar</span>
+                        </div>
+                      )}
+                      {/* Image */}
+                      {!hasError && (
+                        <img
+                          src={url}
+                          alt={`Imagen IA ${i + 1}`}
+                          className={cn(
+                            'w-full h-full object-cover transition-opacity duration-500',
+                            loaded ? 'opacity-100' : 'opacity-0'
+                          )}
+                          onLoad={() => setAILoaded((prev) => ({ ...prev, [seed]: true }))}
+                          onError={() => {
+                            setAILoaded((prev) => ({ ...prev, [seed]: true }))
+                            setAIError((prev) => ({ ...prev, [seed]: true }))
+                          }}
+                        />
+                      )}
+                      {loaded && !hasError && (
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/35 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
                           <span className="bg-white text-surface-800 text-xs font-semibold px-3 py-1.5 rounded-xl shadow-sm flex items-center gap-1.5">
                             <Check className="h-3.5 w-3.5 text-brand-500" /> Usar esta
@@ -1116,7 +1158,7 @@ function UploadSlot({ label, hint, aspect, selectedId, onSelect, gallery, catego
                   <button
                     key={file.id}
                     type="button"
-                    onClick={() => { onSelect(file.id); setShowGallery(false) }}
+                    onClick={() => { setLocalFile(null); onSelect(file.id); setShowGallery(false) }}
                     className={cn(
                       'relative overflow-hidden rounded-xl border-2 transition-all',
                       aspect === 'square' ? 'aspect-square' : 'aspect-video',
@@ -1148,7 +1190,8 @@ function UploadSlot({ label, hint, aspect, selectedId, onSelect, gallery, catego
 }
 
 function Step9({ data, setField }: { data: any; setField: any }) {
-  const { files } = useMediaStore()
+  const { files, loadFiles } = useMediaStore()
+  useEffect(() => { loadFiles() }, [])
   const logos  = files.filter((f) => f.category === 'logo')
   const heroes = files.filter((f) => f.category === 'hero')
 
@@ -1172,7 +1215,7 @@ function Step9({ data, setField }: { data: any; setField: any }) {
         gallery={heroes}
         category="hero"
         businessType={data.businessType}
-        businessName={data.businessName}
+        businessName={data.name}
       />
       <p className="text-xs text-center text-surface-400">
         Podés cambiar las imágenes en cualquier momento desde el editor.
@@ -1291,6 +1334,10 @@ export default function WizardPage() {
   const { addProject } = useProjectStore()
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  // Reset wizard on fresh mount so stale state from a previous incomplete session
+  // doesn't cause old images / wrong fields to appear
+  useEffect(() => { reset() }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
   const progress = (step / TOTAL_WIZARD_STEPS) * 100
   const valid = isStepValid(step)
 
@@ -1403,8 +1450,8 @@ export default function WizardPage() {
   return (
     <div className="min-h-screen flex flex-col bg-surface-50">
       {/* Header */}
-      <div className="bg-white border-b border-surface-200 px-6 py-4 flex-shrink-0">
-        <div className="max-w-2xl mx-auto flex items-center gap-4">
+      <div className="bg-white border-b border-surface-200 px-4 py-3 flex-shrink-0">
+        <div className="max-w-2xl mx-auto flex items-center gap-3">
           <Link href="/dashboard">
             <button
               type="button"
@@ -1415,13 +1462,13 @@ export default function WizardPage() {
               <X className="h-5 w-5" />
             </button>
           </Link>
-          <div className="flex-1">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-surface-700">
-                Paso {step} de {TOTAL_WIZARD_STEPS} —{' '}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-xs sm:text-sm font-medium text-surface-700 truncate min-w-0 mr-2">
+                <span className="text-surface-400">Paso {step}/{TOTAL_WIZARD_STEPS} · </span>
                 <span className="text-brand-600">{STEPS[step - 1]?.title}</span>
               </span>
-              <span className="text-xs text-surface-400 tabular-nums">{Math.round(progress)}%</span>
+              <span className="text-xs text-surface-400 tabular-nums flex-shrink-0">{Math.round(progress)}%</span>
             </div>
             <WizardProgress step={step} total={TOTAL_WIZARD_STEPS} />
           </div>
@@ -1455,7 +1502,7 @@ export default function WizardPage() {
       </div>
 
       {/* Step content */}
-      <div className="flex-1 py-8 px-4 overflow-y-auto">
+      <div className="flex-1 py-4 sm:py-8 px-4 overflow-y-auto">
         <div className="max-w-2xl mx-auto">
           {/* Step header */}
           <div className="mb-6">
@@ -1478,8 +1525,8 @@ export default function WizardPage() {
       </div>
 
       {/* Navigation footer */}
-      <div className="bg-white border-t border-surface-200 px-6 py-4 flex-shrink-0">
-        <div className="max-w-2xl mx-auto flex items-center justify-between gap-4">
+      <div className="bg-white border-t border-surface-200 px-4 py-3 flex-shrink-0">
+        <div className="max-w-2xl mx-auto flex items-center justify-between gap-3">
           <Button
             type="button"
             variant="outline"

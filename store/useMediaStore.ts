@@ -37,7 +37,14 @@ export const useMediaStore = create<MediaStore>((set, get) => ({
       const res = await fetch('/api/media')
       if (!res.ok) return
       const data: MediaFile[] = await res.json()
-      set({ files: data.map((f) => ({ ...f, usedIn: [] })), loaded: true })
+      // Merge: preserve any in-memory files added via addFile while fetch was in-flight
+      const existing = get().files
+      const dbIds = new Set(data.map((f) => f.id))
+      const inMemoryOnly = existing.filter((f) => !dbIds.has(f.id))
+      set({
+        files: [...inMemoryOnly, ...data.map((f) => ({ ...f, usedIn: [] }))],
+        loaded: true,
+      })
     } catch {
       // silent fail — user will see empty state
     }
