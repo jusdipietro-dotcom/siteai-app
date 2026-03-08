@@ -9,7 +9,7 @@ const links: Record<string, { label: string; href: string }[]> = {
   ],
   Soporte: [
     { label: 'Documentación', href: '/help' },
-    { label: 'Preguntas frecuentes', href: '/#pricing' },
+    { label: 'Preguntas frecuentes', href: '/#faq' },
     { label: 'Contacto', href: 'mailto:automaticialab@gmail.com' },
     { label: 'Estado del servicio', href: 'https://automaticialab.com' },
   ],
