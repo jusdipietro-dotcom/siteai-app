@@ -817,7 +817,7 @@ interface UploadSlotProps {
 }
 
 function UploadSlot({ label, hint, aspect, selectedId, onSelect, gallery, category, businessType, businessName }: UploadSlotProps) {
-  const { addMockFile } = useMediaStore()
+  const { addFile } = useMediaStore()
   const [uploading, setUploading] = useState(false)
   const [dragging, setDragging] = useState(false)
   const [showGallery, setShowGallery] = useState(false)
@@ -838,8 +838,9 @@ function UploadSlot({ label, hint, aspect, selectedId, onSelect, gallery, catego
   }
 
   const handleSelectAI = (url: string, seed: number) => {
-    const file = addMockFile(category, `ia-generada-${seed}.jpg`, url)
-    onSelect(file.id)
+    const id = `media-${generateId()}`
+    addFile({ id, name: `ia-generada-${seed}.jpg`, url, thumbnailUrl: url, type: 'image', category, size: 0, favorite: false, usedIn: [], createdAt: new Date().toISOString() })
+    onSelect(id)
     setShowAIPanel(false)
     toast.success('Imagen de IA seleccionada')
   }
@@ -849,8 +850,9 @@ function UploadSlot({ label, hint, aspect, selectedId, onSelect, gallery, catego
     await new Promise((r) => setTimeout(r, 1200))
     const url = UPLOAD_POOL[uploadPoolIdx % UPLOAD_POOL.length]
     uploadPoolIdx++
-    const file = addMockFile(category, fileName, url)
-    onSelect(file.id)
+    const id = `media-${generateId()}`
+    addFile({ id, name: fileName, url, thumbnailUrl: url, type: 'image', category, size: 0, favorite: false, usedIn: [], createdAt: new Date().toISOString() })
+    onSelect(id)
     setUploading(false)
     toast.success('Imagen subida correctamente')
   }

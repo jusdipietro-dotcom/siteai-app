@@ -40,7 +40,7 @@ export function MediaUploader({
   const fileRef = useRef<HTMLInputElement>(null)
   const [isDragging, setIsDragging] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const { addMockFile } = useMediaStore()
+  const { addFile } = useMediaStore()
 
   const handleFile = useCallback(
     async (file: File) => {
@@ -59,9 +59,9 @@ export function MediaUploader({
         formData.append('file', file)
         const res = await fetch('/api/media', { method: 'POST', body: formData })
         if (!res.ok) throw new Error('Upload failed')
-        const { url } = await res.json()
-        const newFile = addMockFile(category, file.name, url)
-        onSelect?.(url, newFile.id)
+        const media = await res.json()
+        addFile({ ...media, usedIn: [] })
+        onSelect?.(media.url, media.id)
         toast.success('Imagen subida correctamente')
       } catch {
         toast.error('Error al subir la imagen')
@@ -69,7 +69,7 @@ export function MediaUploader({
         setIsLoading(false)
       }
     },
-    [category, addMockFile, onSelect]
+    [category, addFile, onSelect]
   )
 
   const handleDrop = useCallback(
