@@ -130,8 +130,7 @@ export default function PublishPage() {
     )
   }
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? (typeof window !== 'undefined' ? window.location.origin : '')
-  const siteUrl = `${appUrl}/s/${project.slug}`
+  const siteUrl = `https://sites.automaticialab.com/${project.slug}`
   const checks = CHECKLIST.map((item) => ({ ...item, passed: item.check(project) }))
   const allPassed = checks.every((c) => c.passed)
 

@@ -29,10 +29,13 @@ export async function generateMetadata(
   const title = bd.seo?.title || row.name
   const description = bd.seo?.description || bd.description || ''
 
+  const canonical = `https://sites.automaticialab.com/${params.slug}`
+
   return {
     title,
     description,
-    openGraph: { title, description, type: 'website' },
+    alternates: { canonical },
+    openGraph: { title, description, type: 'website', url: canonical },
     twitter: { card: 'summary_large_image', title, description },
   }
 }
