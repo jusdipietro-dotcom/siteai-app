@@ -81,11 +81,14 @@ function CheckoutContent() {
     }
   }, [project?.hasPaid, id, step, router])
 
-  // Detectar retorno desde MercadoPago (Checkout Pro devuelve payment_id, status, external_reference)
+  // Detectar retorno desde MercadoPago
+  // - Preapproval (suscripción real): agrega ?preapproval_id=XXX al back_url
+  // - Checkout Pro (legacy): agrega payment_id, status, external_reference
   useEffect(() => {
     const mpReturn = searchParams.get('mp_return')
     if (mpReturn !== 'true') return
 
+    const preapprovalId = searchParams.get('preapproval_id')
     const paymentId = searchParams.get('payment_id')
     const mpStatus = searchParams.get('status')
     const externalReference = searchParams.get('external_reference')
@@ -97,11 +100,12 @@ function CheckoutContent() {
     }
 
     setStep('verifying')
-    verifyPayment(paymentId, mpStatus, externalReference)
+    verifyPayment(preapprovalId, paymentId, mpStatus, externalReference)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const verifyPayment = async (
+    preapprovalId: string | null,
     paymentId: string | null,
     mpStatus: string | null,
     externalReference: string | null
@@ -109,6 +113,7 @@ function CheckoutContent() {
     setProcessing(true)
     try {
       const params = new URLSearchParams()
+      if (preapprovalId) params.set('preapproval_id', preapprovalId)
       if (paymentId) params.set('payment_id', paymentId)
       if (mpStatus) params.set('status', mpStatus)
       if (externalReference) params.set('external_reference', externalReference)
@@ -365,7 +370,7 @@ function CheckoutContent() {
                   <ol className="space-y-1.5 text-xs text-surface-500">
                     {[
                       'Te redirigimos al checkout seguro de MercadoPago',
-                      'Elegís tu tarjeta, cuenta MP o cualquier medio de pago',
+                      'Ingresás tu tarjeta de crédito o débito (único medio disponible para suscripciones)',
                       `MP te cobra ${plan.price} hoy y luego automáticamente cada mes`,
                       'Volvés aquí con tu suscripción activa y el sitio listo para publicar',
                     ].map((item, i) => (
