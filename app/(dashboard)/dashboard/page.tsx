@@ -145,37 +145,51 @@ export default function DashboardPage() {
 
         {/* Toolbar */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-          {/* Search */}
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-surface-400" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar proyectos..."
-              className="w-full h-9 pl-9 pr-4 rounded-xl border border-surface-200 bg-white text-sm text-surface-900 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500/25 focus:border-brand-400 transition-all"
-            />
+          {/* Search + filters row */}
+          <div className="flex items-center gap-3 w-full sm:w-auto sm:flex-1">
+            <div className="relative flex-1 max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-surface-400" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Buscar proyectos..."
+                className="w-full h-9 pl-9 pr-4 rounded-xl border border-surface-200 bg-white text-sm text-surface-900 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500/25 focus:border-brand-400 transition-all"
+              />
+            </div>
+
+            {/* View toggle (visible on mobile here) */}
+            <div className="flex sm:hidden items-center gap-1 bg-surface-100 rounded-lg p-1 shrink-0">
+              {[{ mode: 'grid' as const, icon: LayoutGrid, label: 'Grilla' }, { mode: 'list' as const, icon: LayoutList, label: 'Lista' }].map(({ mode, icon: Icon, label }) => (
+                <button key={mode} type="button" title={label} aria-label={label} onClick={() => setViewMode(mode)}
+                  className={`h-7 w-7 flex items-center justify-center rounded-md transition-all ${viewMode === mode ? 'bg-white shadow-soft text-surface-800' : 'text-surface-400 hover:text-surface-600'}`}>
+                  <Icon className="h-3.5 w-3.5" />
+                </button>
+              ))}
+            </div>
           </div>
 
-          {/* Status filter */}
-          <div className="flex items-center gap-1.5 flex-wrap">
-            {STATUS_FILTERS.map(({ value, label }) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => setStatusFilter(value)}
-                className={`h-8 px-3 rounded-lg text-xs font-medium transition-all ${
-                  statusFilter === value
-                    ? 'bg-surface-900 text-white'
-                    : 'bg-white border border-surface-200 text-surface-600 hover:border-surface-300 hover:text-surface-800'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
+          {/* Status filter — scrollable on mobile */}
+          <div className="w-full sm:w-auto overflow-x-auto scrollbar-hide -mx-6 px-6 sm:mx-0 sm:px-0">
+            <div className="flex items-center gap-1.5 min-w-max sm:flex-wrap sm:min-w-0">
+              {STATUS_FILTERS.map(({ value, label }) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setStatusFilter(value)}
+                  className={`h-8 px-3 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
+                    statusFilter === value
+                      ? 'bg-surface-900 text-white'
+                      : 'bg-white border border-surface-200 text-surface-600 hover:border-surface-300 hover:text-surface-800'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
 
-          {/* View toggle */}
-          <div className="flex items-center gap-1 ml-auto bg-surface-100 rounded-lg p-1">
+          {/* View toggle (desktop only) */}
+          <div className="hidden sm:flex items-center gap-1 ml-auto bg-surface-100 rounded-lg p-1">
             {[{ mode: 'grid' as const, icon: LayoutGrid, label: 'Vista grilla' }, { mode: 'list' as const, icon: LayoutList, label: 'Vista lista' }].map(({ mode, icon: Icon, label }) => (
               <button
                 key={mode}
@@ -390,9 +404,12 @@ function ProjectListRow({ project, onEdit, onPreview, onDuplicate, onDelete, onP
       </div>
       {/* Actions */}
       <div className="flex items-center gap-2 shrink-0">
-        <Button size="xs" variant="outline" onClick={onEdit}>Editar</Button>
+        <Button size="xs" variant="outline" onClick={onEdit} className="hidden sm:flex">Editar</Button>
         {project.status === 'ready' && (
           <Button size="xs" variant="gradient" onClick={onPublish}>Publicar</Button>
+        )}
+        {project.status !== 'ready' && (
+          <Button size="xs" variant="outline" onClick={onEdit} className="sm:hidden">Editar</Button>
         )}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

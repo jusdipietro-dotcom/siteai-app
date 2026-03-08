@@ -219,27 +219,30 @@ export default function SettingsPage() {
     <div className="min-h-screen bg-surface-50/50">
       {/* Header */}
       <div className="bg-white border-b border-surface-100 px-6 lg:px-10 py-5 sticky top-0 z-10">
-        <div className="flex items-center justify-between gap-4 max-w-3xl mx-auto">
-          <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between gap-3 max-w-3xl mx-auto">
+          <div className="flex items-center gap-3 min-w-0">
             <Link
               href="/dashboard"
-              className="p-2 rounded-xl text-surface-400 hover:bg-surface-100 transition-colors"
+              className="p-2 rounded-xl text-surface-400 hover:bg-surface-100 transition-colors shrink-0"
             >
               <ArrowLeft className="w-4 h-4" />
             </Link>
-            <div>
-              <h1 className="text-xl font-extrabold text-surface-900">Configuración</h1>
-              <p className="text-sm text-surface-500">{project.name}</p>
+            <div className="min-w-0">
+              <h1 className="text-xl font-extrabold text-surface-900 truncate">Configuración</h1>
+              <p className="text-sm text-surface-500 truncate">{project.name}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <Link href={`/projects/${id}/editor`}>
               <Button variant="outline" size="sm" className="gap-1.5">
-                <ExternalLink className="w-3.5 h-3.5" /> Abrir editor
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Abrir editor</span>
               </Button>
             </Link>
-            <Button variant="gradient" className="gap-2" loading={saving} onClick={handleSave}>
-              <Save className="w-4 h-4" /> Guardar cambios
+            <Button variant="gradient" size="sm" className="gap-1.5" loading={saving} onClick={handleSave}>
+              <Save className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Guardar</span>
+              <span className="sm:hidden">OK</span>
             </Button>
           </div>
         </div>
@@ -247,20 +250,26 @@ export default function SettingsPage() {
 
       <div className="max-w-3xl mx-auto px-6 py-8">
         <Tabs defaultValue="general">
-          <TabsList className="mb-8">
-            <TabsTrigger value="general" className="gap-1.5">
-              <Globe className="w-3.5 h-3.5" /> General
-            </TabsTrigger>
-            <TabsTrigger value="seo" className="gap-1.5">
-              <Search className="w-3.5 h-3.5" /> SEO
-            </TabsTrigger>
-            <TabsTrigger value="analytics" className="gap-1.5">
-              <BarChart2 className="w-3.5 h-3.5" /> Analytics
-            </TabsTrigger>
-            <TabsTrigger value="socials" className="gap-1.5">
-              <Share2 className="w-3.5 h-3.5" /> Redes
-            </TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto -mx-6 px-6 scrollbar-hide mb-8">
+            <TabsList className="w-full min-w-max">
+              <TabsTrigger value="general" className="gap-1.5 flex-1">
+                <Globe className="w-3.5 h-3.5" />
+                <span>General</span>
+              </TabsTrigger>
+              <TabsTrigger value="seo" className="gap-1.5 flex-1">
+                <Search className="w-3.5 h-3.5" />
+                <span>SEO</span>
+              </TabsTrigger>
+              <TabsTrigger value="analytics" className="gap-1.5 flex-1">
+                <BarChart2 className="w-3.5 h-3.5" />
+                <span>Analytics</span>
+              </TabsTrigger>
+              <TabsTrigger value="socials" className="gap-1.5 flex-1">
+                <Share2 className="w-3.5 h-3.5" />
+                <span>Redes</span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           {/* ── General ── */}
           <TabsContent value="general" className="space-y-6">
