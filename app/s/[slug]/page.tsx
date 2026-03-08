@@ -512,7 +512,7 @@ export default async function PublicSitePage({ params }: { params: { slug: strin
 
             <p className="footer-copy">
               © {new Date().getFullYear()} {name}. Todos los derechos reservados.{' '}
-              <span style={{ opacity: 0.5 }}>· Sitio creado con SiteAI</span>
+              <span style={{ opacity: 0.5 }}>· Sitio creado con Automatic IA Lab</span>
             </p>
           </div>
         </footer>
