@@ -25,6 +25,7 @@ export interface Service {
   price?: string
   emoji?: string
   imageId?: string
+  image?: string
 }
 
 export interface TeamMember {
@@ -33,6 +34,7 @@ export interface TeamMember {
   role: string
   bio?: string
   imageId?: string
+  image?: string
 }
 
 export interface Testimonial {
@@ -101,6 +103,8 @@ export interface BusinessData {
   seo: SEOData
   branding: BrandingData
   gaId?: string
+  heroImage?: string
+  galleryImages?: string[]
 }
 
 export interface Project {

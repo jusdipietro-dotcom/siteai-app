@@ -1,7 +1,5 @@
 import { create } from 'zustand'
 import type { MediaFile, MediaCategory } from '@/types'
-import { mockMedia } from '@/data/mockMedia'
-import { generateId } from '@/lib/utils'
 
 interface MediaStore {
   files: MediaFile[]
@@ -9,7 +7,9 @@ interface MediaStore {
   filter: MediaCategory | 'all'
   search: string
   viewMode: 'grid' | 'list'
+  loaded: boolean
 
+  loadFiles: () => Promise<void>
   setFilter: (filter: MediaCategory | 'all') => void
   setSearch: (search: string) => void
   setViewMode: (mode: 'grid' | 'list') => void
@@ -18,17 +18,30 @@ interface MediaStore {
   clearSelection: () => void
   toggleFavorite: (id: string) => void
   deleteFile: (id: string) => void
-  addMockFile: (category: MediaCategory, name: string, url: string) => MediaFile
+  addFile: (file: MediaFile) => void
   updateAlt: (id: string, alt: string) => void
   getFiltered: () => MediaFile[]
 }
 
 export const useMediaStore = create<MediaStore>((set, get) => ({
-  files: mockMedia,
+  files: [],
   selectedIds: [],
   filter: 'all',
   search: '',
   viewMode: 'grid',
+  loaded: false,
+
+  loadFiles: async () => {
+    if (get().loaded) return
+    try {
+      const res = await fetch('/api/media')
+      if (!res.ok) return
+      const data: MediaFile[] = await res.json()
+      set({ files: data.map((f) => ({ ...f, usedIn: [] })), loaded: true })
+    } catch {
+      // silent fail — user will see empty state
+    }
+  },
 
   setFilter: (filter) => set({ filter }),
   setSearch: (search) => set({ search }),
@@ -44,41 +57,44 @@ export const useMediaStore = create<MediaStore>((set, get) => ({
 
   clearSelection: () => set({ selectedIds: [] }),
 
-  toggleFavorite: (id) =>
+  toggleFavorite: (id) => {
+    const file = get().files.find((f) => f.id === id)
+    if (!file) return
+    const newFav = !file.favorite
     set((s) => ({
-      files: s.files.map((f) => (f.id === id ? { ...f, favorite: !f.favorite } : f)),
-    })),
+      files: s.files.map((f) => (f.id === id ? { ...f, favorite: newFav } : f)),
+    }))
+    fetch('/api/media', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, favorite: newFav }),
+    }).catch(() => {})
+  },
 
-  deleteFile: (id) =>
+  deleteFile: (id) => {
     set((s) => ({
       files: s.files.filter((f) => f.id !== id),
       selectedIds: s.selectedIds.filter((sid) => sid !== id),
-    })),
-
-  addMockFile: (category, name, url) => {
-    const newFile: MediaFile = {
-      id: `media-${generateId()}`,
-      name,
-      url,
-      thumbnailUrl: url,
-      type: 'image',
-      category,
-      size: Math.floor(Math.random() * 500000) + 50000,
-      width: 1200,
-      height: 800,
-      alt: name.replace(/\.[^.]+$/, '').replace(/-/g, ' '),
-      favorite: false,
-      usedIn: [],
-      createdAt: new Date().toISOString(),
-    }
-    set((s) => ({ files: [newFile, ...s.files] }))
-    return newFile
+    }))
+    fetch('/api/media', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    }).catch(() => {})
   },
 
-  updateAlt: (id, alt) =>
+  addFile: (file) => set((s) => ({ files: [file, ...s.files] })),
+
+  updateAlt: (id, alt) => {
     set((s) => ({
       files: s.files.map((f) => (f.id === id ? { ...f, alt } : f)),
-    })),
+    }))
+    fetch('/api/media', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, alt }),
+    }).catch(() => {})
+  },
 
   getFiltered: () => {
     const { files, filter, search } = get()

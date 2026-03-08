@@ -20,6 +20,26 @@ model User {
   updatedAt DateTime @updatedAt
 
   projects Project[]
+  media    Media[]
+}
+
+model Media {
+  id           String   @id @default(cuid())
+  userId       String
+  name         String
+  url          String
+  thumbnailUrl String?
+  type         String   @default("image")
+  category     String   @default("misc")
+  size         Int
+  width        Int?
+  height       Int?
+  alt          String?
+  favorite     Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Project {

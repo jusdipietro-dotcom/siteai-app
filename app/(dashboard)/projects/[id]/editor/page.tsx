@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion, AnimatePresence, Reorder } from 'framer-motion'
@@ -56,7 +56,8 @@ export default function EditorPage() {
   const id = params.id as string
   const { projects, updateProject, toggleSection, reorderSections } = useProjectStore()
   const { device, setDevice, selectedSection, selectSection, sidebarTab, setSidebarTab, isDirty, isSaving, setIsSaving, markSaved } = useEditorStore()
-  const galleryImages = useMediaStore((s) => s.files.filter((f) => f.category === 'gallery').slice(0, 6))
+  const { files: mediaFiles, loadFiles, addFile } = useMediaStore()
+  const galleryImages = mediaFiles.filter((f) => f.category === 'gallery').slice(0, 6)
 
   const project = projects.find((p) => p.id === id)
   const [sections, setSections] = useState<SectionConfig[]>(project?.sections ?? [])
@@ -73,6 +74,8 @@ export default function EditorPage() {
       setLocalTheme(project.businessData.branding.colorTheme)
     }
   }, [project?.id])
+
+  useEffect(() => { loadFiles() }, [])
 
   const handleSave = useCallback(async () => {
     if (!project) return
@@ -359,6 +362,8 @@ export default function EditorPage() {
                 section={sections.find((s) => s.id === selectedSection)}
                 project={project}
                 onClose={() => selectSection(null)}
+                mediaFiles={mediaFiles}
+                addFile={addFile}
                 onUpdate={(updates) => {
                   updateProject(id, { businessData: { ...project.businessData, ...updates } })
                   toast.success('Cambio aplicado')
@@ -434,12 +439,117 @@ function SectionManager({ sections, selectedSection, onSelect, onChange, onToggl
   )
 }
 
+// ── Image Picker ───────────────────────────────────────────────────────────────
+function ImagePicker({ value, onChange, mediaFiles, addFile, label = 'Imagen' }: {
+  value?: string
+  onChange: (url: string) => void
+  mediaFiles: any[]
+  addFile: (file: any) => void
+  label?: string
+}) {
+  const [open, setOpen] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  const handleUpload = async (file: File) => {
+    if (!file.type.startsWith('image/')) return
+    setUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('category', 'misc')
+      const res = await fetch('/api/media', { method: 'POST', body: formData })
+      if (!res.ok) throw new Error()
+      const media = await res.json()
+      addFile({ ...media, usedIn: [] })
+      onChange(media.url)
+      setOpen(false)
+    } catch {
+      toast.error('Error al subir imagen')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  return (
+    <div className="space-y-2">
+      <label className="section-label">{label}</label>
+      {value ? (
+        <div className="relative rounded-xl overflow-hidden border border-surface-200 group">
+          <img src={value} alt="" className="w-full h-28 object-cover" />
+          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+            <button type="button" onClick={() => setOpen(true)} className="text-xs bg-white text-surface-800 px-2 py-1 rounded-lg font-medium">Cambiar</button>
+            <button type="button" onClick={() => onChange('')} className="text-xs bg-danger-500 text-white px-2 py-1 rounded-lg font-medium">Quitar</button>
+          </div>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="w-full h-20 rounded-xl border-2 border-dashed border-surface-200 flex flex-col items-center justify-center gap-1 hover:border-brand-400 hover:bg-brand-50 transition-all text-surface-400 hover:text-brand-500"
+        >
+          <ImageIcon className="h-5 w-5" />
+          <span className="text-xs">Seleccionar imagen</span>
+        </button>
+      )}
+
+      {open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setOpen(false)}>
+          <div className="bg-white rounded-2xl p-5 w-[480px] max-h-[70vh] flex flex-col gap-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between">
+              <p className="font-semibold text-surface-900">Seleccionar imagen</p>
+              <button type="button" onClick={() => setOpen(false)} className="h-7 w-7 rounded-lg hover:bg-surface-100 flex items-center justify-center text-surface-500 text-xs">✕</button>
+            </div>
+
+            <input
+              ref={inputRef}
+              type="file"
+              accept="image/*"
+              aria-label="Subir imagen"
+              className="hidden"
+              onChange={(e) => { if (e.target.files?.[0]) handleUpload(e.target.files[0]); e.target.value = '' }}
+            />
+            <button
+              type="button"
+              onClick={() => inputRef.current?.click()}
+              disabled={uploading}
+              className="flex items-center justify-center gap-2 h-9 rounded-xl border-2 border-dashed border-surface-200 text-sm text-surface-500 hover:border-brand-400 hover:text-brand-500 transition-all disabled:opacity-50"
+            >
+              {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+              {uploading ? 'Subiendo...' : 'Subir nueva imagen'}
+            </button>
+
+            {mediaFiles.length === 0 ? (
+              <p className="text-sm text-surface-400 text-center py-4">No hay imágenes en tu biblioteca. Subí una arriba.</p>
+            ) : (
+              <div className="overflow-y-auto grid grid-cols-4 gap-2">
+                {mediaFiles.map((f) => (
+                  <button
+                    key={f.id}
+                    type="button"
+                    onClick={() => { onChange(f.url); setOpen(false) }}
+                    className={`aspect-square rounded-lg overflow-hidden border-2 transition-all hover:border-brand-500 ${value === f.url ? 'border-brand-500 ring-2 ring-brand-500/30' : 'border-surface-200'}`}
+                  >
+                    <img src={f.url} alt={f.name} className="w-full h-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Right Panel ────────────────────────────────────────────────────────────────
-function RightPanel({ section, project, onClose, onUpdate }: {
+function RightPanel({ section, project, onClose, onUpdate, mediaFiles, addFile }: {
   section?: SectionConfig
   project: any
   onClose: () => void
   onUpdate: (updates: any) => void
+  mediaFiles: any[]
+  addFile: (file: any) => void
 }) {
   if (!section) return null
   const bd = project.businessData
@@ -463,6 +573,13 @@ function RightPanel({ section, project, onClose, onUpdate }: {
             <FieldGroup label="Descripción">
               <textarea defaultValue={bd.description} onBlur={(e) => onUpdate({ description: e.target.value })} rows={3} title="Descripción" placeholder="Descripción del negocio" className="field-textarea" />
             </FieldGroup>
+            <ImagePicker
+              label="Imagen de fondo"
+              value={bd.heroImage}
+              onChange={(url) => onUpdate({ heroImage: url })}
+              mediaFiles={mediaFiles}
+              addFile={addFile}
+            />
           </>
         )}
 
@@ -552,6 +669,13 @@ function RightPanel({ section, project, onClose, onUpdate }: {
             <p className="text-xs text-surface-500">Equipo ({bd.team.length})</p>
             {bd.team.map((m: any, i: number) => (
               <div key={m.id} className="bg-surface-50 rounded-xl p-3 space-y-2">
+                <ImagePicker
+                  value={m.image}
+                  onChange={(url) => { const u = [...bd.team]; u[i] = { ...m, image: url }; onUpdate({ team: u }) }}
+                  mediaFiles={mediaFiles}
+                  addFile={addFile}
+                  label="Foto"
+                />
                 <input
                   defaultValue={m.name}
                   onBlur={(e) => { const u = [...bd.team]; u[i] = { ...m, name: e.target.value }; onUpdate({ team: u }) }}
@@ -594,10 +718,36 @@ function RightPanel({ section, project, onClose, onUpdate }: {
 
         {section.id === 'gallery' && (
           <div className="space-y-3">
-            <p className="text-xs text-surface-500">Las imágenes se toman de la categoría "Galería" en tu biblioteca de medios.</p>
-            <Button variant="outline" size="sm" className="w-full" onClick={() => window.open('/media', '_blank')} leftIcon={<ImageIcon className="h-3.5 w-3.5" />}>
-              Abrir biblioteca de medios
-            </Button>
+            <p className="text-xs text-surface-500">Imágenes de la galería ({(bd.galleryImages ?? []).length}/6)</p>
+            <div className="grid grid-cols-3 gap-2">
+              {(bd.galleryImages ?? []).map((url: string, i: number) => (
+                <div key={i} className="relative aspect-square rounded-lg overflow-hidden border border-surface-200 group">
+                  <img src={url} alt="" className="w-full h-full object-cover" />
+                  <button
+                    type="button"
+                    title="Quitar imagen"
+                    onClick={() => {
+                      const imgs = [...(bd.galleryImages ?? [])]
+                      imgs.splice(i, 1)
+                      onUpdate({ galleryImages: imgs })
+                    }}
+                    className="absolute top-1 right-1 h-5 w-5 rounded-full bg-danger-500 text-white text-[10px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  >✕</button>
+                </div>
+              ))}
+              {(bd.galleryImages ?? []).length < 6 && (
+                <ImagePicker
+                  value={undefined}
+                  onChange={(url) => {
+                    if (!url) return
+                    onUpdate({ galleryImages: [...(bd.galleryImages ?? []), url] })
+                  }}
+                  mediaFiles={mediaFiles}
+                  addFile={addFile}
+                  label=""
+                />
+              )}
+            </div>
           </div>
         )}
 
@@ -710,15 +860,23 @@ function PreviewSection({ section, bd, name, color, galleryImages }: { section: 
   switch (section.id) {
     case 'hero':
       return (
-        <div className="px-8 py-16 text-center" style={{ background: `linear-gradient(135deg, ${color}12, ${color}06)` }}>
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium mb-4 border" style={{ color, borderColor: `${color}40`, backgroundColor: `${color}10` }}>
-            <Sparkles className="h-3 w-3" /> Bienvenido
-          </div>
-          <h1 className="text-3xl font-extrabold text-surface-900 mb-3">{name}</h1>
-          <p className="text-surface-500 text-sm mb-6 max-w-md mx-auto">{bd.tagline}</p>
-          <div className="flex items-center justify-center gap-3">
-            <div className="h-9 px-5 rounded-xl text-sm font-semibold text-white flex items-center" style={{ backgroundColor: color }}>Contactar</div>
-            <div className="h-9 px-5 rounded-xl text-sm font-semibold text-surface-700 flex items-center border border-surface-200">Ver servicios</div>
+        <div
+          className="px-8 py-16 text-center relative overflow-hidden"
+          style={bd.heroImage ? undefined : { background: `linear-gradient(135deg, ${color}12, ${color}06)` }}
+        >
+          {bd.heroImage && (
+            <img src={bd.heroImage} alt="" className="absolute inset-0 w-full h-full object-cover opacity-20" />
+          )}
+          <div className="relative z-10">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium mb-4 border" style={{ color, borderColor: `${color}40`, backgroundColor: `${color}10` }}>
+              <Sparkles className="h-3 w-3" /> Bienvenido
+            </div>
+            <h1 className="text-3xl font-extrabold text-surface-900 mb-3">{name}</h1>
+            <p className="text-surface-500 text-sm mb-6 max-w-md mx-auto">{bd.tagline}</p>
+            <div className="flex items-center justify-center gap-3">
+              <div className="h-9 px-5 rounded-xl text-sm font-semibold text-white flex items-center" style={{ backgroundColor: color }}>Contactar</div>
+              <div className="h-9 px-5 rounded-xl text-sm font-semibold text-surface-700 flex items-center border border-surface-200">Ver servicios</div>
+            </div>
           </div>
         </div>
       )
@@ -782,7 +940,10 @@ function PreviewSection({ section, bd, name, color, galleryImages }: { section: 
           <div className="flex flex-wrap justify-center gap-6">
             {bd.team.slice(0, 4).map((m: any) => (
               <div key={m.id} className="text-center">
-                <div className="h-16 w-16 rounded-2xl gradient-brand mx-auto mb-2 flex items-center justify-center text-white font-bold">{m.name.charAt(0)}</div>
+                {m.image
+                  ? <img src={m.image} alt={m.name} className="h-16 w-16 rounded-2xl object-cover mx-auto mb-2" />
+                  : <div className="h-16 w-16 rounded-2xl gradient-brand mx-auto mb-2 flex items-center justify-center text-white font-bold">{m.name.charAt(0)}</div>
+                }
                 <p className="text-sm font-semibold">{m.name}</p>
                 <p className="text-xs text-surface-400">{m.role}</p>
               </div>
@@ -804,15 +965,16 @@ function PreviewSection({ section, bd, name, color, galleryImages }: { section: 
           </div>
         </div>
       )
-    case 'gallery':
+    case 'gallery': {
+      const imgs: string[] = bd.galleryImages ?? []
       return (
         <div className="px-8 py-12 bg-surface-50">
           <h2 className="text-xl font-bold text-center mb-8">Galería</h2>
           <div className="grid grid-cols-3 gap-3">
-            {galleryImages.length > 0
-              ? galleryImages.map((img) => (
-                  <div key={img.id} className="aspect-square rounded-xl overflow-hidden">
-                    <img src={img.thumbnailUrl ?? img.url} alt={img.alt ?? ''} className="w-full h-full object-cover" />
+            {imgs.length > 0
+              ? imgs.map((url, i) => (
+                  <div key={i} className="aspect-square rounded-xl overflow-hidden">
+                    <img src={url} alt="" className="w-full h-full object-cover" />
                   </div>
                 ))
               : [...Array(6)].map((_, i) => (
@@ -824,6 +986,7 @@ function PreviewSection({ section, bd, name, color, galleryImages }: { section: 
           </div>
         </div>
       )
+    }
     case 'stats':
       return (
         <div className="px-8 py-12" style={{ backgroundColor: color }}>

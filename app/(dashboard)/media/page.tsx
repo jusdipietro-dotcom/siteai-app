@@ -1,5 +1,5 @@
 'use client'
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Upload, Search, Grid3X3, List, Star, Trash2, Copy,
@@ -458,9 +458,11 @@ export default function MediaPage() {
     files, selectedIds, filter, search, viewMode,
     setFilter, setSearch, setViewMode,
     selectFile, deselectFile, clearSelection,
-    toggleFavorite, deleteFile, addMockFile, updateAlt,
-    getFiltered,
+    toggleFavorite, deleteFile, addFile, updateAlt,
+    getFiltered, loadFiles,
   } = useMediaStore()
+
+  useEffect(() => { loadFiles() }, [])
 
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false)
   const [viewFile, setViewFile] = useState<MediaFile | null>(null)
@@ -494,8 +496,8 @@ export default function MediaPage() {
         formData.append('file', file)
         const res = await fetch('/api/media', { method: 'POST', body: formData })
         if (!res.ok) throw new Error()
-        const { url } = await res.json()
-        addMockFile('misc', file.name, url)
+        const media = await res.json()
+        addFile({ ...media, usedIn: [] })
         uploaded++
       } catch {
         toast.error(`Error al subir ${file.name}`)
