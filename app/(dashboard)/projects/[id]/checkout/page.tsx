@@ -15,13 +15,13 @@ import type { Plan } from '@/types'
 
 // ─── Plan definitions ─────────────────────────────────────────────────────────
 
-const PLAN_PRICES = {
-  essential:     { monthly: 12000, annual: 8400 },
-  professional:  { monthly: 29000, annual: 20300 },
+const PLAN_PRICES: Record<string, { monthly: number; annual: number }> = {
+  essential:    { monthly: 12000, annual: 8400 },
+  professional: { monthly: 29000, annual: 20300 },
 }
 
-function planPrice(id: Plan, annual: boolean) {
-  const p = PLAN_PRICES[id]
+function planPrice(id: string, annual: boolean) {
+  const p = PLAN_PRICES[id] ?? { monthly: 0, annual: 0 }
   return annual ? p.annual : p.monthly
 }
 
