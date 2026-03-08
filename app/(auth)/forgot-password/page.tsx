@@ -89,8 +89,8 @@ export default function ForgotPasswordPage() {
               <h2 className="text-xl font-extrabold text-white mb-2">Contactá soporte</h2>
               <p className="text-sm text-white/50 leading-relaxed">
                 Escribinos a{' '}
-                <a href="mailto:soporte@automaticialab.com" className="text-brand-400 hover:text-brand-300 font-medium">
-                  soporte@automaticialab.com
+                <a href="mailto:automaticialab@gmail.com" className="text-brand-400 hover:text-brand-300 font-medium">
+                  automaticialab@gmail.com
                 </a>{' '}
                 desde <span className="text-white/80 font-medium">{sentEmail}</span> y te resetamos la contraseña en minutos.
               </p>
