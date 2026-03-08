@@ -146,8 +146,8 @@ export default function SettingsPage() {
   const [sitemapEnabled, setSitemapEnabled] = useState(project?.businessData.seo.sitemapEnabled ?? true)
 
   // Analytics
-  const [gaEnabled, setGaEnabled] = useState(!!project?.gaId)
-  const [gaId, setGaId] = useState(project?.gaId ?? '')
+  const [gaEnabled, setGaEnabled] = useState(!!project?.businessData.gaId)
+  const [gaId, setGaId] = useState(project?.businessData.gaId ?? '')
 
   // Socials
   const [instagram, setInstagram] = useState(project?.businessData.socials.instagram ?? '')
@@ -169,6 +169,7 @@ export default function SettingsPage() {
   }
 
   async function handleSave() {
+    if (!project) return
     if (!name.trim()) {
       toast.error('El nombre del proyecto es obligatorio')
       return
@@ -182,9 +183,9 @@ export default function SettingsPage() {
       updateProject(id, {
         name: name.trim(),
         slug: slug.trim(),
-        gaId: gaEnabled ? gaId.trim() : undefined,
         businessData: {
           ...project.businessData,
+          gaId: gaEnabled ? gaId.trim() : undefined,
           branding: {
             ...project.businessData.branding,
             ...(logoUrl ? { logoId: logoUrl } : {}),

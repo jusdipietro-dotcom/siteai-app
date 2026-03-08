@@ -613,6 +613,14 @@ function RightPanel({ section, project, onClose, onUpdate, mediaFiles, addFile }
             <p className="text-xs text-surface-500">Servicios ({bd.services.length})</p>
             {bd.services.map((svc: any, i: number) => (
               <div key={svc.id} className="bg-surface-50 rounded-xl p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-surface-400 uppercase">#{i + 1}</span>
+                  <button
+                    type="button"
+                    onClick={() => onUpdate({ services: bd.services.filter((_: any, j: number) => j !== i) })}
+                    className="text-[10px] text-danger-400 hover:text-danger-600"
+                  >Quitar</button>
+                </div>
                 <input
                   defaultValue={svc.name}
                   onBlur={(e) => {
@@ -636,6 +644,13 @@ function RightPanel({ section, project, onClose, onUpdate, mediaFiles, addFile }
                 />
               </div>
             ))}
+            <button
+              type="button"
+              onClick={() => onUpdate({ services: [...bd.services, { id: crypto.randomUUID(), name: '', description: '', emoji: '✦' }] })}
+              className="w-full h-8 rounded-xl border-2 border-dashed border-surface-200 text-xs text-surface-400 hover:border-brand-400 hover:text-brand-500 transition-all flex items-center justify-center gap-1"
+            >
+              <Plus className="h-3 w-3" /> Agregar servicio
+            </button>
           </div>
         )}
 
@@ -644,6 +659,14 @@ function RightPanel({ section, project, onClose, onUpdate, mediaFiles, addFile }
             <p className="text-xs text-surface-500">Testimonios ({bd.testimonials.length})</p>
             {bd.testimonials.map((t: any, i: number) => (
               <div key={t.id} className="bg-surface-50 rounded-xl p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-surface-400 uppercase">#{i + 1}</span>
+                  <button
+                    type="button"
+                    onClick={() => onUpdate({ testimonials: bd.testimonials.filter((_: any, j: number) => j !== i) })}
+                    className="text-[10px] text-danger-400 hover:text-danger-600"
+                  >Quitar</button>
+                </div>
                 <input
                   defaultValue={t.author}
                   onBlur={(e) => { const u = [...bd.testimonials]; u[i] = { ...t, author: e.target.value }; onUpdate({ testimonials: u }) }}
@@ -661,6 +684,13 @@ function RightPanel({ section, project, onClose, onUpdate, mediaFiles, addFile }
                 />
               </div>
             ))}
+            <button
+              type="button"
+              onClick={() => onUpdate({ testimonials: [...bd.testimonials, { id: crypto.randomUUID(), author: '', role: '', content: '', rating: 5 }] })}
+              className="w-full h-8 rounded-xl border-2 border-dashed border-surface-200 text-xs text-surface-400 hover:border-brand-400 hover:text-brand-500 transition-all flex items-center justify-center gap-1"
+            >
+              <Plus className="h-3 w-3" /> Agregar testimonio
+            </button>
           </div>
         )}
 
@@ -701,6 +731,14 @@ function RightPanel({ section, project, onClose, onUpdate, mediaFiles, addFile }
             <p className="text-xs text-surface-500">Preguntas ({bd.faqs.length})</p>
             {bd.faqs.map((faq: any, i: number) => (
               <div key={faq.id} className="bg-surface-50 rounded-xl p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-surface-400 uppercase">P{i + 1}</span>
+                  <button
+                    type="button"
+                    onClick={() => { const u = bd.faqs.filter((_: any, j: number) => j !== i); onUpdate({ faqs: u }) }}
+                    className="text-[10px] text-danger-400 hover:text-danger-600"
+                  >Quitar</button>
+                </div>
                 <input
                   defaultValue={faq.question}
                   onBlur={(e) => { const u = [...bd.faqs]; u[i] = { ...faq, question: e.target.value }; onUpdate({ faqs: u }) }}
@@ -713,6 +751,13 @@ function RightPanel({ section, project, onClose, onUpdate, mediaFiles, addFile }
                 />
               </div>
             ))}
+            <button
+              type="button"
+              onClick={() => onUpdate({ faqs: [...bd.faqs, { id: crypto.randomUUID(), question: '', answer: '' }] })}
+              className="w-full h-8 rounded-xl border-2 border-dashed border-surface-200 text-xs text-surface-400 hover:border-brand-400 hover:text-brand-500 transition-all flex items-center justify-center gap-1"
+            >
+              <Plus className="h-3 w-3" /> Agregar pregunta
+            </button>
           </div>
         )}
 
@@ -753,9 +798,17 @@ function RightPanel({ section, project, onClose, onUpdate, mediaFiles, addFile }
 
         {section.id === 'pricing' && (
           <div className="space-y-3">
-            <p className="text-xs text-surface-500">Planes / precios ({bd.services.length}). Cada servicio puede tener un precio.</p>
+            <p className="text-xs text-surface-500">Planes / precios ({bd.services.length})</p>
             {bd.services.map((svc: any, i: number) => (
               <div key={svc.id} className="bg-surface-50 rounded-xl p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-surface-400 uppercase">Plan {i + 1}</span>
+                  <button
+                    type="button"
+                    onClick={() => onUpdate({ services: bd.services.filter((_: any, j: number) => j !== i) })}
+                    className="text-[10px] text-danger-400 hover:text-danger-600"
+                  >Quitar</button>
+                </div>
                 <input
                   defaultValue={svc.name}
                   onBlur={(e) => {
@@ -763,7 +816,7 @@ function RightPanel({ section, project, onClose, onUpdate, mediaFiles, addFile }
                     updated[i] = { ...svc, name: e.target.value }
                     onUpdate({ services: updated })
                   }}
-                  className="field-input text-xs" placeholder="Nombre del plan"
+                  className="field-input text-xs" placeholder="Nombre del plan (ej: Básico)"
                 />
                 <input
                   defaultValue={svc.price ?? ''}
@@ -781,10 +834,17 @@ function RightPanel({ section, project, onClose, onUpdate, mediaFiles, addFile }
                     updated[i] = { ...svc, description: e.target.value }
                     onUpdate({ services: updated })
                   }}
-                  rows={2} className="field-textarea text-xs" placeholder="Descripción / características"
+                  rows={2} className="field-textarea text-xs" placeholder="Características del plan"
                 />
               </div>
             ))}
+            <button
+              type="button"
+              onClick={() => onUpdate({ services: [...bd.services, { id: crypto.randomUUID(), name: '', description: '', price: '' }] })}
+              className="w-full h-8 rounded-xl border-2 border-dashed border-surface-200 text-xs text-surface-400 hover:border-brand-400 hover:text-brand-500 transition-all flex items-center justify-center gap-1"
+            >
+              <Plus className="h-3 w-3" /> Agregar plan
+            </button>
           </div>
         )}
 
@@ -1056,6 +1116,17 @@ function PreviewSection({ section, bd, name, color, galleryImages }: { section: 
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )
+    case 'cta':
+      return (
+        <div className="px-8 py-16 text-center" style={{ background: `linear-gradient(135deg, ${color}18, ${color}08)` }}>
+          <h2 className="text-2xl font-extrabold text-surface-900 mb-3">{bd.tagline || '¿Listo para empezar?'}</h2>
+          <p className="text-sm text-surface-500 mb-6 max-w-md mx-auto">{bd.description || 'Contactanos hoy y llevá tu negocio al siguiente nivel.'}</p>
+          <div className="flex items-center justify-center gap-3">
+            <div className="h-10 px-6 rounded-xl text-sm font-semibold text-white flex items-center" style={{ backgroundColor: color }}>Contactar ahora</div>
+            <div className="h-10 px-6 rounded-xl text-sm font-semibold text-surface-700 flex items-center border border-surface-200">Saber más</div>
           </div>
         </div>
       )
