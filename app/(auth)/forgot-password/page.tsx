@@ -24,7 +24,6 @@ export default function ForgotPasswordPage() {
   })
 
   const onSubmit = async (data: FormData) => {
-    await new Promise((r) => setTimeout(r, 1200))
     setSentEmail(data.email)
     setSent(true)
   }
@@ -87,22 +86,22 @@ export default function ForgotPasswordPage() {
             </motion.div>
 
             <div>
-              <h2 className="text-xl font-extrabold text-white mb-2">Email enviado</h2>
+              <h2 className="text-xl font-extrabold text-white mb-2">Contactá soporte</h2>
               <p className="text-sm text-white/50 leading-relaxed">
-                Revisá tu casilla <span className="text-white/80 font-medium">{sentEmail}</span> y hacé click en el link para restablecer tu contraseña.
+                Escribinos a{' '}
+                <a href="mailto:soporte@automaticialab.com" className="text-brand-400 hover:text-brand-300 font-medium">
+                  soporte@automaticialab.com
+                </a>{' '}
+                desde <span className="text-white/80 font-medium">{sentEmail}</span> y te resetamos la contraseña en minutos.
               </p>
             </div>
 
             <div className="glass-dark rounded-xl p-4 text-sm text-white/40 text-left space-y-1">
-              <p>• Revisá también la carpeta de spam</p>
-              <p>• El link expira en 24 horas</p>
-              <p>• Si no lo recibís, podés reenviar el email</p>
+              <p>• Respondemos en menos de 24 horas</p>
+              <p>• También podés contactarnos por WhatsApp</p>
             </div>
 
             <div className="flex flex-col gap-3">
-              <button type="button" onClick={() => setSent(false)} className="text-sm text-brand-400 hover:text-brand-300 transition-colors font-medium">
-                Reenviar email
-              </button>
               <Link href="/login" className="text-sm text-white/40 hover:text-white/60 transition-colors">
                 Volver al login
               </Link>

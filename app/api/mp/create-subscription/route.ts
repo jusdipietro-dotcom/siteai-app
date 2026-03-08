@@ -6,15 +6,9 @@ import { prisma } from '@/lib/prisma'
 const ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN!
 
 // ─── Configuración de planes ────────────────────────────────────────────────
-const PLAN_CONFIG: Record<string, { amount: number; title: string }> = {
-  essential: {
-    amount: 12000,
-    title: 'Plan Essential — Automatic IA Lab',
-  },
-  professional: {
-    amount: 29000,
-    title: 'Plan Professional — Automatic IA Lab',
-  },
+const PLAN_CONFIG: Record<string, { monthly: number; annual: number; title: string }> = {
+  essential:    { monthly: 12000, annual: 8400,  title: 'Plan Essential — Automatic IA Lab' },
+  professional: { monthly: 29000, annual: 20300, title: 'Plan Professional — Automatic IA Lab' },
 }
 
 export async function POST(req: NextRequest) {
@@ -29,7 +23,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
 
-    const { plan, projectId, payerEmail } = await req.json()
+    const { plan, projectId, payerEmail, billing } = await req.json()
+    const isAnnual = billing === 'annual'
 
     const config = PLAN_CONFIG[plan]
     if (!config) {
@@ -70,10 +65,10 @@ export async function POST(req: NextRequest) {
       external_reference: `${projectId}:${plan}`,
       payer_email: payerEmail.toLowerCase(),
       auto_recurring: {
-        frequency: 1,
+        frequency: isAnnual ? 12 : 1,
         frequency_type: 'months',
         start_date: startDate,
-        transaction_amount: config.amount,
+        transaction_amount: isAnnual ? config.annual : config.monthly,
         currency_id: 'ARS',
       },
       back_url: backUrl,

@@ -15,11 +15,23 @@ import type { Plan } from '@/types'
 
 // ─── Plan definitions ─────────────────────────────────────────────────────────
 
-const PLANS: {
+const PLAN_PRICES = {
+  essential:     { monthly: 12000, annual: 8400 },
+  professional:  { monthly: 29000, annual: 20300 },
+}
+
+function planPrice(id: Plan, annual: boolean) {
+  const p = PLAN_PRICES[id]
+  return annual ? p.annual : p.monthly
+}
+
+function formatARS(n: number) {
+  return `ARS $${n.toLocaleString('es-AR')}`
+}
+
+const PLAN_META: {
   id: Plan
   name: string
-  price: string
-  period: string
   description: string
   icon: typeof Zap
   popular?: boolean
@@ -28,8 +40,6 @@ const PLANS: {
   {
     id: 'essential',
     name: 'Essential',
-    price: 'ARS $12.000',
-    period: '/mes',
     description: 'Publicá tu sitio y empezá a crecer',
     icon: Zap,
     features: [
@@ -44,8 +54,6 @@ const PLANS: {
   {
     id: 'professional',
     name: 'Professional',
-    price: 'ARS $29.000',
-    period: '/mes',
     description: 'Todo lo que necesitás para destacarte',
     icon: Star,
     popular: true,
@@ -69,10 +77,19 @@ function CheckoutContent() {
   const { projects, setProjectPlan } = useProjectStore()
   const project = projects.find((p) => p.id === id)
 
+  const billingParam = searchParams.get('billing')
+  const isAnnual = billingParam === 'annual'
+
   const [selectedPlan, setSelectedPlan] = useState<Plan>('essential')
   const [step, setStep] = useState<'plan' | 'payment' | 'verifying' | 'success'>('plan')
   const [processing, setProcessing] = useState(false)
   const [payerEmail, setPayerEmail] = useState('')
+
+  const PLANS = PLAN_META.map(p => ({
+    ...p,
+    price: formatARS(planPrice(p.id, isAnnual)),
+    period: isAnnual ? '/mes · facturación anual' : '/mes',
+  }))
 
   // Si ya tiene plan pago, redirigir directo a publicar
   useEffect(() => {
@@ -155,7 +172,7 @@ function CheckoutContent() {
       const res = await fetch('/api/mp/create-subscription', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan: selectedPlan, projectId: id, payerEmail }),
+        body: JSON.stringify({ plan: selectedPlan, projectId: id, payerEmail, billing: isAnnual ? 'annual' : 'monthly' }),
       })
       const data = await res.json()
 

@@ -179,7 +179,7 @@ export function Pricing() {
                   )}
                   {!annual && <div className="mb-4" />}
 
-                  <Link href={plan.href}>
+                  <Link href={plan.monthlyPrice > 0 ? `${plan.href}${annual ? '&billing=annual' : ''}` : plan.href}>
                     <Button variant={plan.ctaVariant} className="w-full mb-4">
                       {plan.cta}
                     </Button>

@@ -18,22 +18,27 @@ export async function middleware(req: NextRequest) {
 
   // ── Subdomain routing: sites.automaticialab.com/{slug} → /s/{slug} ─────────
   if (hostname === 'sites.automaticialab.com' || hostname.startsWith('sites.automaticialab')) {
-    // Dejar pasar internals de Next.js, API routes y archivos estáticos sin modificar
+    // Dejar pasar internals de Next.js y API routes sin modificar
     if (
       pathname.startsWith('/_next') ||
       pathname.startsWith('/api') ||
       pathname === '/favicon.ico' ||
-      pathname === '/' ||
-      /\.(png|jpg|jpeg|gif|svg|ico|webp|woff|woff2|ttf|otf|css|js|json|txt|xml|pdf)$/.test(pathname)
+      pathname === '/'
     ) {
       return NextResponse.next()
     }
 
-    // Reescribir /{slug} → /s/{slug} internamente (URL del visitante no cambia)
-    const slug = pathname.slice(1) // quitar el "/" inicial
-    if (slug && !slug.includes('/')) {
+    // Reescribir /{slug} o /{slug}/ruta → /s/{slug} o /s/{slug}/ruta
+    // Cubre: /mi-negocio, /mi-negocio/sitemap.xml, etc.
+    const segments = pathname.slice(1).split('/')
+    const slug = segments[0]
+    if (slug) {
+      // Archivos estáticos en la raíz (sin slug) pasan sin rewrite
+      if (segments.length === 1 && /\.(png|jpg|jpeg|gif|svg|ico|webp|woff|woff2|ttf|otf|css|js|json|txt|pdf)$/.test(slug)) {
+        return NextResponse.next()
+      }
       const url = req.nextUrl.clone()
-      url.pathname = `/s/${slug}`
+      url.pathname = `/s/${pathname.slice(1)}`
       return NextResponse.rewrite(url)
     }
 
