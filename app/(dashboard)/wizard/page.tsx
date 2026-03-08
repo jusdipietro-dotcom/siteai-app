@@ -845,16 +845,22 @@ function UploadSlot({ label, hint, aspect, selectedId, onSelect, gallery, catego
     toast.success('Imagen de IA seleccionada')
   }
 
-  const doUpload = async (fileName: string) => {
+  const doUpload = async (file: File) => {
     setUploading(true)
-    await new Promise((r) => setTimeout(r, 1200))
-    const url = UPLOAD_POOL[uploadPoolIdx % UPLOAD_POOL.length]
-    uploadPoolIdx++
-    const id = `media-${generateId()}`
-    addFile({ id, name: fileName, url, thumbnailUrl: url, type: 'image', category, size: 0, favorite: false, usedIn: [], createdAt: new Date().toISOString() })
-    onSelect(id)
-    setUploading(false)
-    toast.success('Imagen subida correctamente')
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      const res = await fetch('/api/media', { method: 'POST', body: formData })
+      if (!res.ok) throw new Error('Upload failed')
+      const media = await res.json()
+      addFile({ ...media, usedIn: [] })
+      onSelect(media.id)
+      toast.success('Imagen subida correctamente')
+    } catch {
+      toast.error('Error al subir la imagen')
+    } finally {
+      setUploading(false)
+    }
   }
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -865,7 +871,7 @@ function UploadSlot({ label, hint, aspect, selectedId, onSelect, gallery, catego
       toast.error(`El archivo supera los ${maxMb} MB`)
       return
     }
-    doUpload(file.name)
+    doUpload(file)
     e.target.value = ''
   }
 
@@ -873,7 +879,7 @@ function UploadSlot({ label, hint, aspect, selectedId, onSelect, gallery, catego
     e.preventDefault()
     setDragging(false)
     const file = e.dataTransfer.files?.[0]
-    if (file) doUpload(file.name)
+    if (file) doUpload(file)
   }
 
   return (
