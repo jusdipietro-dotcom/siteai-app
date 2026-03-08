@@ -814,6 +814,7 @@ function UploadSlot({ label, hint, aspect, selectedId, onSelect, gallery, catego
   const [showAIPanel, setShowAIPanel] = useState(false)
   const [aiItems, setAIItems] = useState<{ seed: number; prompt: string; status: 'loading' | 'loaded' | 'error'; blobUrl?: string }[]>([])
   const aiGenRef = useRef(0)
+  const aiAbortRef = useRef<AbortController | null>(null)
   // Local cache of the last uploaded/selected file so the preview is never affected
   // by store race conditions (loadFiles overwriting files, stale gallery, etc.)
   const [localFile, setLocalFile] = useState<import('@/types').MediaFile | null>(null)
@@ -835,6 +836,11 @@ function UploadSlot({ label, hint, aspect, selectedId, onSelect, gallery, catego
   useEffect(() => () => { aiItems.forEach(item => { if (item.blobUrl) URL.revokeObjectURL(item.blobUrl) }) }, [])
 
   const handleGenerate = () => {
+    // Cancelar generación anterior para evitar requests paralelos
+    aiAbortRef.current?.abort()
+    const controller = new AbortController()
+    aiAbortRef.current = controller
+
     aiItems.forEach(item => { if (item.blobUrl) URL.revokeObjectURL(item.blobUrl) })
     const prompts = getAIPrompts(businessType)
     const newItems = Array.from({ length: 2 }, (_, i) => ({
@@ -850,24 +856,34 @@ function UploadSlot({ label, hint, aspect, selectedId, onSelect, gallery, catego
     // Fetches secuenciales desde el navegador (IP del usuario, sin rate limit del VPS)
     const runFetches = async () => {
       for (let i = 0; i < newItems.length; i++) {
+        if (controller.signal.aborted) return
         const { seed, prompt } = newItems[i]
         let blobUrl: string | null = null
         for (let attempt = 0; attempt < 3; attempt++) {
-          const currentSeed = seed + attempt * 1000
+          if (controller.signal.aborted) return
           const url =
             `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}` +
-            `?width=800&height=450&nologo=true&model=flux&seed=${currentSeed}&private=true`
+            `?width=800&height=450&nologo=true&model=turbo&seed=${seed}&enhance=false&private=true`
           try {
-            const res = await fetch(url, { signal: AbortSignal.timeout(60_000) })
-            if (!res.ok) { await new Promise(r => setTimeout(r, 3000)); continue }
+            const res = await fetch(url, { signal: controller.signal })
+            if (res.status === 429) {
+              // Rate limit — esperar más tiempo antes de reintentar
+              if (attempt < 2) await new Promise(r => setTimeout(r, 15000))
+              continue
+            }
+            if (!res.ok) { if (attempt < 2) await new Promise(r => setTimeout(r, 5000)); continue }
             const ct = res.headers.get('content-type') ?? ''
-            if (!ct.startsWith('image/')) { await new Promise(r => setTimeout(r, 3000)); continue }
+            if (!ct.startsWith('image/')) { if (attempt < 2) await new Promise(r => setTimeout(r, 5000)); continue }
             const blob = await res.blob()
-            if (blob.size === 0) { await new Promise(r => setTimeout(r, 3000)); continue }
+            if (blob.size === 0) { if (attempt < 2) await new Promise(r => setTimeout(r, 5000)); continue }
             blobUrl = URL.createObjectURL(blob)
             break
-          } catch { if (attempt < 2) await new Promise(r => setTimeout(r, 3000)) }
+          } catch (e: any) {
+            if (controller.signal.aborted) return
+            if (attempt < 2) await new Promise(r => setTimeout(r, 5000))
+          }
         }
+        if (controller.signal.aborted) return
         setAIItems(prev => {
           if (aiGenRef.current !== gen) return prev
           return prev.map((item, idx) => idx === i
