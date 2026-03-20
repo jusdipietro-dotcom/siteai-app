@@ -50,8 +50,9 @@ export async function middleware(req: NextRequest) {
   if (isProtected) {
     const token = await getToken({ req })
     if (!token) {
-      const loginUrl = new URL('/login', req.url)
-      loginUrl.searchParams.set('callbackUrl', req.nextUrl.href)
+      const baseUrl = process.env.NEXTAUTH_URL || 'https://automaticialab.com'
+      const loginUrl = new URL('/login', baseUrl)
+      loginUrl.searchParams.set('callbackUrl', `${baseUrl}${req.nextUrl.pathname}`)
       return NextResponse.redirect(loginUrl)
     }
   }
