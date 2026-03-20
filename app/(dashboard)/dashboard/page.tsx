@@ -93,7 +93,7 @@ export default function DashboardPage() {
   return (
     <div className="flex flex-col min-h-screen">
       {/* Header */}
-      <div className="bg-white border-b border-surface-100 px-6 lg:px-8 py-5 sticky top-0 z-10">
+      <div className="bg-white border-b border-surface-100 px-4 lg:px-8 py-4 sticky top-14 md:top-0 z-10">
         <div className="flex items-center justify-between gap-4">
           <div>
             <h1 className="text-xl font-extrabold text-surface-900">Dashboard</h1>
@@ -117,7 +117,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="flex-1 px-6 lg:px-8 py-6 space-y-6">
+      <div className="flex-1 px-4 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6">
         {/* Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[
@@ -299,6 +299,9 @@ function ProjectCard({ project, onEdit, onPreview, onDuplicate, onDelete, onPubl
           </button>
           <button type="button" onClick={(e) => { e.stopPropagation(); onEdit() }} className="h-8 px-3 rounded-lg bg-white text-xs font-semibold text-surface-800 flex items-center gap-1.5 shadow-soft hover:bg-surface-50 transition-colors">
             <Edit className="h-3.5 w-3.5" /> Editar
+          </button>
+          <button type="button" onClick={(e) => { e.stopPropagation(); onDelete() }} className="h-8 w-8 rounded-lg bg-white/90 text-xs font-semibold text-red-600 flex items-center justify-center shadow-soft hover:bg-red-50 transition-colors" title="Eliminar proyecto">
+            <Trash2 className="h-3.5 w-3.5" />
           </button>
         </div>
         {/* Status dot */}

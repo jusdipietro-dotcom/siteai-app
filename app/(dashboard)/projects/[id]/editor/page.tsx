@@ -18,6 +18,7 @@ import { useEditorStore } from '@/store/useEditorStore'
 import { useMediaStore } from '@/store/useMediaStore'
 import { ColorPresetSelector } from '@/components/shared/ColorPresetSelector'
 import { cn } from '@/lib/utils'
+import { typographyOptions } from '@/config/themes'
 import type { SectionConfig, SectionType, DevicePreview, ColorTheme } from '@/types'
 
 // Section icons map
@@ -227,6 +228,8 @@ export default function EditorPage() {
                     <input
                       type="color"
                       value={localColor}
+                      title="Color personalizado"
+                      aria-label="Color personalizado"
                       onChange={(e) => { setLocalColor(e.target.value); setPreviewKey((k) => k + 1) }}
                       className="h-9 w-14 rounded-lg border border-surface-200 cursor-pointer p-0.5 bg-white"
                     />
@@ -342,6 +345,7 @@ export default function EditorPage() {
                   selectedSection={selectedSection}
                   onSelectSection={selectSection}
                   galleryImages={galleryImages}
+                  device={device}
                 />
               </div>
             </motion.div>
@@ -917,7 +921,7 @@ function FieldGroup({ label, children }: { label: string; children: React.ReactN
 }
 
 // ── Site Preview ───────────────────────────────────────────────────────────────
-function SitePreview({ project, sections, primaryColor, name, selectedSection, onSelectSection, galleryImages }: {
+function SitePreview({ project, sections, primaryColor, name, selectedSection, onSelectSection, galleryImages, device }: {
   project: any
   sections: SectionConfig[]
   primaryColor: string
@@ -925,12 +929,27 @@ function SitePreview({ project, sections, primaryColor, name, selectedSection, o
   selectedSection: SectionType | null
   onSelectSection: (id: SectionType | null) => void
   galleryImages: any[]
+  device: DevicePreview
 }) {
   const bd = project.businessData
   const enabled = sections.filter((s) => s.enabled).sort((a, b) => a.order - b.order)
 
+  // Fonts from branding
+  const fontHeadingId: string = bd.branding?.fontHeading || 'inter'
+  const fontBodyId: string = bd.branding?.fontBody || 'inter'
+  const headingFont = typographyOptions.find((f) => f.id === fontHeadingId)
+  const bodyFont = typographyOptions.find((f) => f.id === fontBodyId)
+  const headingFamily = headingFont?.cssFamily || 'Inter'
+  const bodyFamily = bodyFont?.cssFamily || 'Inter'
+  const uniqueUrls = Array.from(new Set([headingFont?.googleUrl, bodyFont?.googleUrl].filter((u): u is string => !!u)))
+
   return (
-    <div className="font-sans text-surface-900 min-h-[600px]">
+    <div style={{ fontFamily: `'${bodyFamily}', system-ui, sans-serif` }} className="text-surface-900 min-h-[600px]">
+      <style>{`
+        ${uniqueUrls.map((u) => `@import url('${u}');`).join('\n')}
+        .spedit h1,.spedit h2,.spedit h3,.spedit h4 { font-family: '${headingFamily}', system-ui, sans-serif; }
+      `}</style>
+      <div className="spedit">
       {/* Nav mock */}
       <nav className="flex items-center justify-between px-8 py-4 border-b border-surface-100">
         <div className="flex items-center gap-2">
@@ -966,19 +985,21 @@ function SitePreview({ project, sections, primaryColor, name, selectedSection, o
             </span>
           </div>
 
-          <PreviewSection section={section} bd={bd} name={name} color={primaryColor} galleryImages={galleryImages} />
+          <PreviewSection section={section} bd={bd} name={name} color={primaryColor} galleryImages={galleryImages} device={device} />
         </div>
       ))}
+      </div>
     </div>
   )
 }
 
-function PreviewSection({ section, bd, name, color, galleryImages }: { section: SectionConfig; bd: any; name: string; color: string; galleryImages: any[] }) {
+function PreviewSection({ section, bd, name, color, galleryImages, device }: { section: SectionConfig; bd: any; name: string; color: string; galleryImages: any[]; device: DevicePreview }) {
+  const isMobile = device === 'mobile'
   switch (section.id) {
     case 'hero':
       return (
         <div
-          className="px-8 py-16 text-center relative overflow-hidden"
+          className={cn('text-center relative overflow-hidden', isMobile ? 'px-4 py-12' : 'px-8 py-16')}
           style={bd.heroImage ? undefined : { background: `linear-gradient(135deg, ${color}12, ${color}06)` }}
         >
           {bd.heroImage && (
@@ -1001,7 +1022,7 @@ function PreviewSection({ section, bd, name, color, galleryImages }: { section: 
       return (
         <div className="px-8 py-12">
           <h2 className="text-xl font-bold text-center mb-8">Nuestros Servicios</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div className={cn('grid gap-4', isMobile ? 'grid-cols-1' : 'grid-cols-2 md:grid-cols-3')}>
             {bd.services.slice(0, 6).map((svc: any) => (
               <div key={svc.id} className="p-4 rounded-xl border border-surface-100 hover:shadow-soft transition-shadow">
                 <div className="text-2xl mb-2">{svc.emoji ?? '✦'}</div>
@@ -1025,7 +1046,7 @@ function PreviewSection({ section, bd, name, color, galleryImages }: { section: 
       return (
         <div className="px-8 py-12">
           <h2 className="text-xl font-bold text-center mb-8">Lo que dicen nuestros clientes</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className={cn('grid gap-4', isMobile ? 'grid-cols-1' : 'grid-cols-3')}>
             {bd.testimonials.slice(0, 3).map((t: any) => (
               <div key={t.id} className="p-4 rounded-xl border border-surface-100">
                 <div className="flex mb-2">
@@ -1109,7 +1130,7 @@ function PreviewSection({ section, bd, name, color, galleryImages }: { section: 
         <div className="px-8 py-12">
           <h2 className="text-xl font-bold text-center mb-2">Precios</h2>
           <p className="text-sm text-surface-500 text-center mb-8">Elegí el plan que mejor se adapta a vos</p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl mx-auto">
+          <div className={cn('grid gap-4 max-w-3xl mx-auto', isMobile ? 'grid-cols-1' : 'grid-cols-3')}>
             {bd.services.slice(0, 3).map((svc: any, i: number) => (
               <div
                 key={svc.id}
@@ -1153,7 +1174,7 @@ function PreviewSection({ section, bd, name, color, galleryImages }: { section: 
     case 'stats':
       return (
         <div className="px-8 py-12" style={{ backgroundColor: color }}>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center text-white">
+          <div className={cn('grid gap-6 text-center text-white', isMobile ? 'grid-cols-2' : 'grid-cols-4')}>
             {[['500+','Clientes'],['10+','Años'],['98%','Satisfacción'],['24/7','Soporte']].map(([v, l]) => (
               <div key={l}><p className="text-3xl font-extrabold">{v}</p><p className="text-sm opacity-75 mt-1">{l}</p></div>
             ))}

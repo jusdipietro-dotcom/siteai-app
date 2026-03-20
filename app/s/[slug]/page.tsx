@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { prisma } from '@/lib/prisma'
+import { typographyOptions } from '@/config/themes'
 import type { BusinessData, SectionConfig } from '@/types'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -56,6 +57,15 @@ export default async function PublicSitePage({ params }: { params: { slug: strin
 
   const has = (id: string) => sectionEnabled(sections, id)
 
+  // Fonts from branding
+  const fontHeadingId = bd.branding?.fontHeading || 'inter'
+  const fontBodyId = bd.branding?.fontBody || 'inter'
+  const headingFont = typographyOptions.find((f) => f.id === fontHeadingId)
+  const bodyFont = typographyOptions.find((f) => f.id === fontBodyId)
+  const headingFamily = headingFont?.cssFamily || 'Inter'
+  const bodyFamily = bodyFont?.cssFamily || 'Inter'
+  const fontUrls = Array.from(new Set([headingFont?.googleUrl, bodyFont?.googleUrl].filter((u): u is string => !!u)))
+
   const whatsappNum = bd.contact?.whatsapp?.replace(/\D/g, '')
   const gaId = row.plan === 'professional' && bd.gaId ? (bd.gaId as string).trim() : null
   const sitemapEnabled = bd.seo?.sitemapEnabled && row.hasPaid
@@ -67,7 +77,9 @@ export default async function PublicSitePage({ params }: { params: { slug: strin
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+        {fontUrls.map((url) => (
+          <link key={url} href={url} rel="stylesheet" />
+        ))}
         {sitemapEnabled && (
           <link rel="sitemap" type="application/xml" href={`https://sites.automaticialab.com/${params.slug}/sitemap.xml`} />
         )}
@@ -80,7 +92,8 @@ export default async function PublicSitePage({ params }: { params: { slug: strin
         <style>{`
           *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
           html { scroll-behavior: smooth; }
-          body { font-family: 'Inter', system-ui, sans-serif; color: #1e293b; background: #fff; }
+          body { font-family: '${bodyFamily}', system-ui, sans-serif; color: #1e293b; background: #fff; }
+          h1, h2, h3, h4, h5, h6 { font-family: '${headingFamily}', system-ui, sans-serif; }
           a { color: inherit; text-decoration: none; }
           img { max-width: 100%; display: block; }
           button { cursor: pointer; font-family: inherit; }

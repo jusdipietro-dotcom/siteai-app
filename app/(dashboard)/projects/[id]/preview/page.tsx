@@ -6,6 +6,7 @@ import { motion } from 'framer-motion'
 import { ArrowLeft, Monitor, Tablet, Smartphone, ExternalLink, Edit3, Lock, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useProjectStore } from '@/store/useProjectStore'
+import { typographyOptions } from '@/config/themes'
 import { cn } from '@/lib/utils'
 import type { DevicePreview } from '@/types'
 
@@ -13,15 +14,28 @@ import type { DevicePreview } from '@/types'
 function SiteFullPreview({ project, device, color }: { project: any; device: DevicePreview; color: string }) {
   const bd = project.businessData
   const isMobile = device === 'mobile'
-  const px = isMobile ? '1.5rem' : '3rem'
-  const py = isMobile ? '3rem' : '5rem'
+  const px = isMobile ? '1rem' : '3rem'
+  const py = isMobile ? '2.5rem' : '5rem'
+
+  // Fonts from branding
+  const fontHeadingId: string = bd.branding?.fontHeading || 'inter'
+  const fontBodyId: string = bd.branding?.fontBody || 'inter'
+  const headingFont = typographyOptions.find((f) => f.id === fontHeadingId)
+  const bodyFont = typographyOptions.find((f) => f.id === fontBodyId)
+  const headingFamily = headingFont?.cssFamily || 'Inter'
+  const bodyFamily = bodyFont?.cssFamily || 'Inter'
+  const uniqueUrls = Array.from(new Set([headingFont?.googleUrl, bodyFont?.googleUrl].filter((u): u is string => !!u)))
 
   // Sections sorted by order, only enabled ones (plus always show hero/footer)
-  const enabledIds = new Set(project.sections.filter((s: any) => s.enabled).map((s: any) => s.id))
   const ordered = [...project.sections].sort((a: any, b: any) => a.order - b.order)
 
   return (
-    <div style={{ fontFamily: 'Inter, system-ui, sans-serif', color: '#0f172a' }}>
+    <div style={{ fontFamily: `'${bodyFamily}', system-ui, sans-serif`, color: '#0f172a' }}>
+      <style>{`
+        ${uniqueUrls.map((u) => `@import url('${u}');`).join('\n')}
+        .sprev h1,.sprev h2,.sprev h3,.sprev h4 { font-family: '${headingFamily}', system-ui, sans-serif; }
+      `}</style>
+      <div className="sprev">
       {/* NAV */}
       <nav style={{ position: 'sticky', top: 0, background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(12px)', borderBottom: '1px solid #e8edf3', padding: `0 ${px}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '64px', zIndex: 10 }}>
         <span style={{ fontSize: '1.2rem', fontWeight: '800', color }}>{bd.name}</span>
@@ -273,6 +287,7 @@ function SiteFullPreview({ project, device, color }: { project: any; device: Dev
             return null
         }
       })}
+      </div>
     </div>
   )
 }

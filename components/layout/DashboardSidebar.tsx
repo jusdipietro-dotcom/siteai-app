@@ -43,7 +43,7 @@ export function DashboardSidebar() {
     <motion.aside
       animate={{ width: sidebarCollapsed ? 64 : 240 }}
       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-      className="fixed left-0 top-0 z-30 flex h-screen flex-col bg-surface-950 border-r border-white/5 overflow-hidden"
+      className="hidden md:flex fixed left-0 top-0 z-30 h-screen flex-col bg-surface-950 border-r border-white/5 overflow-hidden"
     >
       {/* Logo */}
       <div className="flex items-center h-16 px-4 border-b border-white/5 shrink-0">

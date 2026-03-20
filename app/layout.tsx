@@ -4,18 +4,31 @@ import './globals.css'
 import { CommandPalette } from '@/components/shared/CommandPalette'
 import { GlobalKeyboardShortcuts } from '@/components/shared/GlobalKeyboardShortcuts'
 import { Providers } from '@/components/providers/Providers'
+import { WhatsAppButton } from '@/components/shared/WhatsAppButton'
 
 export const metadata: Metadata = {
   title: { default: 'Automatic IA Lab — Generador de Sitios Web', template: '%s · Automatic IA Lab' },
   description: 'Creá sitios web profesionales para tu negocio en minutos, sin saber programar.',
+  keywords: [
+    'crear sitio web gratis',
+    'generador de sitios web con IA',
+    'sitio web para negocios',
+    'página web Argentina',
+    'crear página web sin programar',
+  ],
   icons: { icon: '/favicon.ico' },
+  robots: 'index, follow',
   verification: { google: 'C1f6_LmId69To22LmPBUOUV_Ys0Gwiu0jdJCbFdkaP0' },
+  alternates: {
+    canonical: 'https://automaticialab.com',
+  },
   openGraph: {
     type: 'website',
     locale: 'es_AR',
     siteName: 'Automatic IA Lab',
     title: 'Automatic IA Lab — Generador de Sitios Web',
     description: 'Creá sitios web profesionales para tu negocio en minutos, sin saber programar.',
+    url: 'https://automaticialab.com',
   },
   twitter: {
     card: 'summary_large_image',
@@ -30,12 +43,31 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {/* Google Analytics — Reemplazar G-KW8GZ3S9DY con tu ID real */}
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-KW8GZ3S9DY" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('consent', 'default', {
+                'analytics_storage': 'denied',
+                'ad_storage': 'denied'
+              });
+              gtag('config', 'G-KW8GZ3S9DY', {
+                page_path: window.location.pathname,
+              });
+            `,
+          }}
+        />
       </head>
       <body className="antialiased">
         <Providers>
           {children}
           <CommandPalette />
           <GlobalKeyboardShortcuts />
+          <WhatsAppButton />
           <Toaster
             position="bottom-right"
             toastOptions={{

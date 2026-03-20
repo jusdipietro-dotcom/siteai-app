@@ -11,23 +11,29 @@ import { FaqSection } from '@/components/landing/FaqSection'
 import { Pricing } from '@/components/landing/Pricing'
 import { CtaSection } from '@/components/landing/CtaSection'
 import { Footer } from '@/components/landing/Footer'
+import { OrganizationSchema } from '@/components/seo/OrganizationSchema'
+import { FaqSchema } from '@/components/seo/FaqSchema'
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-white">
-      <Navbar />
-      <Hero />
-      <LogoBar />
-      <HowItWorks />
-      <StatsSection />
-      <Features />
-      <BusinessTypes />
-      <TemplatesSection />
-      <Testimonials />
-      <FaqSection />
-      <Pricing />
-      <CtaSection />
-      <Footer />
-    </div>
+    <>
+      <OrganizationSchema />
+      <FaqSchema />
+      <div className="min-h-screen bg-white">
+        <Navbar />
+        <Hero />
+        <LogoBar />
+        <HowItWorks />
+        <StatsSection />
+        <Features />
+        <BusinessTypes />
+        <TemplatesSection />
+        <Testimonials />
+        <FaqSection />
+        <Pricing />
+        <CtaSection />
+        <Footer />
+      </div>
+    </>
   )
 }
