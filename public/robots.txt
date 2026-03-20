@@ -4,6 +4,9 @@ Disallow: /dashboard
 Disallow: /api/
 Disallow: /login
 Disallow: /register
+Disallow: /forgot-password
 Disallow: /projects/
+Disallow: /*?callbackUrl*
+Disallow: /*?error*
 
 Sitemap: https://automaticialab.com/sitemap.xml
