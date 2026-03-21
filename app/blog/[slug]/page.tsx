@@ -30,7 +30,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 
   return {
-    title: `${post.title} | Automatic IA Lab Blog`,
+    title: { absolute: post.title },
     description: post.description,
     keywords: post.keywords,
     openGraph: {
@@ -38,7 +38,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       title: post.title,
       description: post.description,
       url: `https://automaticialab.com/blog/${post.slug}`,
-      images: post.ogImage ? [{ url: post.ogImage }] : [],
+      images: [{ url: post.ogImage || 'https://automaticialab.com/logo.png' }],
       publishedTime: post.date,
       authors: [post.author],
     },
@@ -60,7 +60,7 @@ export default function BlogPostPage({ params }: PageProps) {
   })
 
   return (
-    <div className="min-h-screen bg-white">
+    <main className="min-h-screen bg-white">
       <Navbar />
 
       {/* Back Link */}
@@ -206,6 +206,6 @@ export default function BlogPostPage({ params }: PageProps) {
       <div className="mt-16">
         <Footer />
       </div>
-    </div>
+    </main>
   )
 }

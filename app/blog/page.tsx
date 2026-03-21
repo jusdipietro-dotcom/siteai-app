@@ -6,14 +6,14 @@ import { blogPosts } from '@/data/blog-posts'
 import { Calendar, Clock, Tag } from 'lucide-react'
 
 export const metadata: Metadata = {
-  title: 'Blog — Automatic IA Lab | Tips para tu Negocio Online',
+  title: 'Blog | Tips para tu Negocio Online',
   description: 'Consejos, guías y estrategias para hacer crecer tu negocio online. Aprende sobre marketing digital, SEO, sitios web y más.',
   keywords: ['blog', 'marketing digital', 'sitio web', 'negocios online', 'SEO', 'consejos'],
 }
 
 export default function BlogPage() {
   return (
-    <div className="min-h-screen bg-white">
+    <main className="min-h-screen bg-white">
       <Navbar />
 
       {/* Hero Section */}
@@ -122,6 +122,6 @@ export default function BlogPage() {
       </section>
 
       <Footer />
-    </div>
+    </main>
   )
 }

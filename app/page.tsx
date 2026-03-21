@@ -18,7 +18,7 @@ export default function LandingPage() {
     <>
       <OrganizationSchema />
       <FaqSchema />
-      <div className="min-h-screen bg-white">
+      <main className="min-h-screen bg-white">
         <Navbar />
         <Hero />
         <ProductsSection />
@@ -31,7 +31,7 @@ export default function LandingPage() {
         <Pricing />
         <CtaSection />
         <Footer />
-      </div>
+      </main>
     </>
   )
 }

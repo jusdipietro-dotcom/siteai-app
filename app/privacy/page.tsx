@@ -1,6 +1,9 @@
 import Link from 'next/link'
 
-export const metadata = { title: 'Política de privacidad — Automatic IA Lab' }
+export const metadata = {
+  title: 'Política de privacidad',
+  description: 'Conocé cómo Automatic IA Lab recopila, usa y protege tus datos personales. Política de privacidad actualizada.',
+}
 
 const sections = [
   {

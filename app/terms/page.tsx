@@ -1,6 +1,9 @@
 import Link from 'next/link'
 
-export const metadata = { title: 'Términos de uso — Automatic IA Lab' }
+export const metadata = {
+  title: 'Términos de uso',
+  description: 'Términos y condiciones de uso de Automatic IA Lab. Planes, pagos, responsabilidades y ley aplicable.',
+}
 
 const sections = [
   {

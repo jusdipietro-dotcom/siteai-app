@@ -7,7 +7,7 @@ import { Providers } from '@/components/providers/Providers'
 import { WhatsAppButton } from '@/components/shared/WhatsAppButton'
 
 export const metadata: Metadata = {
-  title: { default: 'Automatic IA Lab — Automatización inteligente para tu negocio', template: '%s · Automatic IA Lab' },
+  title: { default: 'Automatic IA Lab — Automatizaciones con IA', template: '%s · Automatic IA Lab' },
   description: 'Plataforma de automatización con IA: creá tu sitio web en minutos, monitoreá notificaciones judiciales y automatizá procesos de tu negocio.',
   keywords: [
     'automatizacion con inteligencia artificial',
@@ -29,14 +29,16 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'es_AR',
     siteName: 'Automatic IA Lab',
-    title: 'Automatic IA Lab — Automatización inteligente para tu negocio',
+    title: 'Automatic IA Lab — Automatizaciones con IA',
     description: 'Plataforma de automatización con IA: sitios web, monitoreo judicial y más. Todo sin código.',
     url: 'https://automaticialab.com',
+    images: [{ url: 'https://automaticialab.com/logo.png', width: 1200, height: 630, alt: 'Automatic IA Lab' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Automatic IA Lab — Automatización inteligente para tu negocio',
+    title: 'Automatic IA Lab — Automatizaciones con IA',
     description: 'Plataforma de automatización con IA: sitios web, monitoreo judicial y más. Todo sin código.',
+    images: ['https://automaticialab.com/logo.png'],
   },
 }
 
