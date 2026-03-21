@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { encryptPortalCredentials } from '@/lib/encryption'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 
 const MONITORING_PLANS: Record<string, { monthly: number; title: string; maxCuils: number }> = {
   basico:       { monthly: 19000, title: 'Monitoreo Judicial Básico',       maxCuils: 1 },
@@ -12,6 +13,13 @@ const MONITORING_PLANS: Record<string, { monthly: number; title: string; maxCuil
 
 export async function POST(req: NextRequest) {
   try {
+    // Rate limit: 5 subscriptions per 10 minutes per IP
+    const ip = getClientIp(req)
+    const rl = checkRateLimit(`subscribe:${ip}`, { maxRequests: 5, windowSeconds: 600 })
+    if (!rl.allowed) {
+      return NextResponse.json({ error: 'Demasiados intentos. Esperá unos minutos.' }, { status: 429 })
+    }
+
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
@@ -90,7 +98,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Cupón fuera del período de validez' }, { status: 400 })
       }
       couponId = coupon.id
-      discountApplied = coupon.discount
+      discountApplied = Math.min(Math.max(coupon.discount, 0), 99) // Clamp 0-99%
     }
 
     // Encrypt credentials (per-portal)

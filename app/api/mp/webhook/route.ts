@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createHmac } from 'crypto'
 import { prisma } from '@/lib/prisma'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 
 const ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN!
 const MP_WEBHOOK_SECRET = process.env.MP_WEBHOOK_SECRET
@@ -12,8 +13,8 @@ const MP_WEBHOOK_SECRET = process.env.MP_WEBHOOK_SECRET
  */
 function verifyMPSignature(req: NextRequest, body: Record<string, unknown>): boolean {
   if (!MP_WEBHOOK_SECRET) {
-    console.warn('[MP Webhook] MP_WEBHOOK_SECRET not configured — skipping signature verification')
-    return true // Allow if secret not configured (backward compat)
+    console.error('[MP Webhook] MP_WEBHOOK_SECRET not configured — rejecting all webhooks for security')
+    return false
   }
 
   const xSignature = req.headers.get('x-signature')
@@ -44,6 +45,13 @@ function verifyMPSignature(req: NextRequest, body: Record<string, unknown>): boo
 
 export async function POST(req: NextRequest) {
   try {
+    // Rate limit: 30 webhooks per minute per IP (MP sends retries)
+    const ip = getClientIp(req)
+    const rl = checkRateLimit(`mp-webhook:${ip}`, { maxRequests: 30, windowSeconds: 60 })
+    if (!rl.allowed) {
+      return NextResponse.json({ error: 'Rate limited' }, { status: 429 })
+    }
+
     const body = await req.json()
     console.log('[MP Webhook] Received:', JSON.stringify(body))
 

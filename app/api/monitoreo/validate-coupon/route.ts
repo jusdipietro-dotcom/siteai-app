@@ -2,9 +2,17 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 
 export async function POST(req: NextRequest) {
   try {
+    // Rate limit: 10 attempts per minute per IP
+    const ip = getClientIp(req)
+    const rl = checkRateLimit(`coupon:${ip}`, { maxRequests: 10, windowSeconds: 60 })
+    if (!rl.allowed) {
+      return NextResponse.json({ error: 'Demasiados intentos. Esperá un momento.' }, { status: 429 })
+    }
+
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
