@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard, BookTemplate, Settings, HelpCircle,
   Plus, LogOut, Search, Image, ChevronLeft, ChevronRight,
+  Scale, Tag, Users,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useUIStore } from '@/store/useUIStore'
@@ -16,6 +17,7 @@ import { useSession, signOut } from 'next-auth/react'
 const NAV_ITEMS = [
   { href: '/dashboard',  label: 'Dashboard',  icon: LayoutDashboard },
   { href: '/templates',  label: 'Templates',  icon: BookTemplate },
+  { href: '/monitoreo',  label: 'Monitoreo Judicial', icon: Scale },
 ]
 
 const BOTTOM_ITEMS = [
@@ -163,6 +165,35 @@ export function DashboardSidebar() {
                 +{projects.length - 4} más
               </Link>
             )}
+          </div>
+        )}
+
+        {/* Admin section — only visible for admin users */}
+        {!sidebarCollapsed && user?.email && ['automaticialab@gmail.com'].includes(user.email.toLowerCase()) && (
+          <div className="mt-3 px-3">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-white/25 mb-1.5 px-1">
+              Admin
+            </p>
+            <Link
+              href="/admin/cupones"
+              className={cn(
+                'flex items-center gap-2.5 h-8 px-2 rounded-lg text-xs text-white/50 hover:bg-white/6 hover:text-white/80 transition-all',
+                pathname.includes('/admin/cupones') && 'bg-white/8 text-white/80'
+              )}
+            >
+              <Tag className="h-3.5 w-3.5 shrink-0" />
+              Cupones
+            </Link>
+            <Link
+              href="/admin/suscripciones"
+              className={cn(
+                'flex items-center gap-2.5 h-8 px-2 rounded-lg text-xs text-white/50 hover:bg-white/6 hover:text-white/80 transition-all',
+                pathname.includes('/admin/suscripciones') && 'bg-white/8 text-white/80'
+              )}
+            >
+              <Users className="h-3.5 w-3.5 shrink-0" />
+              Suscripciones
+            </Link>
           </div>
         )}
       </div>

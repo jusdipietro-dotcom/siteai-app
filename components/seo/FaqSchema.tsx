@@ -69,6 +69,30 @@ export function FaqSchema() {
           text: 'Sí, tenemos un plan gratuito con funcionalidades básicas. También ofrecemos planes premium con más características.',
         },
       },
+      {
+        '@type': 'Question',
+        name: '¿Qué es el Monitoreo Judicial?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: 'Es un servicio que revisa automáticamente los portales PJN y SCBA cada 2 horas y te envía por email las nuevas notificaciones con el texto completo del PDF. Ideal para abogados y estudios jurídicos.',
+        },
+      },
+      {
+        '@type': 'Question',
+        name: '¿Cuánto cuesta el monitoreo judicial?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: 'Desde $19.000/mes por CUIT monitoreado en el plan Básico. También ofrecemos planes Profesional (3 CUITs, $35.000/mes) y Estudio (8 CUITs, $75.000/mes).',
+        },
+      },
+      {
+        '@type': 'Question',
+        name: '¿Qué portales judiciales monitorean?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: 'Actualmente monitoreamos PJN (Poder Judicial de la Nación) y SCBA (Suprema Corte de Buenos Aires), con expansión planificada a otros portales durante 2026.',
+        },
+      },
     ],
   }
 

@@ -46,7 +46,7 @@ const faqs = [
   },
   {
     q: '¿Puedo contratar solo el monitoreo judicial sin el sitio web?',
-    a: 'Sí, cada producto es independiente. Podés contratar solo el monitoreo judicial, solo el sitio web, o ambos. Escribinos por WhatsApp para combinar productos.',
+    a: 'Sí, cada producto es independiente. Podés contratar solo el monitoreo judicial (desde $19.000/mes por CUIT), solo el sitio web, o ambos. El alta es 100% online desde tu panel.',
   },
   {
     q: '¿Qué tipo de automatizaciones hacen a medida?',

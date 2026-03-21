@@ -19,8 +19,9 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  projects Project[]
-  media    Media[]
+  projects              Project[]
+  media                 Media[]
+  monitoringSubscriptions MonitoringSubscription[]
 }
 
 model Media {
@@ -40,6 +41,45 @@ model Media {
   updatedAt    DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model MonitoringSubscription {
+  id              String   @id @default(cuid())
+  userId          String
+  status          String   @default("pending_payment") // pending_payment, active, provisioning, suspended, cancelled
+  plan            String   // basico, profesional, estudio
+  portal          String   // PJN, SCBA, AMBOS
+  cuil            String
+  credentialUser  String   // encrypted portal username
+  credentialPass  String   // encrypted portal password
+  credentialIv    String   // AES-GCM IV (hex)
+  credentialTag   String   // AES-GCM auth tag (hex)
+  payerEmail      String
+  preapprovalId   String?
+  couponId        String?
+  discountApplied Int      @default(0) // percentage discount applied
+  provisionedAt   DateTime?
+  n8nTenantId     String?  // tenant ID in n8n workflows once provisioned
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  coupon Coupon? @relation(fields: [couponId], references: [id])
+}
+
+model Coupon {
+  id            String   @id @default(cuid())
+  code          String   @unique
+  discount      Int      // percentage 1-100
+  maxUses       Int      @default(1)
+  usedCount     Int      @default(0)
+  validFrom     DateTime @default(now())
+  validUntil    DateTime
+  createdBy     String   // admin user ID
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+
+  subscriptions MonitoringSubscription[]
 }
 
 model Project {

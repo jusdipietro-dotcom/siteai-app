@@ -10,6 +10,8 @@ const PROTECTED_PATHS = [
   '/media',
   '/settings',
   '/help',
+  '/monitoreo',
+  '/admin',
 ]
 
 export async function middleware(req: NextRequest) {
