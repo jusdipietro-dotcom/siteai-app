@@ -1,11 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSession } from 'next-auth/react'
+import { useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Scale, Shield, Bell, FileText, Check, ArrowRight, ArrowLeft,
-  Loader2, Tag, AlertCircle, Clock, Zap,
+  Loader2, Tag, AlertCircle, Clock, Zap, Mail, CheckCircle2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
@@ -42,6 +43,7 @@ const PORTALS = [
 ]
 
 type Step = 'plan' | 'portal' | 'credentials' | 'coupon' | 'payment' | 'done'
+
 type Subscription = {
   id: string
   status: string
@@ -53,9 +55,19 @@ type Subscription = {
   coupon?: { code: string; discount: number } | null
 }
 
-export default function MonitoreoPage() {
+export default function MonitoreoPageWrapper() {
+  return (
+    <Suspense>
+      <MonitoreoPage />
+    </Suspense>
+  )
+}
+
+function MonitoreoPage() {
   const { data: session } = useSession()
-  const [step, setStep] = useState<Step>('plan')
+  const searchParams = useSearchParams()
+  const mpReturn = searchParams.get('mp_return')
+  const [step, setStep] = useState<Step>(mpReturn ? 'done' : 'plan')
   const [selectedPlan, setSelectedPlan] = useState('')
   const [selectedPortal, setSelectedPortal] = useState('')
   const [cuil, setCuil] = useState('')
@@ -63,11 +75,21 @@ export default function MonitoreoPage() {
   const [pjnPass, setPjnPass] = useState('')
   const [scbaUser, setScbaUser] = useState('')
   const [scbaPass, setScbaPass] = useState('')
+  const [notificationEmail, setNotificationEmail] = useState('')
+  const [payerEmail, setPayerEmail] = useState('')
   const [couponCode, setCouponCode] = useState('')
   const [couponValid, setCouponValid] = useState<{ valid: boolean; discount: number } | null>(null)
   const [loading, setLoading] = useState(false)
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
   const [loadingSubs, setLoadingSubs] = useState(true)
+
+  // Pre-fill emails from session
+  useEffect(() => {
+    if (session?.user?.email) {
+      if (!notificationEmail) setNotificationEmail(session.user.email)
+      if (!payerEmail) setPayerEmail(session.user.email)
+    }
+  }, [session?.user?.email])
 
   // Fetch existing subscriptions
   useEffect(() => {
@@ -116,7 +138,8 @@ export default function MonitoreoPage() {
           pjnPass: (selectedPortal === 'PJN' || selectedPortal === 'AMBOS') ? pjnPass : undefined,
           scbaUser: (selectedPortal === 'SCBA' || selectedPortal === 'AMBOS') ? scbaUser : undefined,
           scbaPass: (selectedPortal === 'SCBA' || selectedPortal === 'AMBOS') ? scbaPass : undefined,
-          payerEmail: session?.user?.email,
+          notificationEmail,
+          payerEmail,
           couponCode: couponValid?.valid ? couponCode : undefined,
         }),
       })
@@ -329,6 +352,32 @@ export default function MonitoreoPage() {
                     />
                   </div>
 
+                  <div>
+                    <label className="block text-sm font-medium text-surface-700 mb-1.5">
+                      <Mail className="w-3.5 h-3.5 inline mr-1.5 -mt-0.5" />
+                      Email donde recibir las alertas judiciales
+                    </label>
+                    <input
+                      type="email"
+                      value={notificationEmail}
+                      onChange={e => setNotificationEmail(e.target.value)}
+                      placeholder="alertas@estudio.com"
+                      className="w-full h-10 px-3 rounded-xl border border-surface-200 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none"
+                    />
+                    <p className="text-xs text-surface-400 mt-1">Acá vas a recibir cada nueva notificación judicial.</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-surface-700 mb-1.5">Email de facturación</label>
+                    <input
+                      type="email"
+                      value={payerEmail}
+                      onChange={e => setPayerEmail(e.target.value)}
+                      placeholder="facturacion@estudio.com"
+                      className="w-full h-10 px-3 rounded-xl border border-surface-200 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none"
+                    />
+                  </div>
+
                   {/* PJN Credentials */}
                   {(selectedPortal === 'PJN' || selectedPortal === 'AMBOS') && (
                     <div className="rounded-2xl border border-surface-100 p-4 space-y-3">
@@ -397,7 +446,7 @@ export default function MonitoreoPage() {
                   <Button
                     variant="gradient"
                     disabled={
-                      !cuil ||
+                      !cuil || !notificationEmail || !notificationEmail.includes('@') || !payerEmail || !payerEmail.includes('@') ||
                       ((selectedPortal === 'PJN' || selectedPortal === 'AMBOS') && (!pjnUser || !pjnPass)) ||
                       ((selectedPortal === 'SCBA' || selectedPortal === 'AMBOS') && (!scbaUser || !scbaPass))
                     }
@@ -472,6 +521,10 @@ export default function MonitoreoPage() {
                     <span className="text-surface-500">CUIT</span>
                     <span className="font-medium text-surface-900">{cuil}</span>
                   </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-surface-500">Alertas a</span>
+                    <span className="font-medium text-surface-900">{notificationEmail}</span>
+                  </div>
                   {discount > 0 && (
                     <>
                       <div className="flex justify-between text-sm">
@@ -513,6 +566,43 @@ export default function MonitoreoPage() {
                     ) : (
                       <><Zap className="w-4 h-4" /> Pagar con MercadoPago</>
                     )}
+                  </Button>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Step: Done (post-payment return) */}
+            {step === 'done' && (
+              <motion.div key="done" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
+                    <CheckCircle2 className="w-8 h-8 text-emerald-600" />
+                  </div>
+                  <h2 className="text-xl font-bold text-surface-900 mb-2">Pago registrado</h2>
+                  <p className="text-sm text-surface-500 max-w-md mx-auto mb-6">
+                    Tu suscripción de monitoreo judicial está siendo procesada.
+                    Recibirás un email de confirmación cuando el servicio esté activo (dentro de las 48 horas hábiles).
+                  </p>
+                  <div className="bg-surface-50 rounded-2xl p-5 max-w-sm mx-auto space-y-2 mb-6">
+                    <div className="flex items-center gap-2 text-sm">
+                      <Check className="w-4 h-4 text-emerald-500" />
+                      <span className="text-surface-700">Pago con MercadoPago procesado</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <Clock className="w-4 h-4 text-amber-500" />
+                      <span className="text-surface-700">Activación en curso (hasta 48hs)</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <Bell className="w-4 h-4 text-blue-500" />
+                      <span className="text-surface-700">Te avisamos por email cuando esté listo</span>
+                    </div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={() => { setStep('plan'); window.history.replaceState({}, '', '/monitoreo') }}
+                    className="gap-2"
+                  >
+                    Volver al panel
                   </Button>
                 </div>
               </motion.div>

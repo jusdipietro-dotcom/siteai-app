@@ -106,6 +106,7 @@ async function triggerProvisioning(subscriptionId: string) {
         plan: sub.plan,
         portal: sub.portal,
         cuil: sub.cuil,
+        notificationEmail: sub.notificationEmail,
         payerEmail: sub.payerEmail,
       }),
     })

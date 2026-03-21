@@ -18,6 +18,7 @@ export async function GET() {
         plan: true,
         portal: true,
         cuil: true,
+        notificationEmail: true,
         payerEmail: true,
         discountApplied: true,
         provisionedAt: true,

@@ -54,7 +54,8 @@ model MonitoringSubscription {
   credentialPass  String   // encrypted portal password
   credentialIv    String   // AES-GCM IV (hex)
   credentialTag   String   // AES-GCM auth tag (hex)
-  payerEmail      String
+  notificationEmail String // email donde se envían las alertas judiciales
+  payerEmail      String   // email de facturación (puede ser distinto)
   preapprovalId   String?
   couponId        String?
   discountApplied Int      @default(0) // percentage discount applied

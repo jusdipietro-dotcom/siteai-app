@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json()
-    const { plan, portal, cuil, pjnUser, pjnPass, scbaUser, scbaPass, payerEmail, couponCode } = body
+    const { plan, portal, cuil, pjnUser, pjnPass, scbaUser, scbaPass, notificationEmail, payerEmail, couponCode } = body
 
     // Validate plan
     const planConfig = MONITORING_PLANS[plan]
@@ -39,6 +39,9 @@ export async function POST(req: NextRequest) {
     }
     if ((portal === 'SCBA' || portal === 'AMBOS') && (!scbaUser || !scbaPass)) {
       return NextResponse.json({ error: 'Las credenciales de SCBA son obligatorias' }, { status: 400 })
+    }
+    if (!notificationEmail || !notificationEmail.includes('@')) {
+      return NextResponse.json({ error: 'Email de notificaciones inválido' }, { status: 400 })
     }
     if (!payerEmail || !payerEmail.includes('@')) {
       return NextResponse.json({ error: 'Email de facturación inválido' }, { status: 400 })
@@ -95,6 +98,7 @@ export async function POST(req: NextRequest) {
         portal,
         cuil: cuil.replace(/[-\s]/g, ''),
         ...encrypted,
+        notificationEmail: notificationEmail.toLowerCase(),
         payerEmail: payerEmail.toLowerCase(),
         couponId,
         discountApplied,
