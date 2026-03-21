@@ -98,7 +98,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Cupón fuera del período de validez' }, { status: 400 })
       }
       couponId = coupon.id
-      discountApplied = Math.min(Math.max(coupon.discount, 0), 99) // Clamp 0-99%
+      discountApplied = Math.min(Math.max(coupon.discount, 0), 100) // Clamp 0-100%
     }
 
     // Encrypt credentials (per-portal)

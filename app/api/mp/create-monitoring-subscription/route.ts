@@ -52,7 +52,10 @@ export async function POST(req: NextRequest) {
     }
 
     // Calculate price with discount
-    const finalPrice = Math.round(planConfig.monthly * (1 - sub.discountApplied / 100))
+    const isFreeTrial = sub.discountApplied >= 100
+    const finalPrice = isFreeTrial
+      ? planConfig.monthly // Full price for recurring (after free trial)
+      : Math.round(planConfig.monthly * (1 - sub.discountApplied / 100))
 
     const configuredUrl = process.env.NEXT_PUBLIC_APP_URL ?? process.env.APP_URL
     const requestHost = req.headers.get('x-forwarded-host') ?? req.headers.get('host') ?? 'localhost:3000'
@@ -65,7 +68,7 @@ export async function POST(req: NextRequest) {
     // external_reference format: "monitoring:subscriptionId:plan"
     // IMPORTANT: MP preapproval webhooks must be configured in the MP Developer Dashboard
     // URL: https://automaticialab.com/api/mp/webhook | Events: preapproval
-    const body = {
+    const body: Record<string, unknown> = {
       reason: planConfig.title,
       external_reference: `monitoring:${subscriptionId}:${sub.plan}`,
       payer_email: (payerEmail ?? sub.payerEmail).toLowerCase(),
@@ -75,6 +78,8 @@ export async function POST(req: NextRequest) {
         start_date: startDate,
         transaction_amount: finalPrice,
         currency_id: 'ARS',
+        // 100% discount = first month free via MP free trial
+        ...(isFreeTrial ? { free_trial: { frequency: 1, frequency_type: 'months' } } : {}),
       },
       back_url: backUrl,
     }
