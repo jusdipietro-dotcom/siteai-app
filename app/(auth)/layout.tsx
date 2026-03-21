@@ -19,7 +19,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           <img src="/logo.png" alt="Automatic IA Lab" className="h-10 w-10 object-contain rounded-2xl group-hover:scale-105 transition-transform" />
           <div>
             <p className="text-lg font-bold text-white">Automatic IA Lab</p>
-            <p className="text-xs text-white/40">Website Builder</p>
+            <p className="text-xs text-white/40">Automatizaciones con IA</p>
           </div>
         </Link>
 
@@ -27,36 +27,37 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <div className="relative space-y-8">
           <div>
             <h2 className="text-3xl font-extrabold text-white leading-tight mb-3">
-              Tu negocio, online{' '}
-              <span className="gradient-text">en minutos.</span>
+              Automatiza tu negocio{' '}
+              <span className="gradient-text">con inteligencia artificial.</span>
             </h2>
             <p className="text-white/50 text-base leading-relaxed">
-              Creá tu sitio web profesional sin necesidad de programar. Más de 500 negocios ya confían en Automatic IA Lab.
+              Sitios web profesionales, monitoreo judicial automatizado y herramientas de IA para tu negocio. Todo en una sola plataforma.
             </p>
           </div>
 
-          {/* Testimonial */}
-          <div className="glass-dark rounded-2xl p-5">
-            <p className="text-white/80 text-sm italic leading-relaxed mb-4">
-              "Creé mi sitio en menos de 20 minutos y al día siguiente ya tenía consultas de clientes nuevos. Increíble."
-            </p>
-            <div className="flex items-center gap-3">
-              <div className="h-9 w-9 rounded-full gradient-brand flex items-center justify-center text-white text-xs font-bold">
-                MG
+          {/* Features */}
+          <div className="space-y-3">
+            {[
+              { icon: '🌐', title: 'Sitios web en minutos', desc: 'Creá tu sitio profesional sin programar' },
+              { icon: '⚖️', title: 'Monitoreo judicial', desc: 'Alertas automaticas de PJN y SCBA' },
+              { icon: '🤖', title: 'Automatizaciones IA', desc: 'Workflows inteligentes para tu negocio' },
+            ].map((feat) => (
+              <div key={feat.title} className="flex items-start gap-3 glass-dark rounded-xl p-3">
+                <span className="text-lg mt-0.5">{feat.icon}</span>
+                <div>
+                  <p className="text-white text-sm font-medium">{feat.title}</p>
+                  <p className="text-white/40 text-xs">{feat.desc}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-white text-sm font-medium">Martín González</p>
-                <p className="text-white/40 text-xs">Estudio Contable MG, Córdoba</p>
-              </div>
-            </div>
+            ))}
           </div>
 
           {/* Stats */}
           <div className="grid grid-cols-3 gap-4">
             {[
-              { value: '500+', label: 'Sitios creados' },
-              { value: '< 20 min', label: 'Tiempo promedio' },
-              { value: '4.9 ★', label: 'Satisfacción' },
+              { value: '500+', label: 'Clientes activos' },
+              { value: '24/7', label: 'Monitoreo' },
+              { value: '4.9 ★', label: 'Satisfaccion' },
             ].map((stat) => (
               <div key={stat.label} className="text-center">
                 <p className="text-xl font-extrabold text-white">{stat.value}</p>
