@@ -5,7 +5,7 @@ import { Footer } from '@/components/landing/Footer'
 import { CheckCircle2, ArrowRight, Zap, Globe, Smartphone, Search, MessageCircle, Shield } from 'lucide-react'
 
 export const metadata: Metadata = {
-  title: 'Creá tu Sitio Web Gratis con IA — Automatic IA Lab',
+  title: { absolute: 'Sitio Web Gratis con IA | Automatic IA Lab' },
   description: 'Generá un sitio web profesional para tu negocio en 60 segundos. Sin programar, sin diseñadores, sin tarjeta de crédito. Probá gratis ahora.',
   keywords: [
     'crear sitio web gratis',
@@ -15,10 +15,11 @@ export const metadata: Metadata = {
     'crear pagina web sin programar',
   ],
   openGraph: {
-    title: 'Creá tu Sitio Web Gratis con IA — Automatic IA Lab',
+    title: 'Sitio Web Gratis con IA | Automatic IA Lab',
     description: 'Generá un sitio web profesional para tu negocio en 60 segundos. Sin programar, sin diseñadores, sin tarjeta de crédito.',
     url: 'https://automaticialab.com/gratis',
     type: 'website',
+    images: [{ url: 'https://automaticialab.com/logo.png', width: 512, height: 341, alt: 'Automatic IA Lab' }],
   },
   alternates: {
     canonical: 'https://automaticialab.com/gratis',
@@ -49,7 +50,7 @@ const faqs = [
 
 export default function GratisLandingPage() {
   return (
-    <div className="min-h-screen bg-white">
+    <main className="min-h-screen bg-white">
       <Navbar />
 
       {/* Hero */}
@@ -239,6 +240,6 @@ export default function GratisLandingPage() {
           }),
         }}
       />
-    </div>
+    </main>
   )
 }

@@ -91,8 +91,9 @@ export default function BlogPage() {
                   <Link
                     href={`/blog/${post.slug}`}
                     className="inline-flex items-center text-sm font-semibold text-brand-600 hover:text-brand-700 group/link"
+                    aria-label={`Leer artículo: ${post.title}`}
                   >
-                    Leer más
+                    Leer artículo
                     <span className="ml-2 group-hover/link:translate-x-1 transition-transform">→</span>
                   </Link>
                 </div>

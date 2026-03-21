@@ -15,7 +15,7 @@ export const blogPosts: BlogPost[] = [
   {
     slug: 'por-que-tu-negocio-necesita-un-sitio-web-en-2026',
     title: '¿Por qué tu negocio necesita un sitio web en 2026?',
-    description: 'Descubrí por qué tener presencia online es fundamental para los negocios locales. Estadísticas reales sobre comportamiento de consumidores y cómo construir credibilidad.',
+    description: 'Descubrí por qué tener presencia online es clave para negocios locales. Estadísticas reales y consejos para construir credibilidad.',
     author: 'Automatic IA Lab',
     date: '2026-03-19',
     readTime: '8 min',
@@ -31,7 +31,7 @@ export const blogPosts: BlogPost[] = [
 
       <h3>Las estadísticas que no podés ignorar</h3>
 
-      <p>Según un relevamiento reciente del INDEC, en Argentina el comercio electrónico creció un 35% en los últimos dos años. Pero no es solo sobre vender productos digitales. Hasta los negocios locales —barbershops, pymes de servicios, consultorios, gastronomía— necesitan una presencia online.</p>
+      <p>Según datos del <a href="https://www.indec.gob.ar/" target="_blank" rel="noopener noreferrer">INDEC</a>, en Argentina el comercio electrónico creció un 35% en los últimos dos años. Pero no es solo sobre vender productos digitales. Hasta los negocios locales —barbershops, pymes de servicios, consultorios, gastronomía— necesitan una presencia online.</p>
 
       <ul>
         <li><strong>8 de cada 10 personas</strong> busca información sobre empresas locales en Google antes de visitarlas</li>
@@ -59,7 +59,7 @@ export const blogPosts: BlogPost[] = [
 
       <h3>El factor SEO que no podés pasar por alto</h3>
 
-      <p>Google favorece a los sitios web en los resultados de búsqueda. Si tu competidor tiene un sitio web decente y vos no, él aparecerá primero cuando alguien busque "barbershop en Flores" o "dentista cerca de mí".</p>
+      <p><a href="https://developers.google.com/search/docs/fundamentals/seo-starter-guide" target="_blank" rel="noopener noreferrer">Google</a> favorece a los sitios web en los resultados de búsqueda. Si tu competidor tiene un sitio web decente y vos no, él aparecerá primero cuando alguien busque "barbershop en Flores" o "dentista cerca de mí".</p>
 
       <p>Los negocios con presencia web optimizada para SEO reciben hasta 4 veces más tráfico que sus competidores sin sitio. Y ese tráfico es cualificado: personas que ya buscan exactamente lo que ofrecés.</p>
 
@@ -111,7 +111,7 @@ export const blogPosts: BlogPost[] = [
 
       <p>Déjame ser honesto: la mayoría de las opciones "tradicionales" para crear un sitio web tiene sus limitaciones.</p>
 
-      <h4>Opción 1: WordPress</h4>
+      <h4>Opción 1: <a href="https://wordpress.org/" target="_blank" rel="noopener noreferrer">WordPress</a></h4>
 
       <ul>
         <li><strong>Pro:</strong> Popular, muchos temas disponibles</li>
@@ -120,7 +120,7 @@ export const blogPosts: BlogPost[] = [
         <li><strong>Tiempo:</strong> 2-4 semanas para tener algo decente</li>
       </ul>
 
-      <h4>Opción 2: Wix / Squarespace</h4>
+      <h4>Opción 2: <a href="https://www.wix.com/" target="_blank" rel="noopener noreferrer">Wix</a> / <a href="https://www.squarespace.com/" target="_blank" rel="noopener noreferrer">Squarespace</a></h4>
 
       <ul>
         <li><strong>Pro:</strong> Fácil de usar, drag-and-drop</li>
@@ -225,8 +225,8 @@ export const blogPosts: BlogPost[] = [
   },
   {
     slug: '5-errores-comunes-sitios-web-negocios-locales',
-    title: '5 errores comunes en sitios web de negocios locales (y cómo evitarlos)',
-    description: 'Identificá los errores más frecuentes que cometen las pequeñas empresas con sus sitios web. Y mejor aún, descubrí cómo Automatic IA Lab los evita automáticamente.',
+    title: '5 errores comunes en sitios web de negocios locales',
+    description: 'Identificá los 5 errores más comunes en sitios web de pymes y cómo evitarlos. Soluciones prácticas para mejorar tu presencia online.',
     author: 'Automatic IA Lab',
     date: '2026-03-10',
     readTime: '7 min',
@@ -262,7 +262,7 @@ export const blogPosts: BlogPost[] = [
 
       <p>Sabés esa sensación de esperar una página que no carga. Esperas 3 segundos. Nada. Esperas 5 segundos. Todavía cargando. En ese momento, cerraste la pestaña.</p>
 
-      <p>El 53% de los visitantes abandona un sitio si tarda más de 3 segundos en cargar. Y Google penaliza en búsquedas a los sitios lentos.</p>
+      <p>Según <a href="https://web.dev/performance/" target="_blank" rel="noopener noreferrer">web.dev de Google</a>, el 53% de los visitantes abandona un sitio si tarda más de 3 segundos en cargar. Y Google penaliza en búsquedas a los sitios lentos.</p>
 
       <p>Los sitios mal construidos —especialmente los que usan demasiados plugins o imágenes sin optimizar— son terriblemente lentos.</p>
 
@@ -270,7 +270,7 @@ export const blogPosts: BlogPost[] = [
 
       <h3>Error #4: SEO prácticamente nulo</h3>
 
-      <p>Muchos negocios locales hacen un sitio bonito, pero nadie lo encuentra en Google. ¿Por qué? Porque no tiene SEO.</p>
+      <p>Muchos negocios locales hacen un sitio bonito, pero nadie lo encuentra en <a href="https://search.google.com/search-console/about" target="_blank" rel="noopener noreferrer">Google</a>. ¿Por qué? Porque no tiene SEO.</p>
 
       <p>Errores típicos:</p>
 

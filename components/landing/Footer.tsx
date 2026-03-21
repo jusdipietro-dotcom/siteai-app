@@ -28,7 +28,7 @@ export function Footer() {
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
             <div className="flex items-center gap-2 mb-4">
-              <img src="/logo.png" alt="Automatic IA Lab" className="w-8 h-8 object-contain rounded-xl" />
+              <img src="/logo.png" alt="Automatic IA Lab" width={32} height={32} className="w-8 h-8 object-contain rounded-xl" />
               <span className="text-lg font-bold text-white">Automatic IA Lab</span>
             </div>
             <p className="text-sm text-surface-500 leading-relaxed max-w-xs">
@@ -38,7 +38,7 @@ export function Footer() {
 
           {Object.entries(links).map(([category, items]) => (
             <div key={category}>
-              <h4 className="text-xs font-semibold text-surface-500 uppercase tracking-wider mb-4">{category}</h4>
+              <p className="text-xs font-semibold text-surface-500 uppercase tracking-wider mb-4">{category}</p>
               <ul className="space-y-2.5">
                 {items.map((item) => (
                   <li key={item.label}>

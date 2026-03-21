@@ -29,15 +29,17 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     }
   }
 
+  const url = `https://automaticialab.com/blog/${post.slug}`
   return {
     title: { absolute: post.title },
     description: post.description,
     keywords: post.keywords,
+    alternates: { canonical: url },
     openGraph: {
       type: 'article',
       title: post.title,
       description: post.description,
-      url: `https://automaticialab.com/blog/${post.slug}`,
+      url,
       images: [{ url: post.ogImage || 'https://automaticialab.com/logo.png' }],
       publishedTime: post.date,
       authors: [post.author],

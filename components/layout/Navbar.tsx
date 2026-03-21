@@ -39,7 +39,7 @@ export function Navbar() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 group">
-            <img src="/logo.png" alt="Automatic IA Lab" className="w-12 h-12 object-contain rounded-xl group-hover:scale-105 transition-transform" />
+            <img src="/logo.png" alt="Automatic IA Lab" width={48} height={48} className="w-12 h-12 object-contain rounded-xl group-hover:scale-105 transition-transform" />
             <span className="text-lg font-bold text-white tracking-tight">Automatic IA Lab</span>
           </Link>
 
