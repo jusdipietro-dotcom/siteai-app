@@ -85,6 +85,8 @@ function MonitoreoPage() {
   const [loading, setLoading] = useState(false)
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
   const [loadingSubs, setLoadingSubs] = useState(true)
+  const [changingPlan, setChangingPlan] = useState<string | null>(null) // subscriptionId being changed
+  const [changePlanLoading, setChangePlanLoading] = useState(false)
 
   // Pre-fill emails from session
   useEffect(() => {
@@ -182,6 +184,48 @@ function MonitoreoPage() {
     }
   }
 
+  const handleChangePlan = async (oldSubId: string, newPlan: string) => {
+    setChangePlanLoading(true)
+    try {
+      // 1. Create new subscription via change-plan endpoint
+      const changeRes = await fetch('/api/monitoreo/change-plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subscriptionId: oldSubId, newPlan }),
+      })
+      const changeData = await changeRes.json()
+      if (!changeRes.ok) {
+        toast.error(changeData.error)
+        setChangePlanLoading(false)
+        return
+      }
+
+      // 2. Create MP payment for the new subscription
+      const mpRes = await fetch('/api/mp/create-monitoring-subscription', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subscriptionId: changeData.subscriptionId,
+          payerEmail: session?.user?.email,
+          replacesSubscriptionId: oldSubId,
+        }),
+      })
+      const mpData = await mpRes.json()
+      if (!mpRes.ok) {
+        toast.error(mpData.error ?? 'Error al crear el pago')
+        setChangePlanLoading(false)
+        return
+      }
+
+      // 3. Redirect to MercadoPago
+      window.location.href = mpData.init_point
+    } catch {
+      toast.error('Error al cambiar el plan')
+    } finally {
+      setChangePlanLoading(false)
+    }
+  }
+
   const planConfig = PLANS.find(p => p.id === selectedPlan)
   const discount = couponValid?.valid ? couponValid.discount : 0
   const finalPrice = planConfig ? Math.round(planConfig.price * (1 - discount / 100)) : 0
@@ -252,32 +296,70 @@ function MonitoreoPage() {
                     )}
                   </div>
                   {isActive && (
-                    <div className="border-t border-surface-100 px-4 py-2 flex justify-end">
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          if (!confirm('¿Seguro que querés cancelar esta suscripción? Se desactivará el monitoreo para este CUIT.')) return
-                          try {
-                            const res = await fetch(`/api/monitoreo/cancel`, {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ subscriptionId: sub.id }),
-                            })
-                            const data = await res.json()
-                            if (res.ok) {
-                              toast.success('Suscripción cancelada')
-                              fetchSubscriptions()
-                            } else {
-                              toast.error(data.error ?? 'Error al cancelar')
+                    <div className="border-t border-surface-100 px-4 py-2">
+                      {/* Plan change selector */}
+                      {changingPlan === sub.id && (
+                        <div className="mb-3 pt-2">
+                          <p className="text-xs font-medium text-surface-700 mb-2">Seleccioná tu nuevo plan:</p>
+                          <div className="flex gap-2 flex-wrap">
+                            {PLANS.filter(p => p.id !== sub.plan).map(p => (
+                              <button
+                                key={p.id}
+                                type="button"
+                                disabled={changePlanLoading}
+                                onClick={() => handleChangePlan(sub.id, p.id)}
+                                className="text-xs px-3 py-1.5 rounded-lg border border-brand-200 bg-brand-50 text-brand-700 hover:bg-brand-100 transition-colors disabled:opacity-50"
+                              >
+                                {changePlanLoading ? '...' : `${p.name} — $${p.price.toLocaleString('es-AR')}/mes`}
+                              </button>
+                            ))}
+                            <button
+                              type="button"
+                              onClick={() => setChangingPlan(null)}
+                              className="text-xs px-3 py-1.5 rounded-lg border border-surface-200 text-surface-500 hover:bg-surface-50 transition-colors"
+                            >
+                              Cancelar
+                            </button>
+                          </div>
+                          <p className="text-[10px] text-surface-400 mt-1.5">
+                            Tu plan actual se cancela automáticamente cuando se confirme el pago del nuevo.
+                          </p>
+                        </div>
+                      )}
+                      <div className="flex justify-end gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setChangingPlan(changingPlan === sub.id ? null : sub.id)}
+                          className="text-xs text-brand-600 hover:text-brand-800 font-medium transition-colors"
+                        >
+                          {changingPlan === sub.id ? '' : 'Cambiar plan'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            if (!confirm('¿Seguro que querés cancelar esta suscripción? Se desactivará el monitoreo para este CUIT.')) return
+                            try {
+                              const res = await fetch(`/api/monitoreo/cancel`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ subscriptionId: sub.id }),
+                              })
+                              const data = await res.json()
+                              if (res.ok) {
+                                toast.success('Suscripción cancelada')
+                                fetchSubscriptions()
+                              } else {
+                                toast.error(data.error ?? 'Error al cancelar')
+                              }
+                            } catch {
+                              toast.error('Error al cancelar la suscripción')
                             }
-                          } catch {
-                            toast.error('Error al cancelar la suscripción')
-                          }
-                        }}
-                        className="text-xs text-red-500 hover:text-red-700 font-medium transition-colors"
-                      >
-                        Cancelar suscripción
-                      </button>
+                          }}
+                          className="text-xs text-red-500 hover:text-red-700 font-medium transition-colors"
+                        >
+                          Cancelar suscripción
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>

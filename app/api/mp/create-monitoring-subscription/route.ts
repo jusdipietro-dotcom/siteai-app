@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
 
-    const { subscriptionId, payerEmail } = await req.json()
+    const { subscriptionId, payerEmail, replacesSubscriptionId } = await req.json()
 
     if (!subscriptionId) {
       return NextResponse.json({ error: 'subscriptionId requerido' }, { status: 400 })
@@ -65,12 +65,16 @@ export async function POST(req: NextRequest) {
     const backUrl = `${baseUrl}/monitoreo?mp_return=true&sub=${subscriptionId}`
     const startDate = new Date(Date.now() + 120_000).toISOString() // 2 min buffer
 
-    // external_reference format: "monitoring:subscriptionId:plan"
+    // external_reference format: "monitoring:subscriptionId:plan" or "monitoring:subscriptionId:plan:replacesSubId"
     // IMPORTANT: MP preapproval webhooks must be configured in the MP Developer Dashboard
     // URL: https://automaticialab.com/api/mp/webhook | Events: preapproval
+    const extRef = replacesSubscriptionId
+      ? `monitoring:${subscriptionId}:${sub.plan}:${replacesSubscriptionId}`
+      : `monitoring:${subscriptionId}:${sub.plan}`
+
     const body: Record<string, unknown> = {
       reason: planConfig.title,
-      external_reference: `monitoring:${subscriptionId}:${sub.plan}`,
+      external_reference: extRef,
       payer_email: (payerEmail ?? sub.payerEmail).toLowerCase(),
       auto_recurring: {
         frequency: 1,

@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
 
       console.log(`[MP Webhook] preapproval=${preapprovalId} | status=${status} | ref=${external_reference}`)
 
-      // ─── Monitoring subscription: "monitoring:subscriptionId:plan" ───
+      // ─── Monitoring subscription: "monitoring:subscriptionId:plan[:replacesSubId]" ───
       if (parts[0] === 'monitoring') {
         if (parts.length < 3 || !parts[1] || !parts[2]) {
           console.warn('[MP Webhook] Invalid monitoring external_reference:', external_reference)
@@ -81,6 +81,7 @@ export async function POST(req: NextRequest) {
         }
         const subscriptionId = parts[1]
         const plan = parts[2]
+        const replacesSubId = parts[3] || null // Optional: old subscription being replaced
 
         if (status === 'authorized' && subscriptionId) {
           // Idempotency: skip if already provisioned/active
@@ -99,6 +100,12 @@ export async function POST(req: NextRequest) {
               data: { usedCount: { increment: 1 } },
             })
             console.log(`[MP Webhook] Coupon ${currentSub.couponId} usage incremented`)
+          }
+
+          // If this is a plan change, cancel the old subscription first
+          if (replacesSubId) {
+            await cancelOldSubscription(replacesSubId)
+            console.log(`[MP Webhook] Old subscription ${replacesSubId} cancelled (replaced by ${subscriptionId})`)
           }
 
           await prisma.monitoringSubscription.update({
@@ -218,6 +225,51 @@ async function triggerDeprovisioning(subscriptionId: string) {
     console.log(`[MP Webhook] Deprovision tenant ${sub.n8nTenantId}: ${res.status}`)
   } catch (err) {
     console.error('[MP Webhook] Failed to trigger deprovisioning:', err)
+  }
+}
+
+/** Cancel old subscription when a plan change is confirmed */
+async function cancelOldSubscription(oldSubId: string) {
+  const ACCESS = process.env.MP_ACCESS_TOKEN
+  const apiKey = process.env.SCRAPER_API_KEY
+
+  try {
+    const oldSub = await prisma.monitoringSubscription.findUnique({ where: { id: oldSubId } })
+    if (!oldSub || oldSub.status === 'cancelled') return
+
+    // Cancel MP preapproval
+    if (oldSub.preapprovalId && ACCESS) {
+      try {
+        await fetch(`https://api.mercadopago.com/preapproval/${oldSub.preapprovalId}`, {
+          method: 'PUT',
+          headers: { Authorization: `Bearer ${ACCESS}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'cancelled' }),
+        })
+      } catch (err) {
+        console.error(`[MP Webhook] Failed to cancel old MP preapproval ${oldSub.preapprovalId}:`, err)
+      }
+    }
+
+    // Remove tenant from n8n scrapers
+    if (oldSub.n8nTenantId && apiKey) {
+      try {
+        await fetch(`https://n8n.abogadoenquilmes.com/webhook/alj-tenants-remove?apiKey=${apiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tenantId: oldSub.n8nTenantId }),
+        })
+      } catch (err) {
+        console.error(`[MP Webhook] Failed to remove old tenant ${oldSub.n8nTenantId}:`, err)
+      }
+    }
+
+    // Mark as cancelled
+    await prisma.monitoringSubscription.update({
+      where: { id: oldSubId },
+      data: { status: 'cancelled' },
+    })
+  } catch (err) {
+    console.error(`[MP Webhook] Error cancelling old subscription ${oldSubId}:`, err)
   }
 }
 
