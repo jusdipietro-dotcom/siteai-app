@@ -48,6 +48,9 @@ export async function POST(req: NextRequest) {
             data: { status: 'suspended' },
           })
           console.log(`[MP Webhook] Monitoring ${subscriptionId} suspended (${status})`)
+
+          // Trigger deprovisioning — remove tenant from n8n scrapers
+          await triggerDeprovisioning(subscriptionId)
         }
 
         return NextResponse.json({ received: true })
@@ -116,6 +119,36 @@ async function triggerProvisioning(subscriptionId: string) {
     console.error('[MP Webhook] Failed to trigger provisioning:', err)
     // Don't throw — the subscription is already marked as provisioning
     // Manual provisioning can be done within 48hs
+  }
+}
+
+/** Trigger n8n deprovisioning — remove tenant from scraper workflows */
+async function triggerDeprovisioning(subscriptionId: string) {
+  const apiKey = process.env.SCRAPER_API_KEY
+  if (!apiKey) {
+    console.warn('[MP Webhook] SCRAPER_API_KEY not configured — manual deprovisioning required')
+    return
+  }
+
+  try {
+    const sub = await prisma.monitoringSubscription.findUnique({
+      where: { id: subscriptionId },
+    })
+    if (!sub?.n8nTenantId) {
+      console.log(`[MP Webhook] Subscription ${subscriptionId} has no tenantId — skip deprovision`)
+      return
+    }
+
+    const tenantsRemoveUrl = `https://n8n.abogadoenquilmes.com/webhook/alj-tenants-remove?apiKey=${apiKey}`
+    const res = await fetch(tenantsRemoveUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tenantId: sub.n8nTenantId }),
+    })
+
+    console.log(`[MP Webhook] Deprovision tenant ${sub.n8nTenantId}: ${res.status}`)
+  } catch (err) {
+    console.error('[MP Webhook] Failed to trigger deprovisioning:', err)
   }
 }
 
