@@ -2,7 +2,7 @@ import Link from 'next/link'
 
 export const metadata = {
   title: 'Términos de uso',
-  description: 'Términos y condiciones de uso de Automatic IA Lab. Información sobre planes, pagos, responsabilidades del usuario, propiedad intelectual y legislación aplicable en Argentina.',
+  description: 'Términos y condiciones de uso de Automatic IA Lab. Planes, pagos, responsabilidades del usuario y legislación aplicable en Argentina.',
 }
 
 const sections = [
@@ -55,7 +55,7 @@ export default function TermsPage() {
       <header className="bg-white border-b border-surface-100">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 py-4 flex items-center gap-4">
           <Link href="/" className="flex items-center gap-2 group">
-            <img src="/logo.png" alt="Automatic IA Lab" className="w-8 h-8 object-contain rounded-xl" />
+            <img src="/logo.png" alt="Automatic IA Lab" width={32} height={32} className="w-8 h-8 object-contain rounded-xl" />
             <span className="text-lg font-bold text-surface-900">Automatic IA Lab</span>
           </Link>
         </div>
