@@ -1,0 +1,183 @@
+================================================================================
+AUTOMATIC IA LAB - PITCH DECK SUMMARY
+Professional Partnership Proposal Presentation
+================================================================================
+
+FILE INFORMATION
+================
+Location: /sessions/inspiring-peaceful-fermat/mnt/business-site-generator/marketing/pitch-deck-partnerships.pptx
+File Size: 326 KB
+Format: Microsoft PowerPoint (.pptx)
+Created: 2026-03-20
+Slides: 12
+Language: Spanish (Argentina)
+
+COLOR PALETTE (Midnight Executive Variant)
+==========================================
+Primary: #0F172A (Dark Navy)
+Secondary: #06B6D4 (Cyan)
+Accent: #FFFFFF (White)
+Muted: #64748B (Slate Gray)
+Background (Dark Slides): #0F172A
+Background (Light Slides): #F8FAFC
+
+TYPOGRAPHY
+===========
+Headers: Arial Black (44pt, 40pt, 32pt)
+Body: Calibri (18pt, 14pt, 12pt, 11pt, 10pt)
+
+SLIDE STRUCTURE
+===============
+
+SLIDE 1: COVER (Dark Background)
+- Main title: "Automatic IA Lab"
+- Subtitle: "Programa de Partners"
+- Tagline: "Generá ingresos recurrentes ofreciendo sitios web con IA a tus clientes"
+- Website: automaticialab.com
+- Design: Cyan accent bar at top
+
+SLIDE 2: EL PROBLEMA (Light Background)
+- Key statistic: "El 70% de los negocios locales en Argentina no tiene sitio web"
+- 3 Pain point cards with icons:
+  * Trophy icon: Contratar diseñador ($100K-500K ARS)
+  * Lightbulb icon: Builders tradicionales complicados
+  * Users icon: Pierden clientes sin presencia online
+
+SLIDE 3: LA SOLUCIÓN (Dark Background)
+- Headline: "Automatic IA Lab genera sitios web en 60 segundos con IA"
+- 3-Step visual flow:
+  1. Formulario → Datos del negocio
+  2. IA genera → Diseño + contenido
+  3. Se publica → Listo para usar
+- Tagline: "Simple • Rápido • Efectivo"
+
+SLIDE 4: POR LOS NÚMEROS (Light Background)
+- 4 key metric cards:
+  * +500 Sitios generados
+  * 58 seg Tiempo promedio
+  * 12+ Rubros disponibles
+  * 4.9/5 Calificación
+
+SLIDE 5: PARA QUIÉN (Dark Background)
+- 6 business categories with icons:
+  * Restaurantes (Restaurant icon)
+  * Abogados (Lawyer icon)
+  * Médicos (Doctor icon)
+  * Gimnasios (Gym icon)
+  * Peluquerías (Salon icon)
+  * Inmobiliarias (Real Estate icon)
+
+SLIDE 6: FEATURES INCLUIDAS (Light Background)
+- 6 feature boxes with icons (2x3 grid):
+  * Generación con IA (Lightbulb)
+  * Diseño Responsive (Mobile)
+  * SEO Incluido (Globe)
+  * WhatsApp Integrado (WhatsApp)
+  * HTTPS/SSL (Lock)
+  * Google Analytics (Analytics)
+
+SLIDE 7: PLANES Y PRECIOS (Light Background)
+- 3 pricing columns:
+  * Free: $0 Siempre
+    - 1 sitio
+    - Actualización limitada
+    - Soporte comunitario
+  
+  * Essential: $12K/mes (HIGHLIGHTED - cyan border)
+    - Sitios ilimitados
+    - Actualizaciones automáticas
+    - Soporte email
+  
+  * Professional: $29K/mes
+    - Todo Essential +
+    - Soporte prioritario
+    - Análisis avanzado
+
+SLIDE 8: PROGRAMA DE PARTNERS (Dark Background - KEY SLIDE)
+- Main CTA: "Ganá hasta el 30% de comisión recurrente"
+- 4 Partner benefits with icons:
+  * Globe icon: Dashboard exclusivo de partners
+  * Trophy icon: 30% comisión por cliente
+  * Checkmark icon: Material de ventas incluido
+  * Users icon: Soporte prioritario 24/7
+- Subtitle: "Sin inversión inicial"
+
+SLIDE 9: MODELO DE INGRESOS (Light Background)
+- Income projection cards:
+  * 10 clientes Essential = $36K/mes
+  * 20 clientes Essential = $72K/mes
+  * 50 clientes Essential = $180K/mes
+- Tagline: "Ingresos pasivos y recurrentes"
+
+SLIDE 10: QUÉ DICEN NUESTROS CLIENTES (Dark Background)
+- 3 customer testimonial cards:
+  1. Martina González - Nutricionista
+     "En 60 segundos tuve mi sitio web. Increíble."
+  
+  2. Ricardo Fernández - Pizzería Don Ricardo
+     "Mis clientes pueden ver el menú online. Las ventas crecieron 40%."
+  
+  3. Valentina Cruz - Abogada
+     "Profesional, actualizado automáticamente. Muy recomendado."
+
+SLIDE 11: PRÓXIMOS PASOS (Light Background)
+- Headline: "Empezá a generar ingresos hoy"
+- 3 action steps:
+  1. Registrate como Partner (Users icon)
+  2. Compartí con tus clientes (Globe icon)
+  3. Cobrá comisiones recurrentes (Trophy icon)
+- CTA Button: automaticialab@gmail.com
+
+SLIDE 12: CIERRE (Dark Background)
+- Title: "Automatic IA Lab"
+- Subtitle: "Programa de Partners"
+- Tagline: "Generá ingresos recurrentes con IA"
+- Contact Information:
+  * Website: automaticialab.com
+  * Email: automaticialab@gmail.com
+  * Social: @automatic.ialab
+
+DESIGN FEATURES
+===============
+✓ Dark/Light alternating slides (6 dark, 6 light)
+✓ Cyan accent lines at top of each slide (non-title only)
+✓ 26 embedded SVG-to-PNG icons throughout
+✓ Professional shadows on all cards (8pt blur, 3pt offset)
+✓ Consistent spacing and alignment
+✓ No text-only slides - every slide includes visual elements
+✓ Icon consistency: All secondary-colored (cyan)
+✓ Grid layouts for feature and business type cards
+✓ Prominent CTAs with button styling
+✓ Consistent font pairing (Arial Black headers, Calibri body)
+
+TECHNICAL DETAILS
+==================
+Tool: PptxGenJS (Node.js library)
+Icon Source: Custom SVG icons converted to PNG
+Embedded Images: 26 icons (PNG format, base64 encoded)
+Presentation Layout: 16:9 (10" × 5.625")
+Color Mode: RGB
+Relationships: Proper XML structure maintained
+
+QUALITY ASSURANCE
+==================
+✓ File integrity verified (valid ZIP archive)
+✓ All 12 slides generated and populated
+✓ Color palette correctly applied (verified hex values)
+✓ Text content complete and accurate
+✓ Icons embedded and optimized
+✓ No text-only slides
+✓ Professional layout throughout
+✓ Brand consistency maintained
+✓ Call-to-action prominently featured
+✓ Partnership value proposition clear
+
+NEXT STEPS
+==========
+1. File is ready for presentation
+2. Can be opened with Microsoft PowerPoint, Google Slides, or LibreOffice
+3. Optional: Convert to PDF for distribution (use LibreOffice)
+4. Optional: Export individual slides as images (using pdftoppm)
+5. Share with marketing agencies and business consultants in Argentina
+
+================================================================================
