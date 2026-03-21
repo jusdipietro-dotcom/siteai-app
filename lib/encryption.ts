@@ -47,20 +47,69 @@ export function decrypt(data: EncryptedData): string {
   return decrypted
 }
 
-/** Encrypt both username and password, returning fields ready for DB storage */
+/** Encrypt portal credentials (supports separate PJN/SCBA), returning fields ready for DB storage */
+export function encryptPortalCredentials(creds: {
+  pjnUser?: string
+  pjnPass?: string
+  scbaUser?: string
+  scbaPass?: string
+}) {
+  const users: Record<string, string> = {}
+  const passes: Record<string, string> = {}
+
+  if (creds.pjnUser) users.pjn = creds.pjnUser
+  if (creds.scbaUser) users.scba = creds.scbaUser
+  if (creds.pjnPass) passes.pjn = creds.pjnPass
+  if (creds.scbaPass) passes.scba = creds.scbaPass
+
+  const userEnc = encrypt(JSON.stringify(users))
+  const passEnc = encrypt(JSON.stringify(passes))
+
+  return {
+    credentialUser: userEnc.encrypted,
+    credentialPass: passEnc.encrypted,
+    credentialIv: `${userEnc.iv}:${passEnc.iv}`,
+    credentialTag: `${userEnc.tag}:${passEnc.tag}`,
+  }
+}
+
+/** Legacy: encrypt single username/password pair */
 export function encryptCredentials(username: string, password: string) {
   const userEnc = encrypt(username)
   const passEnc = encrypt(password)
   return {
     credentialUser: userEnc.encrypted,
     credentialPass: passEnc.encrypted,
-    // Share IV and tag for both (store separately for each)
     credentialIv: `${userEnc.iv}:${passEnc.iv}`,
     credentialTag: `${userEnc.tag}:${passEnc.tag}`,
   }
 }
 
-/** Decrypt credentials from DB fields */
+/** Decrypt portal credentials from DB fields (returns per-portal creds) */
+export function decryptPortalCredentials(fields: {
+  credentialUser: string
+  credentialPass: string
+  credentialIv: string
+  credentialTag: string
+}): { pjnUser?: string; pjnPass?: string; scbaUser?: string; scbaPass?: string } {
+  const [userIv, passIv] = fields.credentialIv.split(':')
+  const [userTag, passTag] = fields.credentialTag.split(':')
+
+  const usersRaw = decrypt({ encrypted: fields.credentialUser, iv: userIv, tag: userTag })
+  const passesRaw = decrypt({ encrypted: fields.credentialPass, iv: passIv, tag: passTag })
+
+  const users = JSON.parse(usersRaw) as Record<string, string>
+  const passes = JSON.parse(passesRaw) as Record<string, string>
+
+  return {
+    pjnUser: users.pjn,
+    pjnPass: passes.pjn,
+    scbaUser: users.scba,
+    scbaPass: passes.scba,
+  }
+}
+
+/** Legacy: decrypt single credential pair */
 export function decryptCredentials(fields: {
   credentialUser: string
   credentialPass: string

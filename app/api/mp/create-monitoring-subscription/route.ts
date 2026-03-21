@@ -14,7 +14,8 @@ const MONITORING_PLANS: Record<string, { monthly: number; title: string }> = {
 export async function POST(req: NextRequest) {
   try {
     if (!ACCESS_TOKEN) {
-      return NextResponse.json({ error: 'Pago no configurado' }, { status: 503 })
+      console.error('[MP Monitoring] MP_ACCESS_TOKEN no está configurado')
+      return NextResponse.json({ error: 'El sistema de pago no está configurado. Contactá soporte.' }, { status: 503 })
     }
 
     const session = await getServerSession(authOptions)

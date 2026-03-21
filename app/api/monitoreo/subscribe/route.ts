@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { encryptCredentials } from '@/lib/encryption'
+import { encryptPortalCredentials } from '@/lib/encryption'
 
 const MONITORING_PLANS: Record<string, { monthly: number; title: string; maxCuils: number }> = {
   basico:       { monthly: 19000, title: 'Monitoreo Judicial Básico',       maxCuils: 1 },
@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json()
-    const { plan, portal, cuil, portalUser, portalPass, payerEmail, couponCode } = body
+    const { plan, portal, cuil, pjnUser, pjnPass, scbaUser, scbaPass, payerEmail, couponCode } = body
 
     // Validate plan
     const planConfig = MONITORING_PLANS[plan]
@@ -33,8 +33,12 @@ export async function POST(req: NextRequest) {
     if (!cuil || !/^\d{2}-?\d{7,8}-?\d$/.test(cuil.replace(/\s/g, ''))) {
       return NextResponse.json({ error: 'CUIT inválido' }, { status: 400 })
     }
-    if (!portalUser || !portalPass) {
-      return NextResponse.json({ error: 'Las credenciales del portal son obligatorias' }, { status: 400 })
+    // Validate per-portal credentials
+    if ((portal === 'PJN' || portal === 'AMBOS') && (!pjnUser || !pjnPass)) {
+      return NextResponse.json({ error: 'Las credenciales de PJN son obligatorias' }, { status: 400 })
+    }
+    if ((portal === 'SCBA' || portal === 'AMBOS') && (!scbaUser || !scbaPass)) {
+      return NextResponse.json({ error: 'Las credenciales de SCBA son obligatorias' }, { status: 400 })
     }
     if (!payerEmail || !payerEmail.includes('@')) {
       return NextResponse.json({ error: 'Email de facturación inválido' }, { status: 400 })
@@ -75,8 +79,13 @@ export async function POST(req: NextRequest) {
       discountApplied = coupon.discount
     }
 
-    // Encrypt credentials
-    const encrypted = encryptCredentials(portalUser, portalPass)
+    // Encrypt credentials (per-portal)
+    const encrypted = encryptPortalCredentials({
+      pjnUser: (portal === 'PJN' || portal === 'AMBOS') ? pjnUser : undefined,
+      pjnPass: (portal === 'PJN' || portal === 'AMBOS') ? pjnPass : undefined,
+      scbaUser: (portal === 'SCBA' || portal === 'AMBOS') ? scbaUser : undefined,
+      scbaPass: (portal === 'SCBA' || portal === 'AMBOS') ? scbaPass : undefined,
+    })
 
     // Create subscription
     const subscription = await prisma.monitoringSubscription.create({

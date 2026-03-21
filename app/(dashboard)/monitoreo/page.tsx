@@ -59,8 +59,10 @@ export default function MonitoreoPage() {
   const [selectedPlan, setSelectedPlan] = useState('')
   const [selectedPortal, setSelectedPortal] = useState('')
   const [cuil, setCuil] = useState('')
-  const [portalUser, setPortalUser] = useState('')
-  const [portalPass, setPortalPass] = useState('')
+  const [pjnUser, setPjnUser] = useState('')
+  const [pjnPass, setPjnPass] = useState('')
+  const [scbaUser, setScbaUser] = useState('')
+  const [scbaPass, setScbaPass] = useState('')
   const [couponCode, setCouponCode] = useState('')
   const [couponValid, setCouponValid] = useState<{ valid: boolean; discount: number } | null>(null)
   const [loading, setLoading] = useState(false)
@@ -110,8 +112,10 @@ export default function MonitoreoPage() {
           plan: selectedPlan,
           portal: selectedPortal,
           cuil,
-          portalUser,
-          portalPass,
+          pjnUser: (selectedPortal === 'PJN' || selectedPortal === 'AMBOS') ? pjnUser : undefined,
+          pjnPass: (selectedPortal === 'PJN' || selectedPortal === 'AMBOS') ? pjnPass : undefined,
+          scbaUser: (selectedPortal === 'SCBA' || selectedPortal === 'AMBOS') ? scbaUser : undefined,
+          scbaPass: (selectedPortal === 'SCBA' || selectedPortal === 'AMBOS') ? scbaPass : undefined,
           payerEmail: session?.user?.email,
           couponCode: couponValid?.valid ? couponCode : undefined,
         }),
@@ -309,7 +313,7 @@ export default function MonitoreoPage() {
                   </p>
                 </div>
 
-                <div className="space-y-4 max-w-md">
+                <div className="space-y-5 max-w-lg">
                   <div>
                     <label className="block text-sm font-medium text-surface-700 mb-1.5">CUIT a monitorear</label>
                     <input
@@ -320,28 +324,66 @@ export default function MonitoreoPage() {
                       className="w-full h-10 px-3 rounded-xl border border-surface-200 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none"
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-surface-700 mb-1.5">
-                      Usuario del portal {selectedPortal === 'AMBOS' ? '(PJN/SCBA)' : `(${selectedPortal})`}
-                    </label>
-                    <input
-                      type="text"
-                      value={portalUser}
-                      onChange={e => setPortalUser(e.target.value)}
-                      placeholder="usuario@notificaciones..."
-                      className="w-full h-10 px-3 rounded-xl border border-surface-200 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-surface-700 mb-1.5">Contraseña del portal</label>
-                    <input
-                      type="password"
-                      value={portalPass}
-                      onChange={e => setPortalPass(e.target.value)}
-                      placeholder="Contraseña"
-                      className="w-full h-10 px-3 rounded-xl border border-surface-200 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none"
-                    />
-                  </div>
+
+                  {/* PJN Credentials */}
+                  {(selectedPortal === 'PJN' || selectedPortal === 'AMBOS') && (
+                    <div className="rounded-2xl border border-surface-100 p-4 space-y-3">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-xs font-bold uppercase tracking-wider text-violet-600 bg-violet-100 px-2 py-0.5 rounded-full">PJN</span>
+                        <span className="text-xs text-surface-400">Poder Judicial de la Nación</span>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-surface-700 mb-1.5">Usuario PJN</label>
+                        <input
+                          type="text"
+                          value={pjnUser}
+                          onChange={e => setPjnUser(e.target.value)}
+                          placeholder="CUIT sin guiones (ej: 20345678901)"
+                          className="w-full h-10 px-3 rounded-xl border border-surface-200 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-surface-700 mb-1.5">Contraseña PJN</label>
+                        <input
+                          type="password"
+                          value={pjnPass}
+                          onChange={e => setPjnPass(e.target.value)}
+                          placeholder="Contraseña del portal PJN"
+                          className="w-full h-10 px-3 rounded-xl border border-surface-200 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* SCBA Credentials */}
+                  {(selectedPortal === 'SCBA' || selectedPortal === 'AMBOS') && (
+                    <div className="rounded-2xl border border-surface-100 p-4 space-y-3">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-xs font-bold uppercase tracking-wider text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">SCBA</span>
+                        <span className="text-xs text-surface-400">Suprema Corte de Buenos Aires</span>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-surface-700 mb-1.5">Usuario SCBA</label>
+                        <input
+                          type="text"
+                          value={scbaUser}
+                          onChange={e => setScbaUser(e.target.value)}
+                          placeholder="CUIT@notificaciones.scba.gov.ar"
+                          className="w-full h-10 px-3 rounded-xl border border-surface-200 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-surface-700 mb-1.5">Contraseña SCBA</label>
+                        <input
+                          type="password"
+                          value={scbaPass}
+                          onChange={e => setScbaPass(e.target.value)}
+                          placeholder="Contraseña del portal SCBA"
+                          className="w-full h-10 px-3 rounded-xl border border-surface-200 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none"
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex gap-3 mt-6">
@@ -350,7 +392,11 @@ export default function MonitoreoPage() {
                   </Button>
                   <Button
                     variant="gradient"
-                    disabled={!cuil || !portalUser || !portalPass}
+                    disabled={
+                      !cuil ||
+                      ((selectedPortal === 'PJN' || selectedPortal === 'AMBOS') && (!pjnUser || !pjnPass)) ||
+                      ((selectedPortal === 'SCBA' || selectedPortal === 'AMBOS') && (!scbaUser || !scbaPass))
+                    }
                     onClick={() => setStep('coupon')}
                     className="gap-2"
                   >
