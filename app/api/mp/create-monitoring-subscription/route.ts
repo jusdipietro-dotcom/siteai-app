@@ -57,6 +57,8 @@ export async function POST(req: NextRequest) {
     const startDate = new Date(Date.now() + 120_000).toISOString() // 2 min buffer
 
     // external_reference format: "monitoring:subscriptionId:plan"
+    // IMPORTANT: MP preapproval webhooks must be configured in the MP Developer Dashboard
+    // URL: https://automaticialab.com/api/mp/webhook | Events: preapproval
     const body = {
       reason: planConfig.title,
       external_reference: `monitoring:${subscriptionId}:${sub.plan}`,

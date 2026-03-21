@@ -50,8 +50,11 @@ type Subscription = {
   plan: string
   portal: string
   cuil: string
+  notificationEmail: string
+  payerEmail: string
   provisionedAt: string | null
   createdAt: string
+  updatedAt: string
   coupon?: { code: string; discount: number } | null
 }
 
@@ -91,14 +94,18 @@ function MonitoreoPage() {
     }
   }, [session?.user?.email])
 
-  // Fetch existing subscriptions
-  useEffect(() => {
+  // Fetch existing subscriptions (refetch when returning from MP payment)
+  const fetchSubscriptions = () => {
     fetch('/api/monitoreo/status')
       .then(r => r.json())
       .then(data => setSubscriptions(data.subscriptions ?? []))
-      .catch(() => {})
+      .catch(() => toast.error('Error al cargar suscripciones'))
       .finally(() => setLoadingSubs(false))
-  }, [])
+  }
+  useEffect(() => { fetchSubscriptions() }, [])
+  useEffect(() => {
+    if (mpReturn) fetchSubscriptions()
+  }, [mpReturn])
 
   const validateCoupon = async () => {
     if (!couponCode.trim()) return
@@ -198,28 +205,81 @@ function MonitoreoPage() {
       {!loadingSubs && subscriptions.length > 0 && (
         <div className="mb-10">
           <h2 className="text-lg font-semibold text-surface-800 mb-4">Mis suscripciones</h2>
-          <div className="space-y-3">
+          <div className="space-y-4">
             {subscriptions.map(sub => {
               const st = statusLabel[sub.status] ?? statusLabel.cancelled
+              const isActive = sub.status === 'active' || sub.status === 'provisioning'
               return (
-                <div key={sub.id} className="flex items-center justify-between p-4 rounded-2xl border border-surface-100 bg-white">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-violet-100 flex items-center justify-center">
-                      <Scale className="w-5 h-5 text-violet-600" />
+                <div key={sub.id} className="rounded-2xl border border-surface-100 bg-white overflow-hidden">
+                  <div className="flex items-center justify-between p-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-violet-100 flex items-center justify-center">
+                        <Scale className="w-5 h-5 text-violet-600" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-surface-900 text-sm">
+                          {sub.portal} — CUIT {sub.cuil}
+                        </p>
+                        <p className="text-xs text-surface-400">
+                          Plan {sub.plan} — desde {new Date(sub.createdAt).toLocaleDateString('es-AR')}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-medium text-surface-900 text-sm">
-                        {sub.portal} — CUIT {sub.cuil}
-                      </p>
-                      <p className="text-xs text-surface-400">
-                        Plan {sub.plan} — {new Date(sub.createdAt).toLocaleDateString('es-AR')}
-                        {sub.coupon && ` — Cupón ${sub.coupon.code} (${sub.coupon.discount}%)`}
-                      </p>
-                    </div>
+                    <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${st.color}`}>
+                      {st.text}
+                    </span>
                   </div>
-                  <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${st.color}`}>
-                    {st.text}
-                  </span>
+                  <div className="border-t border-surface-50 px-4 py-3 bg-surface-50/50 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                    <div className="flex items-center gap-1.5 text-surface-500">
+                      <Mail className="w-3.5 h-3.5" />
+                      <span>Alertas a: <span className="text-surface-700 font-medium">{sub.notificationEmail}</span></span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-surface-500">
+                      <FileText className="w-3.5 h-3.5" />
+                      <span>Facturación: <span className="text-surface-700 font-medium">{sub.payerEmail}</span></span>
+                    </div>
+                    {sub.coupon && (
+                      <div className="flex items-center gap-1.5 text-surface-500">
+                        <Tag className="w-3.5 h-3.5" />
+                        <span>Cupón {sub.coupon.code} ({sub.coupon.discount}% off)</span>
+                      </div>
+                    )}
+                    {sub.provisionedAt && (
+                      <div className="flex items-center gap-1.5 text-surface-500">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                        <span>Activo desde {new Date(sub.provisionedAt).toLocaleDateString('es-AR')}</span>
+                      </div>
+                    )}
+                  </div>
+                  {isActive && (
+                    <div className="border-t border-surface-100 px-4 py-2 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (!confirm('¿Seguro que querés cancelar esta suscripción? Se desactivará el monitoreo para este CUIT.')) return
+                          try {
+                            const res = await fetch(`/api/monitoreo/cancel`, {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ subscriptionId: sub.id }),
+                            })
+                            const data = await res.json()
+                            if (res.ok) {
+                              toast.success('Suscripción cancelada')
+                              fetchSubscriptions()
+                            } else {
+                              toast.error(data.error ?? 'Error al cancelar')
+                            }
+                          } catch {
+                            toast.error('Error al cancelar la suscripción')
+                          }
+                        }}
+                        className="text-xs text-red-500 hover:text-red-700 font-medium transition-colors"
+                      >
+                        Cancelar suscripción
+                      </button>
+                    </div>
+                  )}
                 </div>
               )
             })}
@@ -599,7 +659,7 @@ function MonitoreoPage() {
                   </div>
                   <Button
                     variant="outline"
-                    onClick={() => { setStep('plan'); window.history.replaceState({}, '', '/monitoreo') }}
+                    onClick={() => { setStep('plan'); fetchSubscriptions(); window.history.replaceState({}, '', '/monitoreo') }}
                     className="gap-2"
                   >
                     Volver al panel
