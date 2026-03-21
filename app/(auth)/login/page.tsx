@@ -1,7 +1,7 @@
 'use client'
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -20,8 +20,11 @@ const loginSchema = z.object({
 
 type LoginData = z.infer<typeof loginSchema>
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const next = searchParams.get('next')
+  const redirectTo = next === 'monitoreo' ? '/monitoreo' : '/dashboard'
   const [showPassword, setShowPassword] = useState(false)
 
   const {
@@ -43,12 +46,12 @@ export default function LoginPage() {
     }
 
     toast.success('¡Bienvenido de vuelta!')
-    router.push('/dashboard')
+    router.push(redirectTo)
     router.refresh()
   }
 
   const handleGoogleLogin = async () => {
-    await signIn('google', { callbackUrl: '/dashboard' })
+    await signIn('google', { callbackUrl: redirectTo })
   }
 
   return (
@@ -62,7 +65,7 @@ export default function LoginPage() {
         <h1 className="text-2xl font-extrabold text-white mb-1.5">Iniciá sesión</h1>
         <p className="text-sm text-white/50">
           ¿No tenés cuenta?{' '}
-          <Link href="/register" className="text-brand-400 hover:text-brand-300 font-medium transition-colors">
+          <Link href={next ? `/register?next=${next}` : '/register'} className="text-brand-400 hover:text-brand-300 font-medium transition-colors">
             Registrate gratis
           </Link>
         </p>
@@ -166,5 +169,13 @@ export default function LoginPage() {
         <Link href="/privacy" className="underline hover:text-white/40 transition-colors">Política de privacidad</Link>
       </p>
     </motion.div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   )
 }

@@ -35,6 +35,8 @@ function RegisterForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const plan = searchParams.get('plan') ?? 'free'
+  const next = searchParams.get('next')
+  const redirectTo = next === 'monitoreo' ? '/monitoreo' : '/wizard'
   const [showPassword, setShowPassword] = useState(false)
   const [passwordValue, setPasswordValue] = useState('')
 
@@ -69,13 +71,13 @@ function RegisterForm() {
       return
     }
 
-    toast.success('¡Cuenta creada! Empecemos con tu sitio.')
-    router.push('/wizard')
+    toast.success(next === 'monitoreo' ? '¡Cuenta creada! Configurá tu monitoreo.' : '¡Cuenta creada! Empecemos con tu sitio.')
+    router.push(redirectTo)
     router.refresh()
   }
 
   const handleGoogleRegister = async () => {
-    await signIn('google', { callbackUrl: '/wizard' })
+    await signIn('google', { callbackUrl: redirectTo })
   }
 
   return (
@@ -94,7 +96,7 @@ function RegisterForm() {
         <h1 className="text-2xl font-extrabold text-white mb-1.5">Crear cuenta gratis</h1>
         <p className="text-sm text-white/50">
           ¿Ya tenés cuenta?{' '}
-          <Link href="/login" className="text-brand-400 hover:text-brand-300 font-medium transition-colors">
+          <Link href={next ? `/login?next=${next}` : '/login'} className="text-brand-400 hover:text-brand-300 font-medium transition-colors">
             Iniciá sesión
           </Link>
         </p>
