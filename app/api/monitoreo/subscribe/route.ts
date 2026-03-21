@@ -71,6 +71,20 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // Enforce max CUITs per plan
+    const activeSubs = await prisma.monitoringSubscription.count({
+      where: {
+        userId: session.user.id,
+        status: { in: ['active', 'provisioning', 'pending_payment'] },
+      },
+    })
+    if (activeSubs >= planConfig.maxCuils) {
+      return NextResponse.json(
+        { error: `El plan ${planConfig.title} permite hasta ${planConfig.maxCuils} CUIT${planConfig.maxCuils > 1 ? 's' : ''}. Podés cambiar a un plan superior para agregar más.` },
+        { status: 400 }
+      )
+    }
+
     // Auto-cancel stale pending_payment records for the same CUIT
     await prisma.monitoringSubscription.updateMany({
       where: {

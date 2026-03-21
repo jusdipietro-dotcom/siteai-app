@@ -23,9 +23,26 @@ export default function ForgotPasswordPage() {
     resolver: zodResolver(schema),
   })
 
+  const [error, setError] = useState('')
+
   const onSubmit = async (data: FormData) => {
-    setSentEmail(data.email)
-    setSent(true)
+    setError('')
+    try {
+      const res = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: data.email }),
+      })
+      if (!res.ok) {
+        const d = await res.json()
+        setError(d.error ?? 'Error al enviar el email')
+        return
+      }
+      setSentEmail(data.email)
+      setSent(true)
+    } catch {
+      setError('Error de conexión. Intentá de nuevo.')
+    }
   }
 
   return (
@@ -69,6 +86,8 @@ export default function ForgotPasswordPage() {
                 {errors.email && <p className="text-xs text-danger-400">{errors.email.message}</p>}
               </div>
 
+              {error && <p className="text-xs text-danger-400 text-center">{error}</p>}
+
               <Button type="submit" variant="gradient" size="lg" loading={isSubmitting} className="w-full shadow-brand" rightIcon={<ArrowRight className="h-4 w-4" />}>
                 Enviar link de recuperación
               </Button>
@@ -86,19 +105,16 @@ export default function ForgotPasswordPage() {
             </motion.div>
 
             <div>
-              <h2 className="text-xl font-extrabold text-white mb-2">Contactá soporte</h2>
+              <h2 className="text-xl font-extrabold text-white mb-2">Revisá tu email</h2>
               <p className="text-sm text-white/50 leading-relaxed">
-                Escribinos a{' '}
-                <a href="mailto:automaticialab@gmail.com" className="text-brand-400 hover:text-brand-300 font-medium">
-                  automaticialab@gmail.com
-                </a>{' '}
-                desde <span className="text-white/80 font-medium">{sentEmail}</span> y te resetamos la contraseña en minutos.
+                Si existe una cuenta con <span className="text-white/80 font-medium">{sentEmail}</span>,
+                te enviamos un link para restablecer tu contraseña.
               </p>
             </div>
 
             <div className="glass-dark rounded-xl p-4 text-sm text-white/40 text-left space-y-1">
-              <p>• Respondemos en menos de 24 horas</p>
-              <p>• También podés contactarnos por WhatsApp</p>
+              <p>• Revisá tu bandeja de spam si no lo ves</p>
+              <p>• El link expira en 1 hora</p>
             </div>
 
             <div className="flex flex-col gap-3">
