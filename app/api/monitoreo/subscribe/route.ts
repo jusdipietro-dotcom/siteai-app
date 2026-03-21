@@ -48,11 +48,12 @@ export async function POST(req: NextRequest) {
     }
 
     // Check existing active subscription for same CUIT
+    const normalizedCuil = cuil.replace(/[-\s]/g, '')
     const existing = await prisma.monitoringSubscription.findFirst({
       where: {
         userId: session.user.id,
-        cuil: cuil.replace(/[-\s]/g, ''),
-        status: { in: ['active', 'provisioning', 'pending_payment'] },
+        cuil: normalizedCuil,
+        status: { in: ['active', 'provisioning'] },
       },
     })
     if (existing) {
@@ -61,6 +62,16 @@ export async function POST(req: NextRequest) {
         { status: 409 }
       )
     }
+
+    // Auto-cancel stale pending_payment records for the same CUIT
+    await prisma.monitoringSubscription.updateMany({
+      where: {
+        userId: session.user.id,
+        cuil: normalizedCuil,
+        status: 'pending_payment',
+      },
+      data: { status: 'cancelled' },
+    })
 
     // Validate coupon if provided
     let couponId: string | null = null
@@ -96,7 +107,7 @@ export async function POST(req: NextRequest) {
         userId: session.user.id,
         plan,
         portal,
-        cuil: cuil.replace(/[-\s]/g, ''),
+        cuil: normalizedCuil,
         ...encrypted,
         notificationEmail: notificationEmail.toLowerCase(),
         payerEmail: payerEmail.toLowerCase(),
@@ -105,13 +116,9 @@ export async function POST(req: NextRequest) {
       },
     })
 
-    // If coupon was used, increment usage
-    if (couponId) {
-      await prisma.coupon.update({
-        where: { id: couponId },
-        data: { usedCount: { increment: 1 } },
-      })
-    }
+    // NOTE: Coupon usedCount is incremented in the MP webhook handler
+    // AFTER payment is confirmed, not here at subscription creation time.
+    // This prevents abandoned checkouts from consuming coupon uses.
 
     // Calculate final price
     const finalPrice = Math.round(planConfig.monthly * (1 - discountApplied / 100))

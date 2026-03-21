@@ -40,6 +40,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Esta suscripción ya fue procesada' }, { status: 400 })
     }
 
+    // Idempotency: if a preapproval already exists, don't create another
+    if (sub.preapprovalId) {
+      console.log(`[MP Monitoring] Subscription ${subscriptionId} already has preapproval ${sub.preapprovalId} — skipping`)
+      return NextResponse.json({ error: 'Ya se generó un link de pago para esta suscripción. Refrescá la página.' }, { status: 409 })
+    }
+
     const planConfig = MONITORING_PLANS[sub.plan]
     if (!planConfig) {
       return NextResponse.json({ error: 'Plan inválido' }, { status: 400 })

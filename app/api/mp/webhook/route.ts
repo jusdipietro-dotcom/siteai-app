@@ -1,14 +1,57 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createHmac } from 'crypto'
 import { prisma } from '@/lib/prisma'
 
 const ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN!
-const N8N_API_URL = process.env.N8N_API_URL
-const N8N_API_KEY = process.env.N8N_API_KEY
+const MP_WEBHOOK_SECRET = process.env.MP_WEBHOOK_SECRET
+
+/**
+ * Verify MercadoPago webhook signature (HMAC-SHA256).
+ * Header x-signature: "ts=...,v1=..."
+ * Data template: "id:{data.id};request-id:{x-request-id};ts:{ts};"
+ */
+function verifyMPSignature(req: NextRequest, body: Record<string, unknown>): boolean {
+  if (!MP_WEBHOOK_SECRET) {
+    console.warn('[MP Webhook] MP_WEBHOOK_SECRET not configured — skipping signature verification')
+    return true // Allow if secret not configured (backward compat)
+  }
+
+  const xSignature = req.headers.get('x-signature')
+  const xRequestId = req.headers.get('x-request-id')
+  if (!xSignature || !xRequestId) {
+    console.warn('[MP Webhook] Missing x-signature or x-request-id headers')
+    return false
+  }
+
+  // Parse ts and v1 from "ts=123456,v1=abcdef..."
+  const parts = Object.fromEntries(
+    xSignature.split(',').map(p => {
+      const [k, ...v] = p.trim().split('=')
+      return [k, v.join('=')]
+    })
+  )
+  const ts = parts['ts']
+  const v1 = parts['v1']
+  if (!ts || !v1) return false
+
+  // Build the manifest string per MP docs
+  const dataId = (body.data as Record<string, unknown>)?.id ?? ''
+  const manifest = `id:${dataId};request-id:${xRequestId};ts:${ts};`
+  const hmac = createHmac('sha256', MP_WEBHOOK_SECRET).update(manifest).digest('hex')
+
+  return hmac === v1
+}
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
     console.log('[MP Webhook] Received:', JSON.stringify(body))
+
+    // Verify webhook signature
+    if (!verifyMPSignature(req, body)) {
+      console.error('[MP Webhook] Invalid signature — rejecting request')
+      return NextResponse.json({ error: 'Invalid signature' }, { status: 403 })
+    }
 
     if (body.type === 'preapproval' && body.data?.id) {
       const res = await fetch(`https://api.mercadopago.com/preapproval/${body.data.id}`, {
@@ -32,6 +75,24 @@ export async function POST(req: NextRequest) {
         const plan = parts[2]
 
         if (status === 'authorized' && subscriptionId) {
+          // Idempotency: skip if already provisioned/active
+          const currentSub = await prisma.monitoringSubscription.findUnique({
+            where: { id: subscriptionId },
+          })
+          if (currentSub && ['active', 'provisioning'].includes(currentSub.status)) {
+            console.log(`[MP Webhook] Monitoring ${subscriptionId} already ${currentSub.status} — skipping`)
+            return NextResponse.json({ received: true })
+          }
+
+          // Increment coupon usage now that payment is confirmed
+          if (currentSub?.couponId) {
+            await prisma.coupon.update({
+              where: { id: currentSub.couponId },
+              data: { usedCount: { increment: 1 } },
+            })
+            console.log(`[MP Webhook] Coupon ${currentSub.couponId} usage incremented`)
+          }
+
           await prisma.monitoringSubscription.update({
             where: { id: subscriptionId },
             data: { status: 'provisioning', preapprovalId },

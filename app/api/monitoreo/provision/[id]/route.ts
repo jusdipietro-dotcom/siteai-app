@@ -32,6 +32,11 @@ export async function GET(
       return NextResponse.json({ error: 'Subscription not found' }, { status: 404 })
     }
 
+    // Only return credentials for subscriptions being provisioned
+    if (!['provisioning', 'active'].includes(sub.status)) {
+      return NextResponse.json({ error: `Cannot provision subscription with status: ${sub.status}` }, { status: 403 })
+    }
+
     // Decrypt portal credentials
     const creds = decryptPortalCredentials({
       credentialUser: sub.credentialUser,
@@ -93,6 +98,9 @@ export async function PATCH(
     if (action === 'activate') {
       if (!n8nTenantId) {
         return NextResponse.json({ error: 'n8nTenantId required for activation' }, { status: 400 })
+      }
+      if (sub.status !== 'provisioning') {
+        return NextResponse.json({ error: `Cannot activate subscription with status: ${sub.status}` }, { status: 400 })
       }
 
       await prisma.monitoringSubscription.update({

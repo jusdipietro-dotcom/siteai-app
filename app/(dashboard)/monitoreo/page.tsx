@@ -163,7 +163,7 @@ function MonitoreoPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           subscriptionId: subData.subscriptionId,
-          payerEmail: session?.user?.email,
+          payerEmail: payerEmail || session?.user?.email,
         }),
       })
       const mpData = await mpRes.json()
