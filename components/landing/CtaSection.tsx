@@ -1,7 +1,7 @@
 'use client'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { ArrowRight, Zap } from 'lucide-react'
+import { ArrowRight, Zap, Scale, MessageSquare } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 export function CtaSection() {
@@ -16,14 +16,15 @@ export function CtaSection() {
         >
           <div className="inline-flex items-center gap-2 bg-brand-500/15 border border-brand-500/30 rounded-full px-4 py-2 text-sm font-medium text-brand-300 mb-8">
             <Zap className="w-3.5 h-3.5" />
-            Sin tarjeta de crédito · Plan gratuito disponible
+            Sin tarjeta de crédito para empezar
           </div>
           <h2 className="text-4xl sm:text-5xl font-extrabold text-white mb-6 leading-tight">
-            Tu negocio merece estar en internet.
-            <span className="block text-brand-400">Empezá hoy.</span>
+            Automatizá lo que te quita tiempo.
+            <span className="block text-brand-400">Enfocate en lo que importa.</span>
           </h2>
           <p className="text-lg text-surface-400 mb-10">
-            Creá tu primer sitio en minutos. Sin código, sin diseñadores, sin complicaciones.
+            Ya sea tu sitio web, el seguimiento de causas judiciales o procesos de tu negocio,
+            tenemos la solución. Empezá hoy.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/register">
@@ -33,9 +34,10 @@ export function CtaSection() {
                 <ArrowRight className="w-4 h-4" />
               </Button>
             </Link>
-            <Link href="/dashboard">
+            <Link href="https://wa.me/5491171311465?text=Hola,%20quiero%20información%20sobre%20los%20productos">
               <Button size="xl" variant="outline" className="gap-2 w-full sm:w-auto border-surface-700 text-surface-300 hover:bg-surface-800 hover:text-white">
-                Ver demo en vivo
+                <MessageSquare className="w-5 h-5" />
+                Hablemos por WhatsApp
               </Button>
             </Link>
           </div>

@@ -1,18 +1,17 @@
 import Link from 'next/link'
 
 const links: Record<string, { label: string; href: string }[]> = {
-  Producto: [
-    { label: 'Características', href: '/#features' },
-    { label: 'Templates', href: '/#templates' },
+  Productos: [
+    { label: 'Sitios Web con IA', href: '/#sitios-web' },
+    { label: 'Monitoreo Judicial', href: '/#monitoreo-judicial' },
+    { label: 'Automatizaciones', href: '/#automatizaciones' },
     { label: 'Precios', href: '/#pricing' },
-    { label: 'Blog', href: '/blog' },
-    { label: 'Novedades', href: '/#features' },
   ],
-  Soporte: [
-    { label: 'Documentación', href: '/help' },
+  Recursos: [
+    { label: 'Blog', href: '/blog' },
     { label: 'Preguntas frecuentes', href: '/#faq' },
+    { label: 'Documentación', href: '/help' },
     { label: 'Contacto', href: 'mailto:automaticialab@gmail.com' },
-    { label: 'Estado del servicio', href: 'https://automaticialab.com' },
   ],
   Legal: [
     { label: 'Términos de uso', href: '/terms' },
@@ -33,7 +32,7 @@ export function Footer() {
               <span className="text-lg font-bold text-white">Automatic IA Lab</span>
             </div>
             <p className="text-sm text-surface-500 leading-relaxed max-w-xs">
-              Generador de sitios web con IA para negocios locales de Argentina. Sin código, sin diseñadores.
+              Plataforma de automatización con IA. Sitios web, monitoreo judicial y soluciones a medida para negocios de Argentina.
             </p>
           </div>
 
@@ -55,10 +54,10 @@ export function Footer() {
 
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-8 border-t border-surface-800">
           <p className="text-sm text-surface-600">
-            © {new Date().getFullYear()} Automatic IA Lab · Buenos Aires, Argentina
+            &copy; {new Date().getFullYear()} Automatic IA Lab &middot; Buenos Aires, Argentina
           </p>
           <p className="text-sm text-surface-600">
-            Hecho con IA para negocios locales
+            Automatización inteligente para negocios
           </p>
         </div>
       </div>

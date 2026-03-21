@@ -34,7 +34,23 @@ const faqs = [
   },
   {
     q: '¿Incluye botón de WhatsApp?',
-    a: 'Sí, todos los planes incluyen el botón flotante de WhatsApp integrado automáticamente con el número que ingresés en el formulario.',
+    a: 'Sí, todos los planes de Sitios Web incluyen el botón flotante de WhatsApp integrado automáticamente con el número que ingresés en el formulario.',
+  },
+  {
+    q: '¿Qué es el Monitoreo Judicial?',
+    a: 'Es un servicio que revisa automáticamente los portales PJN (Poder Judicial de la Nación) y SCBA (Suprema Corte de Buenos Aires) cada 2 horas y te envía por email las nuevas notificaciones con el texto completo del PDF. No necesitás entrar al portal nunca más.',
+  },
+  {
+    q: '¿Qué portales judiciales monitorean?',
+    a: 'Actualmente monitoreamos PJN y SCBA, con expansión planificada a MEV, PJ Buenos Aires, Córdoba y Santa Fe durante 2026.',
+  },
+  {
+    q: '¿Puedo contratar solo el monitoreo judicial sin el sitio web?',
+    a: 'Sí, cada producto es independiente. Podés contratar solo el monitoreo judicial, solo el sitio web, o ambos. Escribinos por WhatsApp para combinar productos.',
+  },
+  {
+    q: '¿Qué tipo de automatizaciones hacen a medida?',
+    a: 'Desarrollamos flujos con IA: scraping de datos, integraciones API, agentes LLM (GPT, Gemini, Groq), procesamiento de documentos, notificaciones inteligentes y más. Cada proyecto se adapta a la necesidad del cliente.',
   },
 ]
 

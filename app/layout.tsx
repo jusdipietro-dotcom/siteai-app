@@ -7,14 +7,17 @@ import { Providers } from '@/components/providers/Providers'
 import { WhatsAppButton } from '@/components/shared/WhatsAppButton'
 
 export const metadata: Metadata = {
-  title: { default: 'Automatic IA Lab — Generador de Sitios Web', template: '%s · Automatic IA Lab' },
-  description: 'Creá sitios web profesionales para tu negocio en minutos, sin saber programar.',
+  title: { default: 'Automatic IA Lab — Automatización inteligente para tu negocio', template: '%s · Automatic IA Lab' },
+  description: 'Plataforma de automatización con IA: creá tu sitio web en minutos, monitoreá notificaciones judiciales y automatizá procesos de tu negocio.',
   keywords: [
+    'automatizacion con inteligencia artificial',
     'crear sitio web gratis',
     'generador de sitios web con IA',
-    'sitio web para negocios',
-    'página web Argentina',
-    'crear página web sin programar',
+    'notificaciones judiciales automaticas',
+    'monitoreo judicial Argentina',
+    'automatizacion para abogados',
+    'pagina web para negocios',
+    'automatic ia lab',
   ],
   icons: { icon: '/favicon.ico' },
   robots: 'index, follow',
@@ -26,14 +29,14 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'es_AR',
     siteName: 'Automatic IA Lab',
-    title: 'Automatic IA Lab — Generador de Sitios Web',
-    description: 'Creá sitios web profesionales para tu negocio en minutos, sin saber programar.',
+    title: 'Automatic IA Lab — Automatización inteligente para tu negocio',
+    description: 'Plataforma de automatización con IA: sitios web, monitoreo judicial y más. Todo sin código.',
     url: 'https://automaticialab.com',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Automatic IA Lab — Generador de Sitios Web',
-    description: 'Creá sitios web profesionales para tu negocio en minutos, sin saber programar.',
+    title: 'Automatic IA Lab — Automatización inteligente para tu negocio',
+    description: 'Plataforma de automatización con IA: sitios web, monitoreo judicial y más. Todo sin código.',
   },
 }
 
