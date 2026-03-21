@@ -274,7 +274,11 @@ export default function MonitoreoPage() {
                     <button
                       key={p.id}
                       type="button"
-                      onClick={() => setSelectedPortal(p.id)}
+                      onClick={() => {
+                        setSelectedPortal(p.id)
+                        if (p.id === 'PJN') { setScbaUser(''); setScbaPass('') }
+                        if (p.id === 'SCBA') { setPjnUser(''); setPjnPass('') }
+                      }}
                       className={`text-left p-5 rounded-2xl border-2 transition-all hover:shadow-md ${
                         selectedPortal === p.id ? 'border-violet-500 bg-violet-50' : 'border-surface-100 hover:border-surface-200'
                       }`}

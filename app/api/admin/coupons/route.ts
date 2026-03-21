@@ -30,6 +30,13 @@ export async function POST(req: NextRequest) {
     if (!validUntil) {
       return NextResponse.json({ error: 'Fecha de vencimiento requerida' }, { status: 400 })
     }
+    const expiryDate = new Date(validUntil)
+    if (isNaN(expiryDate.getTime()) || expiryDate < new Date()) {
+      return NextResponse.json({ error: 'Fecha de vencimiento debe ser en el futuro' }, { status: 400 })
+    }
+    if (maxUses !== undefined && (typeof maxUses !== 'number' || maxUses < 1)) {
+      return NextResponse.json({ error: 'maxUses debe ser >= 1' }, { status: 400 })
+    }
 
     const existing = await prisma.coupon.findUnique({ where: { code: code.toUpperCase() } })
     if (existing) {
@@ -60,6 +67,10 @@ export async function DELETE(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const id = searchParams.get('id')
   if (!id) return NextResponse.json({ error: 'ID requerido' }, { status: 400 })
+
+  const coupon = await prisma.coupon.findUnique({ where: { id } })
+  if (!coupon) return NextResponse.json({ error: 'Cupón no encontrado' }, { status: 404 })
+  if (!coupon.active) return NextResponse.json({ error: 'Cupón ya está desactivado' }, { status: 400 })
 
   await prisma.coupon.update({ where: { id }, data: { active: false } })
   return NextResponse.json({ ok: true })

@@ -54,7 +54,12 @@ export async function middleware(req: NextRequest) {
     if (!token) {
       const baseUrl = process.env.NEXTAUTH_URL || 'https://automaticialab.com'
       const loginUrl = new URL('/login', baseUrl)
-      loginUrl.searchParams.set('callbackUrl', `${baseUrl}${req.nextUrl.pathname}`)
+      // Login/register pages read ?next= for product-specific redirects
+      if (pathname.startsWith('/monitoreo')) {
+        loginUrl.searchParams.set('next', 'monitoreo')
+      } else {
+        loginUrl.searchParams.set('callbackUrl', `${baseUrl}${req.nextUrl.pathname}`)
+      }
       return NextResponse.redirect(loginUrl)
     }
   }

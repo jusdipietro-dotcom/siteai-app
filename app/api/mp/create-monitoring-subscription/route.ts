@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
     const baseUrl = configuredUrl ?? `${requestProto}://${requestHost}`
 
     const backUrl = `${baseUrl}/monitoreo?mp_return=true&sub=${subscriptionId}`
-    const startDate = new Date(Date.now() + 60_000).toISOString()
+    const startDate = new Date(Date.now() + 120_000).toISOString() // 2 min buffer
 
     // external_reference format: "monitoring:subscriptionId:plan"
     const body = {
@@ -69,7 +69,6 @@ export async function POST(req: NextRequest) {
         currency_id: 'ARS',
       },
       back_url: backUrl,
-      status: 'pending',
     }
 
     console.log('[MP Monitoring] Creating preapproval:', { plan: sub.plan, subscriptionId, price: finalPrice })
@@ -90,16 +89,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: data.message ?? 'Error de MercadoPago' }, { status: res.status })
     }
 
+    const initPoint = data.init_point
+    if (!initPoint || !data.id) {
+      console.error('[MP Monitoring] Missing init_point or id:', { init_point: !!initPoint, id: !!data.id })
+      return NextResponse.json({ error: 'MercadoPago no devolvió link de pago' }, { status: 502 })
+    }
+
     // Update subscription with preapproval ID
     await prisma.monitoringSubscription.update({
       where: { id: subscriptionId },
       data: { preapprovalId: data.id },
     })
-
-    const initPoint = data.init_point
-    if (!initPoint) {
-      return NextResponse.json({ error: 'MercadoPago no devolvió link de pago' }, { status: 502 })
-    }
 
     console.log('[MP Monitoring] Preapproval created:', data.id)
     return NextResponse.json({ init_point: initPoint, id: data.id })

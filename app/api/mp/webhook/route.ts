@@ -24,6 +24,10 @@ export async function POST(req: NextRequest) {
 
       // ─── Monitoring subscription: "monitoring:subscriptionId:plan" ───
       if (parts[0] === 'monitoring') {
+        if (parts.length < 3 || !parts[1] || !parts[2]) {
+          console.warn('[MP Webhook] Invalid monitoring external_reference:', external_reference)
+          return NextResponse.json({ received: true })
+        }
         const subscriptionId = parts[1]
         const plan = parts[2]
 
