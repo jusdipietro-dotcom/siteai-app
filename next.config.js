@@ -92,6 +92,7 @@ const nextConfig = {
   // Necesario para que Prisma funcione en edge/serverless en Vercel
   experimental: {
     serverComponentsExternalPackages: ['@prisma/client', 'prisma'],
+    instrumentationHook: true,
   },
 
   typescript: { ignoreBuildErrors: true },

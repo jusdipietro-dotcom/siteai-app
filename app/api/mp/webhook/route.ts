@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createHmac } from 'crypto'
 import { prisma } from '@/lib/prisma'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
+import { sendPaymentConfirmationEmail, sendSubscriptionCancelledEmail } from '@/lib/email'
 
 const ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN!
 const MP_WEBHOOK_SECRET = process.env.MP_WEBHOOK_SECRET
@@ -114,8 +115,25 @@ export async function POST(req: NextRequest) {
           })
           console.log(`[MP Webhook] Monitoring ${subscriptionId} → provisioning (plan: ${plan})`)
 
-          // Trigger auto-provisioning via n8n webhook
+          // Trigger auto-provisioning via n8n webhook (with retry)
           await triggerProvisioning(subscriptionId)
+
+          // Send payment confirmation email
+          try {
+            const userForEmail = await prisma.monitoringSubscription.findUnique({
+              where: { id: subscriptionId },
+              include: { user: { select: { email: true } } },
+            })
+            if (userForEmail?.user.email) {
+              await sendPaymentConfirmationEmail(userForEmail.user.email, {
+                type: 'monitoring',
+                plan,
+              })
+              console.log(`[MP Webhook] Payment confirmation email sent to ${userForEmail.user.email}`)
+            }
+          } catch (emailErr) {
+            console.error('[MP Webhook] Failed to send payment email:', emailErr)
+          }
         }
 
         if ((status === 'cancelled' || status === 'paused') && subscriptionId) {
@@ -127,6 +145,22 @@ export async function POST(req: NextRequest) {
 
           // Trigger deprovisioning — remove tenant from n8n scrapers
           await triggerDeprovisioning(subscriptionId)
+
+          // Send cancellation email
+          try {
+            const subForEmail = await prisma.monitoringSubscription.findUnique({
+              where: { id: subscriptionId },
+              include: { user: { select: { email: true } } },
+            })
+            if (subForEmail?.user.email) {
+              await sendSubscriptionCancelledEmail(subForEmail.user.email, {
+                type: 'monitoring',
+                plan,
+              })
+            }
+          } catch (emailErr) {
+            console.error('[MP Webhook] Failed to send cancellation email:', emailErr)
+          }
         }
 
         return NextResponse.json({ received: true })
@@ -141,6 +175,22 @@ export async function POST(req: NextRequest) {
           data: { hasPaid: true, plan: plan ?? 'essential', preapprovalId },
         })
         console.log(`[MP Webhook] Project ${projectId} activated — plan: ${plan}`)
+
+        // Send payment confirmation email
+        try {
+          const project = await prisma.project.findUnique({
+            where: { id: projectId },
+            include: { user: { select: { email: true } } },
+          })
+          if (project?.user.email) {
+            await sendPaymentConfirmationEmail(project.user.email, {
+              type: 'project',
+              plan: plan ?? 'essential',
+            })
+          }
+        } catch (emailErr) {
+          console.error('[MP Webhook] Failed to send project payment email:', emailErr)
+        }
       }
 
       if ((status === 'cancelled' || status === 'paused') && projectId) {
@@ -159,7 +209,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
-/** Trigger n8n provisioning webhook for a monitoring subscription */
+/** Trigger n8n provisioning webhook with retry (3 attempts, exponential backoff) */
 async function triggerProvisioning(subscriptionId: string) {
   const webhookUrl = process.env.N8N_PROVISIONING_WEBHOOK
   if (!webhookUrl) {
@@ -167,35 +217,50 @@ async function triggerProvisioning(subscriptionId: string) {
     return
   }
 
-  try {
-    const sub = await prisma.monitoringSubscription.findUnique({
-      where: { id: subscriptionId },
-      include: { user: { select: { email: true, name: true } } },
-    })
-    if (!sub) return
+  const sub = await prisma.monitoringSubscription.findUnique({
+    where: { id: subscriptionId },
+    include: { user: { select: { email: true, name: true } } },
+  })
+  if (!sub) return
 
-    const res = await fetch(webhookUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        subscriptionId: sub.id,
-        userId: sub.userId,
-        userEmail: sub.user.email,
-        userName: sub.user.name,
-        plan: sub.plan,
-        portal: sub.portal,
-        cuil: sub.cuil,
-        notificationEmail: sub.notificationEmail,
-        payerEmail: sub.payerEmail,
-      }),
-    })
+  const payload = JSON.stringify({
+    subscriptionId: sub.id,
+    userId: sub.userId,
+    userEmail: sub.user.email,
+    userName: sub.user.name,
+    plan: sub.plan,
+    portal: sub.portal,
+    cuil: sub.cuil,
+    notificationEmail: sub.notificationEmail,
+    payerEmail: sub.payerEmail,
+  })
 
-    console.log(`[MP Webhook] Provisioning webhook response: ${res.status}`)
-  } catch (err) {
-    console.error('[MP Webhook] Failed to trigger provisioning:', err)
-    // Don't throw — the subscription is already marked as provisioning
-    // Manual provisioning can be done within 48hs
+  const MAX_RETRIES = 3
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const res = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: payload,
+      })
+
+      if (res.ok) {
+        console.log(`[MP Webhook] Provisioning OK (attempt ${attempt}): ${res.status}`)
+        return
+      }
+
+      console.warn(`[MP Webhook] Provisioning attempt ${attempt}/${MAX_RETRIES} failed: HTTP ${res.status}`)
+    } catch (err) {
+      console.error(`[MP Webhook] Provisioning attempt ${attempt}/${MAX_RETRIES} error:`, err)
+    }
+
+    if (attempt < MAX_RETRIES) {
+      const delay = attempt * 2000 // 2s, 4s
+      await new Promise(r => setTimeout(r, delay))
+    }
   }
+
+  console.error(`[MP Webhook] Provisioning FAILED after ${MAX_RETRIES} attempts for ${subscriptionId} — manual provisioning required`)
 }
 
 /** Trigger n8n deprovisioning — remove tenant from scraper workflows */
