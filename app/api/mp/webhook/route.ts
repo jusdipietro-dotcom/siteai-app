@@ -247,6 +247,81 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ received: true })
       }
 
+      // ─── LinkedIn subscription: "linkedin:subscriptionId:plan" ───
+      if (parts[0] === 'linkedin') {
+        if (parts.length < 3 || !parts[1] || !parts[2]) {
+          console.warn('[MP Webhook] Invalid linkedin external_reference:', external_reference)
+          return NextResponse.json({ received: true })
+        }
+        const linkedinSubId = parts[1]
+        const linkedinPlan = parts[2]
+
+        if (status === 'authorized' && linkedinSubId) {
+          const currentSub = await prisma.linkedInSubscription.findUnique({
+            where: { id: linkedinSubId },
+          })
+          if (currentSub && ['active', 'provisioning'].includes(currentSub.status)) {
+            console.log(`[MP Webhook] LinkedIn ${linkedinSubId} already ${currentSub.status} — skipping`)
+            return NextResponse.json({ received: true })
+          }
+
+          // Increment coupon usage
+          if (currentSub?.couponId) {
+            await prisma.coupon.update({
+              where: { id: currentSub.couponId },
+              data: { usedCount: { increment: 1 } },
+            })
+          }
+
+          await prisma.linkedInSubscription.update({
+            where: { id: linkedinSubId },
+            data: { status: 'active', preapprovalId, provisionedAt: new Date() },
+          })
+          console.log(`[MP Webhook] LinkedIn ${linkedinSubId} → active (plan: ${linkedinPlan})`)
+
+          // Send payment confirmation email
+          try {
+            const subForEmail = await prisma.linkedInSubscription.findUnique({
+              where: { id: linkedinSubId },
+              include: { user: { select: { email: true } } },
+            })
+            if (subForEmail?.user.email) {
+              await sendPaymentConfirmationEmail(subForEmail.user.email, {
+                type: 'linkedin',
+                plan: linkedinPlan,
+              })
+            }
+          } catch (emailErr) {
+            console.error('[MP Webhook] Failed to send linkedin payment email:', emailErr)
+          }
+        }
+
+        if ((status === 'cancelled' || status === 'paused') && linkedinSubId) {
+          await prisma.linkedInSubscription.update({
+            where: { id: linkedinSubId },
+            data: { status: 'suspended' },
+          })
+          console.log(`[MP Webhook] LinkedIn ${linkedinSubId} suspended (${status})`)
+
+          try {
+            const subForEmail = await prisma.linkedInSubscription.findUnique({
+              where: { id: linkedinSubId },
+              include: { user: { select: { email: true } } },
+            })
+            if (subForEmail?.user.email) {
+              await sendSubscriptionCancelledEmail(subForEmail.user.email, {
+                type: 'linkedin',
+                plan: linkedinPlan,
+              })
+            }
+          } catch (emailErr) {
+            console.error('[MP Webhook] Failed to send linkedin cancellation email:', emailErr)
+          }
+        }
+
+        return NextResponse.json({ received: true })
+      }
+
       // ─── Website project subscription: "projectId:plan" ───
       const [projectId, plan] = parts
 

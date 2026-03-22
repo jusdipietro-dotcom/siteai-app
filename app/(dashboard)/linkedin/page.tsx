@@ -108,6 +108,7 @@ function LinkedInPage() {
   const handleSubscribe = async () => {
     setLoading(true)
     try {
+      // Step 1: Create subscription record
       const res = await fetch('/api/linkedin/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -127,6 +128,29 @@ function LinkedInPage() {
         setLoading(false)
         return
       }
+
+      // Step 2: Create MercadoPago preapproval and redirect to checkout
+      const mpRes = await fetch('/api/mp/create-linkedin-subscription', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subscriptionId: data.subscriptionId,
+          payerEmail,
+        }),
+      })
+      const mpData = await mpRes.json()
+      if (!mpRes.ok) {
+        toast.error(mpData.error || 'Error al generar el pago')
+        setLoading(false)
+        return
+      }
+
+      // Redirect to MercadoPago checkout
+      if (mpData.init_point) {
+        window.location.href = mpData.init_point
+        return
+      }
+
       toast.success('Suscripcion creada')
       setStep('done')
       fetchSubscriptions()
@@ -150,6 +174,47 @@ function LinkedInPage() {
       else toast.error('Cupon invalido')
     } catch {
       toast.error('Error validando cupon')
+    }
+  }
+
+  // Handle MP return — check payment status
+  useEffect(() => {
+    if (mpReturn) {
+      const preapprovalId = searchParams.get('preapproval_id')
+      if (preapprovalId) {
+        fetch(`/api/mp/check-subscription?preapproval_id=${preapprovalId}`)
+          .then(r => r.json())
+          .then(data => {
+            if (data.status === 'authorized') {
+              toast.success('Pago confirmado! Tu suscripcion esta activa.')
+            } else {
+              toast.info('El pago esta siendo procesado. Te notificaremos por email.')
+            }
+            fetchSubscriptions()
+          })
+          .catch(() => {})
+      }
+      setStep('done')
+    }
+  }, [mpReturn])
+
+  const handleCancel = async (subId: string) => {
+    if (!confirm('Estas seguro de cancelar esta suscripcion?')) return
+    try {
+      const res = await fetch('/api/linkedin/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subscriptionId: subId }),
+      })
+      if (res.ok) {
+        toast.success('Suscripcion cancelada')
+        fetchSubscriptions()
+      } else {
+        const data = await res.json()
+        toast.error(data.error || 'Error al cancelar')
+      }
+    } catch {
+      toast.error('Error de conexion')
     }
   }
 
@@ -195,13 +260,25 @@ function LinkedInPage() {
                     {sub.postsGenerated} posts generados &middot; {sub.postsPublished} publicados
                   </p>
                 </div>
-                {sub.status === 'active' && (
-                  <a href={TELEGRAM_BOT_URL} target="_blank" rel="noopener noreferrer">
-                    <Button variant="outline" size="sm" className="gap-2">
-                      <Send className="w-4 h-4" /> Abrir bot en Telegram
+                <div className="flex gap-2">
+                  {sub.status === 'active' && (
+                    <a href={TELEGRAM_BOT_URL} target="_blank" rel="noopener noreferrer">
+                      <Button variant="outline" size="sm" className="gap-2">
+                        <Send className="w-4 h-4" /> Abrir bot en Telegram
+                      </Button>
+                    </a>
+                  )}
+                  {['active', 'provisioning', 'pending_payment'].includes(sub.status) && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-red-500 hover:text-red-600 hover:border-red-300"
+                      onClick={() => handleCancel(sub.id)}
+                    >
+                      Cancelar
                     </Button>
-                  </a>
-                )}
+                  )}
+                </div>
               </div>
             </div>
           ))}

@@ -56,15 +56,25 @@ export async function sendPasswordResetEmail(to: string, resetUrl: string) {
 export async function sendPaymentConfirmationEmail(
   to: string,
   details: {
-    type: 'monitoring' | 'project'
+    type: 'monitoring' | 'project' | 'reviews' | 'linkedin'
     plan: string
     amount?: string
   }
 ) {
-  const productName = details.type === 'monitoring' ? 'Monitoreo Judicial' : 'Sitio Web con IA'
-  const dashboardUrl = details.type === 'monitoring'
-    ? `${APP_URL}/monitoreo`
-    : `${APP_URL}/dashboard`
+  const productNames: Record<string, string> = {
+    monitoring: 'Monitoreo Judicial',
+    project: 'Sitio Web con IA',
+    reviews: 'Reseñas Google IA',
+    linkedin: 'LinkedIn Optimizer IA',
+  }
+  const dashboardUrls: Record<string, string> = {
+    monitoring: `${APP_URL}/monitoreo`,
+    project: `${APP_URL}/dashboard`,
+    reviews: `${APP_URL}/resenas`,
+    linkedin: `${APP_URL}/linkedin`,
+  }
+  const productName = productNames[details.type] ?? 'Servicio'
+  const dashboardUrl = dashboardUrls[details.type] ?? `${APP_URL}/dashboard`
 
   const html = emailWrapper('Pago confirmado', `
     <p>Tu pago fue procesado correctamente. Ya podes usar tu suscripcion.</p>
@@ -102,9 +112,15 @@ export async function sendPaymentConfirmationEmail(
 
 export async function sendSubscriptionCancelledEmail(
   to: string,
-  details: { type: 'monitoring' | 'project'; plan: string }
+  details: { type: 'monitoring' | 'project' | 'reviews' | 'linkedin'; plan: string }
 ) {
-  const productName = details.type === 'monitoring' ? 'Monitoreo Judicial' : 'Sitio Web con IA'
+  const productNames: Record<string, string> = {
+    monitoring: 'Monitoreo Judicial',
+    project: 'Sitio Web con IA',
+    reviews: 'Reseñas Google IA',
+    linkedin: 'LinkedIn Optimizer IA',
+  }
+  const productName = productNames[details.type] ?? 'Servicio'
 
   const html = emailWrapper('Suscripcion cancelada', `
     <p>Tu suscripcion a <strong>${productName} (${details.plan})</strong> fue cancelada.</p>
