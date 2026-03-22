@@ -11,6 +11,8 @@ const PROTECTED_PATHS = [
   '/settings',
   '/help',
   '/monitoreo',
+  '/linkedin',
+  '/resenas',
   '/admin',
 ]
 
@@ -57,6 +59,10 @@ export async function middleware(req: NextRequest) {
       // Login/register pages read ?next= for product-specific redirects
       if (pathname.startsWith('/monitoreo')) {
         loginUrl.searchParams.set('next', 'monitoreo')
+      } else if (pathname.startsWith('/linkedin')) {
+        loginUrl.searchParams.set('next', 'linkedin')
+      } else if (pathname.startsWith('/resenas')) {
+        loginUrl.searchParams.set('next', 'resenas')
       } else {
         loginUrl.searchParams.set('callbackUrl', `${baseUrl}${req.nextUrl.pathname}`)
       }

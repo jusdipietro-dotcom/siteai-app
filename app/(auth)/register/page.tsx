@@ -36,7 +36,8 @@ function RegisterForm() {
   const searchParams = useSearchParams()
   const plan = searchParams.get('plan') ?? 'free'
   const next = searchParams.get('next')
-  const redirectTo = next === 'monitoreo' ? '/monitoreo' : '/wizard'
+  const NEXT_ROUTES: Record<string, string> = { monitoreo: '/monitoreo', linkedin: '/linkedin', resenas: '/resenas' }
+  const redirectTo = (next && NEXT_ROUTES[next]) ?? '/wizard'
   const [showPassword, setShowPassword] = useState(false)
   const [passwordValue, setPasswordValue] = useState('')
 
@@ -71,7 +72,12 @@ function RegisterForm() {
       return
     }
 
-    toast.success(next === 'monitoreo' ? '¡Cuenta creada! Configurá tu monitoreo.' : '¡Cuenta creada! Empecemos con tu sitio.')
+    const toastMessages: Record<string, string> = {
+      monitoreo: '¡Cuenta creada! Configurá tu monitoreo.',
+      linkedin: '¡Cuenta creada! Configurá tu LinkedIn Optimizer.',
+      resenas: '¡Cuenta creada! Configurá tus reseñas.',
+    }
+    toast.success(toastMessages[next ?? ''] ?? '¡Cuenta creada! Empecemos con tu sitio.')
     router.push(redirectTo)
     router.refresh()
   }
