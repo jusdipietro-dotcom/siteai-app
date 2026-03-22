@@ -5,8 +5,8 @@ import { Footer } from '@/components/landing/Footer'
 import { CheckCircle2, ArrowRight, Zap, Globe, Smartphone, Search, MessageCircle, Shield } from 'lucide-react'
 
 export const metadata: Metadata = {
-  title: { absolute: 'Sitio Web Gratis con IA | Automatic IA Lab' },
-  description: 'Generá un sitio web profesional para tu negocio en 60 segundos. Sin programar, sin diseñadores, sin tarjeta de crédito. Probá gratis ahora.',
+  title: 'Sitio Web Gratis con IA',
+  description: 'Genera un sitio web profesional para tu negocio en 60 segundos. Sin programar, sin diseñadores, sin tarjeta de credito. Proba gratis ahora.',
   keywords: [
     'crear sitio web gratis',
     'sitio web gratis Argentina',
@@ -208,7 +208,20 @@ export default function GratisLandingPage() {
             <ArrowRight className="w-5 h-5" />
           </Link>
           <p className="mt-4 text-sm text-surface-500">
-            Sin tarjeta de crédito. Plan gratuito disponible.
+            Sin tarjeta de credito. Plan gratuito disponible para siempre.
+          </p>
+        </div>
+      </section>
+
+      {/* Comparativa */}
+      <section className="py-16 bg-white">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-2xl font-bold text-surface-900 mb-6 text-center">¿Por que elegir Automatic IA Lab?</h2>
+          <p className="text-surface-600 text-center max-w-2xl mx-auto mb-8">
+            Comparado con contratar un diseñador web o usar herramientas complicadas, nuestra plataforma
+            te permite tener un sitio profesional en minutos, no semanas. Con contenido generado por
+            inteligencia artificial adaptado a tu rubro, optimizacion SEO automatica y publicacion
+            instantanea. Miles de negocios en Argentina ya confian en nosotros para su presencia online.
           </p>
         </div>
       </section>

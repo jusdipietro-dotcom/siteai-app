@@ -22,8 +22,10 @@ export default function BlogPage() {
           <h1 className="text-4xl sm:text-5xl font-bold text-surface-950 mb-4">
             Blog
           </h1>
-          <p className="text-xl text-surface-600">
-            Tips, guías y estrategias para hacer crecer tu negocio online
+          <p className="text-xl text-surface-600 max-w-2xl mx-auto">
+            Tips, guias y estrategias para hacer crecer tu negocio online. Publicamos articulos
+            sobre marketing digital, creacion de sitios web, automatizacion con inteligencia artificial
+            y las mejores practicas para pymes y emprendedores en Argentina.
           </p>
         </div>
       </section>
@@ -92,12 +94,35 @@ export default function BlogPage() {
                     href={`/blog/${post.slug}`}
                     className="inline-flex items-center text-sm font-semibold text-brand-600 hover:text-brand-700 group/link"
                   >
-                    {`Leer: ${post.title.slice(0, 30)}…`}
-                    <span className="ml-2 group-hover/link:translate-x-1 transition-transform">→</span>
+                    {`Leer articulo: ${post.title}`}
+                    <span className="ml-2 group-hover/link:translate-x-1 transition-transform">&#8594;</span>
                   </Link>
                 </div>
               </article>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Newsletter / extra content */}
+      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-surface-50">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-2xl font-bold text-surface-950 mb-4">Recursos adicionales</h2>
+          <p className="text-surface-600 mb-6 max-w-2xl mx-auto">
+            Ademas de estos articulos, podes explorar nuestras herramientas gratuitas para mejorar
+            la presencia digital de tu negocio. Desde el generador de sitios web con IA hasta el
+            monitoreo judicial automatico, todo esta diseñado para ahorrarte tiempo y ayudarte a crecer.
+          </p>
+          <div className="flex flex-wrap justify-center gap-4">
+            <Link href="/gratis" className="text-sm font-semibold text-brand-600 hover:text-brand-700 underline">
+              Crear sitio web gratis
+            </Link>
+            <Link href="/about" className="text-sm font-semibold text-brand-600 hover:text-brand-700 underline">
+              Sobre nosotros
+            </Link>
+            <Link href="/contacto" className="text-sm font-semibold text-brand-600 hover:text-brand-700 underline">
+              Contacto
+            </Link>
           </div>
         </div>
       </section>
@@ -109,7 +134,7 @@ export default function BlogPage() {
             ¿Listo para crear tu sitio web?
           </h2>
           <p className="text-white/90 mb-8 text-lg">
-            Dejá que la IA construya tu presencia online en minutos, no semanas.
+            Deja que la IA construya tu presencia online en minutos, no semanas.
           </p>
           <Link
             href="/register"

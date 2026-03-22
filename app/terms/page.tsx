@@ -2,7 +2,7 @@ import Link from 'next/link'
 
 export const metadata = {
   title: 'Términos de uso',
-  description: 'Términos y condiciones de uso de Automatic IA Lab. Planes, pagos, responsabilidades del usuario y legislación aplicable en Argentina.',
+  description: 'Terminos y condiciones de uso de Automatic IA Lab. Informacion sobre planes, pagos, politica de reembolsos, responsabilidades del usuario y legislacion aplicable en Argentina.',
 }
 
 const sections = [
@@ -42,9 +42,19 @@ const sections = [
       'Nos reservamos el derecho de modificar estos términos en cualquier momento. Los cambios significativos serán notificados por email con al menos 15 días de anticipación.',
   },
   {
-    title: '8. Ley aplicable',
+    title: '8. Propiedad intelectual',
     content:
-      'Estos términos se rigen por las leyes de la República Argentina. Cualquier disputa se someterá a la jurisdicción de los tribunales ordinarios de la Ciudad Autónoma de Buenos Aires.',
+      'El contenido generado por la IA para tu sitio web es de tu propiedad. La plataforma, su codigo fuente, diseño, marca y documentacion son propiedad exclusiva de Automatic IA Lab. No esta permitido copiar, modificar o distribuir el software de la plataforma sin autorizacion expresa.',
+  },
+  {
+    title: '9. Garantia y reembolsos',
+    content:
+      'Ofrecemos una garantia de satisfaccion de 30 dias para planes pagos. Si no estas conforme con el servicio dentro de los primeros 30 dias, podes solicitar un reembolso completo escribiendo a automaticialab@gmail.com. Pasado ese plazo, no se realizan reembolsos parciales por el periodo restante.',
+  },
+  {
+    title: '10. Ley aplicable',
+    content:
+      'Estos terminos se rigen por las leyes de la Republica Argentina, en particular la Ley 24.240 de Defensa del Consumidor y la Ley 25.326 de Proteccion de Datos Personales. Cualquier disputa se sometera a la jurisdiccion de los tribunales ordinarios de la Ciudad Autonoma de Buenos Aires.',
   },
 ]
 

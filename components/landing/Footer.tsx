@@ -6,17 +6,17 @@ const links: Record<string, { label: string; href: string }[]> = {
     { label: 'Monitoreo Judicial', href: '/#monitoreo-judicial' },
     { label: 'Automatizaciones', href: '/#automatizaciones' },
     { label: 'Precios', href: '/#pricing' },
+    { label: 'Plan Gratuito', href: '/gratis' },
   ],
   Recursos: [
     { label: 'Blog', href: '/blog' },
     { label: 'Preguntas frecuentes', href: '/#faq' },
-    { label: 'Documentación', href: '/help' },
-    { label: 'Contacto', href: 'mailto:automaticialab@gmail.com' },
+    { label: 'Sobre nosotros', href: '/about' },
+    { label: 'Contacto', href: '/contacto' },
   ],
   Legal: [
     { label: 'Términos de uso', href: '/terms' },
     { label: 'Privacidad', href: '/privacy' },
-    { label: 'Política de cookies', href: '/privacy' },
   ],
 }
 

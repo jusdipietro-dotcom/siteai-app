@@ -2,7 +2,7 @@ import Link from 'next/link'
 
 export const metadata = {
   title: 'Política de privacidad',
-  description: 'Conocé cómo Automatic IA Lab recopila, usa y protege tus datos personales. Cookies, almacenamiento seguro y tus derechos.',
+  description: 'Conoce como Automatic IA Lab recopila, usa y protege tus datos personales. Informacion sobre cookies, almacenamiento seguro, retencion de datos y tus derechos como usuario.',
 }
 
 const sections = [
@@ -42,9 +42,19 @@ const sections = [
       'Conservamos tus datos mientras tu cuenta esté activa. Si eliminás tu cuenta, tus datos personales serán eliminados en un plazo de 30 días, excepto aquellos que debamos conservar por obligaciones legales.',
   },
   {
-    title: '8. Cambios a esta política',
+    title: '8. Seguridad de los datos',
     content:
-      'Podemos actualizar esta política periódicamente. Te notificaremos por email ante cambios significativos. El uso continuado del servicio tras la notificación implica la aceptación de la nueva política.',
+      'Implementamos cifrado en transito (HTTPS/TLS) y en reposo para proteger tus datos. Las credenciales de acceso se almacenan con hash seguro y nunca en texto plano. Realizamos auditorias periodicas de seguridad para detectar y corregir vulnerabilidades.',
+  },
+  {
+    title: '9. Transferencia internacional de datos',
+    content:
+      'Tus datos pueden ser procesados en servidores ubicados fuera de Argentina. En estos casos, nos aseguramos de que el proveedor cumpla con estandares de proteccion equivalentes a los establecidos por la Ley 25.326 de Proteccion de Datos Personales.',
+  },
+  {
+    title: '10. Cambios a esta politica',
+    content:
+      'Podemos actualizar esta politica periodicamente. Te notificaremos por email ante cambios significativos con al menos 15 dias de anticipacion. El uso continuado del servicio tras la notificacion implica la aceptacion de la nueva politica.',
   },
 ]
 
