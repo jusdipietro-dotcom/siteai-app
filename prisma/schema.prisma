@@ -22,6 +22,7 @@ model User {
   projects              Project[]
   media                 Media[]
   monitoringSubscriptions MonitoringSubscription[]
+  reviewsSubscriptions  ReviewsSubscription[]
   passwordResetTokens   PasswordResetToken[]
 }
 
@@ -92,7 +93,32 @@ model Coupon {
   active        Boolean  @default(true)
   createdAt     DateTime @default(now())
 
-  subscriptions MonitoringSubscription[]
+  subscriptions        MonitoringSubscription[]
+  reviewsSubscriptions ReviewsSubscription[]
+}
+
+model ReviewsSubscription {
+  id              String   @id @default(cuid())
+  userId          String
+  status          String   @default("pending_payment") // pending_payment, active, provisioning, suspended, cancelled
+  plan            String   // basico, profesional, premium
+  businessName    String
+  businessType    String
+  searchUrl       String   // URL de busqueda Google para el negocio
+  googleEmail     String   // cuenta Google del negocio
+  responseTone    String   @default("profesional") // profesional, cercano, formal
+  notificationEmail String
+  payerEmail      String
+  preapprovalId   String?
+  couponId        String?
+  discountApplied Int      @default(0)
+  provisionedAt   DateTime?
+  n8nTenantId     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  coupon Coupon? @relation(fields: [couponId], references: [id])
 }
 
 model Project {

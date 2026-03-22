@@ -166,6 +166,81 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ received: true })
       }
 
+      // ─── Reviews subscription: "reviews:subscriptionId:plan" ───
+      if (parts[0] === 'reviews') {
+        if (parts.length < 3 || !parts[1] || !parts[2]) {
+          console.warn('[MP Webhook] Invalid reviews external_reference:', external_reference)
+          return NextResponse.json({ received: true })
+        }
+        const reviewsSubId = parts[1]
+        const reviewsPlan = parts[2]
+
+        if (status === 'authorized' && reviewsSubId) {
+          const currentSub = await prisma.reviewsSubscription.findUnique({
+            where: { id: reviewsSubId },
+          })
+          if (currentSub && ['active', 'provisioning'].includes(currentSub.status)) {
+            console.log(`[MP Webhook] Reviews ${reviewsSubId} already ${currentSub.status} — skipping`)
+            return NextResponse.json({ received: true })
+          }
+
+          // Increment coupon usage
+          if (currentSub?.couponId) {
+            await prisma.coupon.update({
+              where: { id: currentSub.couponId },
+              data: { usedCount: { increment: 1 } },
+            })
+          }
+
+          await prisma.reviewsSubscription.update({
+            where: { id: reviewsSubId },
+            data: { status: 'provisioning', preapprovalId },
+          })
+          console.log(`[MP Webhook] Reviews ${reviewsSubId} → provisioning (plan: ${reviewsPlan})`)
+
+          // Send payment confirmation email
+          try {
+            const subForEmail = await prisma.reviewsSubscription.findUnique({
+              where: { id: reviewsSubId },
+              include: { user: { select: { email: true } } },
+            })
+            if (subForEmail?.user.email) {
+              await sendPaymentConfirmationEmail(subForEmail.user.email, {
+                type: 'reviews',
+                plan: reviewsPlan,
+              })
+            }
+          } catch (emailErr) {
+            console.error('[MP Webhook] Failed to send reviews payment email:', emailErr)
+          }
+        }
+
+        if ((status === 'cancelled' || status === 'paused') && reviewsSubId) {
+          await prisma.reviewsSubscription.update({
+            where: { id: reviewsSubId },
+            data: { status: 'suspended' },
+          })
+          console.log(`[MP Webhook] Reviews ${reviewsSubId} suspended (${status})`)
+
+          try {
+            const subForEmail = await prisma.reviewsSubscription.findUnique({
+              where: { id: reviewsSubId },
+              include: { user: { select: { email: true } } },
+            })
+            if (subForEmail?.user.email) {
+              await sendSubscriptionCancelledEmail(subForEmail.user.email, {
+                type: 'reviews',
+                plan: reviewsPlan,
+              })
+            }
+          } catch (emailErr) {
+            console.error('[MP Webhook] Failed to send reviews cancellation email:', emailErr)
+          }
+        }
+
+        return NextResponse.json({ received: true })
+      }
+
       // ─── Website project subscription: "projectId:plan" ───
       const [projectId, plan] = parts
 
