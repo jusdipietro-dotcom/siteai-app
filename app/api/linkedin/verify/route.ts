@@ -23,8 +23,32 @@ export async function GET(req: NextRequest) {
   }
 
   const chatId = req.nextUrl.searchParams.get('chatId')
+  const email = req.nextUrl.searchParams.get('email')
+
+  // Search by email — used by /vincular command to find unlinked subscriptions
+  if (email) {
+    const sub = await prisma.linkedInSubscription.findFirst({
+      where: {
+        status: 'active',
+        user: { email: email.toLowerCase() },
+      },
+      orderBy: { createdAt: 'desc' },
+    })
+
+    if (!sub) {
+      return NextResponse.json({ active: false, subscriptionId: null, plan: null })
+    }
+
+    return NextResponse.json({
+      active: true,
+      subscriptionId: sub.id,
+      plan: sub.plan,
+      alreadyLinked: !!sub.telegramChatId,
+    })
+  }
+
   if (!chatId) {
-    return NextResponse.json({ error: 'chatId required' }, { status: 400 })
+    return NextResponse.json({ error: 'chatId or email required' }, { status: 400 })
   }
 
   const sub = await prisma.linkedInSubscription.findFirst({
@@ -44,11 +68,28 @@ export async function GET(req: NextRequest) {
     })
   }
 
+  // Monthly counter reset: if the current month differs from last reset, reset counter
+  const now = new Date()
+  const updatedMonth = sub.updatedAt.getMonth()
+  const updatedYear = sub.updatedAt.getFullYear()
+  const currentMonth = now.getMonth()
+  const currentYear = now.getFullYear()
+
+  let postsGenerated = sub.postsGenerated
+  if (currentYear > updatedYear || currentMonth > updatedMonth) {
+    // New month — reset counters
+    await prisma.linkedInSubscription.update({
+      where: { id: sub.id },
+      data: { postsGenerated: 0, postsPublished: 0 },
+    })
+    postsGenerated = 0
+  }
+
   return NextResponse.json({
     active: true,
     plan: sub.plan,
     postsPerMonth: PLAN_LIMITS[sub.plan] ?? 20,
-    postsGenerated: sub.postsGenerated,
+    postsGenerated,
     subscriptionId: sub.id,
   })
 }
