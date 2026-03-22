@@ -1,7 +1,7 @@
 'use client'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { ArrowRight, Globe, Scale, Bot, Check, Zap, Bell, FileText, Shield, Clock, Mail, Webhook, MessageSquare } from 'lucide-react'
+import { ArrowRight, Globe, Scale, Bot, Check, Zap, Bell, FileText, Shield, Clock, Mail, Webhook, MessageSquare, Linkedin, TrendingUp, Users, PenTool } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 const products = [
@@ -61,6 +61,25 @@ const products = [
     ctaHref: '/register?next=resenas',
     price: 'Desde $15.000/mes',
     priceNote: 'Por perfil de Google Business',
+  },
+  {
+    id: 'linkedin-optimizer',
+    badge: 'Nuevo',
+    title: 'LinkedIn Optimizer IA',
+    subtitle: 'Publicaciones que posicionan, perfil que convierte',
+    description: 'Un asistente de IA analiza tu perfil de LinkedIn, genera recomendaciones de optimizacion y crea publicaciones profesionales de alto impacto. Confirmás, se publica automaticamente. Todo desde Telegram.',
+    icon: Linkedin,
+    gradient: 'from-blue-600 to-sky-500',
+    bgGlow: 'bg-blue-500/10',
+    features: [
+      { icon: TrendingUp, text: 'Optimizacion de perfil con IA' },
+      { icon: PenTool, text: 'Posts virales auto-publicados' },
+      { icon: Users, text: 'Plan de contenido semanal' },
+    ],
+    cta: 'Activar LinkedIn IA',
+    ctaHref: '/register?next=linkedin',
+    price: 'Desde $12.000/mes',
+    priceNote: 'Por perfil de LinkedIn',
   },
   {
     id: 'automatizaciones',

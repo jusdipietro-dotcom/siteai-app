@@ -8,7 +8,7 @@ import { WhatsAppButton } from '@/components/shared/WhatsAppButton'
 
 export const metadata: Metadata = {
   title: { default: 'Automatic IA Lab — Automatizaciones con IA', template: '%s · Automatic IA Lab' },
-  description: 'Plataforma de automatización con IA: creá tu sitio web en minutos, monitoreá notificaciones judiciales, respondé reseñas de Google con IA y automatizá procesos de tu negocio.',
+  description: 'Plataforma de automatización con IA: creá tu sitio web en minutos, monitoreá notificaciones judiciales, respondé reseñas de Google, optimizá tu perfil de LinkedIn y automatizá procesos de tu negocio.',
   keywords: [
     'automatizacion con inteligencia artificial',
     'crear sitio web gratis',
@@ -19,6 +19,9 @@ export const metadata: Metadata = {
     'pagina web para negocios',
     'responder resenas google con ia',
     'gestion de resenas google business',
+    'optimizar perfil linkedin con ia',
+    'generar publicaciones linkedin automatico',
+    'linkedin optimizer bot',
     'automatic ia lab',
   ],
   icons: { icon: '/favicon.ico' },

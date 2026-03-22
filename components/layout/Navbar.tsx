@@ -12,6 +12,7 @@ const navLinks = [
   { label: 'Productos', href: '/#productos' },
   { label: 'Sitios Web', href: '/#sitios-web' },
   { label: 'Monitoreo Judicial', href: '/#monitoreo-judicial' },
+  { label: 'LinkedIn IA', href: '/#linkedin-optimizer' },
   { label: 'Precios', href: '/#pricing' },
   { label: 'Blog', href: '/blog' },
 ]

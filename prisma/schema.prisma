@@ -23,6 +23,7 @@ model User {
   media                 Media[]
   monitoringSubscriptions MonitoringSubscription[]
   reviewsSubscriptions  ReviewsSubscription[]
+  linkedinSubscriptions LinkedInSubscription[]
   passwordResetTokens   PasswordResetToken[]
 }
 
@@ -93,8 +94,9 @@ model Coupon {
   active        Boolean  @default(true)
   createdAt     DateTime @default(now())
 
-  subscriptions        MonitoringSubscription[]
-  reviewsSubscriptions ReviewsSubscription[]
+  subscriptions         MonitoringSubscription[]
+  reviewsSubscriptions  ReviewsSubscription[]
+  linkedinSubscriptions LinkedInSubscription[]
 }
 
 model ReviewsSubscription {
@@ -114,6 +116,31 @@ model ReviewsSubscription {
   discountApplied Int      @default(0)
   provisionedAt   DateTime?
   n8nTenantId     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  coupon Coupon? @relation(fields: [couponId], references: [id])
+}
+
+model LinkedInSubscription {
+  id              String   @id @default(cuid())
+  userId          String
+  status          String   @default("pending_payment") // pending_payment, active, suspended, cancelled
+  plan            String   // basico, profesional, agencia
+  linkedinName    String?  // nombre del perfil conectado
+  linkedinHeadline String? // headline actual
+  industry        String   // industria/nicho
+  audience        String   // publico objetivo
+  notificationEmail String
+  payerEmail      String
+  telegramChatId  String?  // chatId de Telegram vinculado
+  postsGenerated  Int      @default(0)
+  postsPublished  Int      @default(0)
+  preapprovalId   String?
+  couponId        String?
+  discountApplied Int      @default(0)
+  provisionedAt   DateTime?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 

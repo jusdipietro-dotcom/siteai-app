@@ -1,0 +1,118 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
+
+const LINKEDIN_PLANS: Record<string, { monthly: number; title: string; maxProfiles: number; postsPerMonth: number }> = {
+  basico:      { monthly: 12000, title: 'LinkedIn IA Basico',      maxProfiles: 1,  postsPerMonth: 20 },
+  profesional: { monthly: 20000, title: 'LinkedIn IA Profesional', maxProfiles: 3,  postsPerMonth: 60 },
+  agencia:     { monthly: 45000, title: 'LinkedIn IA Agencia',     maxProfiles: 10, postsPerMonth: 200 },
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const ip = getClientIp(req)
+    const rl = checkRateLimit(`linkedin-subscribe:${ip}`, { maxRequests: 5, windowSeconds: 600 })
+    if (!rl.allowed) {
+      return NextResponse.json({ error: 'Demasiados intentos. Espera unos minutos.' }, { status: 429 })
+    }
+
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    }
+
+    const body = await req.json()
+    const { plan, linkedinName, industry, audience, notificationEmail, payerEmail, couponCode } = body
+
+    const planConfig = LINKEDIN_PLANS[plan]
+    if (!planConfig) {
+      return NextResponse.json({ error: 'Plan invalido' }, { status: 400 })
+    }
+
+    if (!industry?.trim()) {
+      return NextResponse.json({ error: 'Industria requerida' }, { status: 400 })
+    }
+    if (!audience?.trim()) {
+      return NextResponse.json({ error: 'Publico objetivo requerido' }, { status: 400 })
+    }
+    if (!notificationEmail?.includes('@')) {
+      return NextResponse.json({ error: 'Email de notificaciones invalido' }, { status: 400 })
+    }
+    if (!payerEmail?.includes('@')) {
+      return NextResponse.json({ error: 'Email de facturacion invalido' }, { status: 400 })
+    }
+
+    // Check existing active subscriptions
+    const activeSubs = await prisma.linkedInSubscription.count({
+      where: {
+        userId: session.user.id,
+        status: { in: ['active', 'provisioning', 'pending_payment'] },
+      },
+    })
+    if (activeSubs >= planConfig.maxProfiles) {
+      return NextResponse.json(
+        { error: `El plan ${planConfig.title} permite hasta ${planConfig.maxProfiles} perfil${planConfig.maxProfiles > 1 ? 'es' : ''}. Podes cambiar a un plan superior.` },
+        { status: 400 }
+      )
+    }
+
+    // Cancel stale pending_payment records
+    await prisma.linkedInSubscription.updateMany({
+      where: {
+        userId: session.user.id,
+        status: 'pending_payment',
+      },
+      data: { status: 'cancelled' },
+    })
+
+    // Validate coupon
+    let couponId: string | null = null
+    let discountApplied = 0
+
+    if (couponCode) {
+      const coupon = await prisma.coupon.findUnique({ where: { code: couponCode.toUpperCase() } })
+      if (!coupon || !coupon.active) {
+        return NextResponse.json({ error: 'Cupon invalido o expirado' }, { status: 400 })
+      }
+      if (coupon.usedCount >= coupon.maxUses) {
+        return NextResponse.json({ error: 'Cupon agotado' }, { status: 400 })
+      }
+      const now = new Date()
+      if (now < coupon.validFrom || now > coupon.validUntil) {
+        return NextResponse.json({ error: 'Cupon fuera del periodo de validez' }, { status: 400 })
+      }
+      couponId = coupon.id
+      discountApplied = Math.min(Math.max(coupon.discount, 0), 100)
+    }
+
+    const subscription = await prisma.linkedInSubscription.create({
+      data: {
+        userId: session.user.id,
+        plan,
+        linkedinName: linkedinName?.trim() || null,
+        industry: industry.trim(),
+        audience: audience.trim(),
+        notificationEmail: notificationEmail.toLowerCase().trim(),
+        payerEmail: payerEmail.toLowerCase().trim(),
+        couponId,
+        discountApplied,
+      },
+    })
+
+    const finalPrice = Math.round(planConfig.monthly * (1 - discountApplied / 100))
+
+    return NextResponse.json({
+      subscriptionId: subscription.id,
+      plan,
+      monthlyPrice: finalPrice,
+      discount: discountApplied,
+      status: 'pending_payment',
+      nextStep: 'payment',
+    })
+  } catch (err) {
+    console.error('[LinkedIn Subscribe] Error:', err)
+    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 })
+  }
+}

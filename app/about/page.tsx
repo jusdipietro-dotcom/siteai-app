@@ -56,6 +56,12 @@ export default function AboutPage() {
               a cada portal, sin perder plazos.
             </p>
             <p>
+              <strong className="text-surface-900">LinkedIn Optimizer IA:</strong> Optimiza tu perfil de
+              LinkedIn y genera publicaciones profesionales de alto impacto con inteligencia artificial.
+              La IA analiza tu perfil, genera recomendaciones y crea posts virales que se publican
+              automaticamente en tu cuenta despues de tu confirmacion. Todo desde Telegram.
+            </p>
+            <p>
               <strong className="text-surface-900">Automatizaciones a medida:</strong> Diseñamos flujos
               de trabajo personalizados que conectan tus herramientas, eliminan tareas repetitivas y
               permiten que tu equipo se concentre en lo que realmente importa.

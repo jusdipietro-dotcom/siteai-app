@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard, BookTemplate, Settings, HelpCircle,
   Plus, LogOut, Search, Image, ChevronLeft, ChevronRight,
-  Scale, Tag, Users, MessageSquare,
+  Scale, Tag, Users, MessageSquare, Linkedin,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useUIStore } from '@/store/useUIStore'
@@ -20,6 +20,7 @@ const NAV_ITEMS = [
   { href: '/templates',  label: 'Templates',  icon: BookTemplate },
   { href: '/monitoreo',  label: 'Monitoreo Judicial', icon: Scale },
   { href: '/resenas',    label: 'Reseñas Google IA',  icon: MessageSquare },
+  { href: '/linkedin',   label: 'LinkedIn IA',         icon: Linkedin },
 ]
 
 const BOTTOM_ITEMS = [
