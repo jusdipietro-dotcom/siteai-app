@@ -2,7 +2,7 @@ import Link from 'next/link'
 
 export const metadata = {
   title: 'Términos de uso',
-  description: 'Terminos y condiciones de uso de Automatic IA Lab. Informacion sobre planes, pagos, politica de reembolsos, responsabilidades del usuario y legislacion aplicable en Argentina.',
+  description: 'Terminos y condiciones de Automatic IA Lab. Planes, pagos, reembolsos, responsabilidades y legislacion aplicable en Argentina.',
 }
 
 const sections = [

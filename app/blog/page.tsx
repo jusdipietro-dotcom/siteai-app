@@ -108,10 +108,16 @@ export default function BlogPage() {
       <section className="py-16 px-4 sm:px-6 lg:px-8 bg-surface-50">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-2xl font-bold text-surface-950 mb-4">Recursos adicionales</h2>
-          <p className="text-surface-600 mb-6 max-w-2xl mx-auto">
+          <p className="text-surface-600 mb-4 max-w-2xl mx-auto">
             Ademas de estos articulos, podes explorar nuestras herramientas gratuitas para mejorar
             la presencia digital de tu negocio. Desde el generador de sitios web con IA hasta el
             monitoreo judicial automatico, todo esta diseñado para ahorrarte tiempo y ayudarte a crecer.
+          </p>
+          <p className="text-surface-600 mb-6 max-w-2xl mx-auto">
+            Publicamos contenido nuevo regularmente sobre las mejores practicas para emprendedores
+            y profesionales que quieren aprovechar la tecnologia sin complicarse. Cada guia esta
+            escrita pensando en negocios reales de Argentina, con ejemplos concretos y soluciones
+            que podes aplicar hoy mismo sin conocimientos tecnicos previos.
           </p>
           <div className="flex flex-wrap justify-center gap-4">
             <Link href="/gratis" className="text-sm font-semibold text-brand-600 hover:text-brand-700 underline">

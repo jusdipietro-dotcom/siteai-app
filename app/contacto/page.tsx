@@ -5,14 +5,14 @@ import { Footer } from '@/components/landing/Footer'
 import { Mail, MessageCircle, MapPin, Clock } from 'lucide-react'
 
 export const metadata: Metadata = {
-  title: 'Contacto',
-  description: 'Contacta a Automatic IA Lab por email o WhatsApp. Estamos en Buenos Aires, Argentina. Respondemos consultas sobre sitios web, monitoreo judicial y automatizaciones.',
+  title: 'Contacto — Automatic IA Lab',
+  description: 'Contacta a Automatic IA Lab por email o WhatsApp. Respondemos consultas sobre sitios web, monitoreo judicial y automatizaciones.',
   alternates: { canonical: 'https://automaticialab.com/contacto' },
   openGraph: {
     title: 'Contacto — Automatic IA Lab',
     description: 'Escribinos por email o WhatsApp. Respondemos en menos de 24 horas.',
     url: 'https://automaticialab.com/contacto',
-    images: [{ url: 'https://automaticialab.com/logo.png', width: 512, height: 341, alt: 'Automatic IA Lab' }],
+    images: [{ url: 'https://automaticialab.com/og-image.png', width: 1200, height: 630, alt: 'Automatic IA Lab' }],
   },
 }
 
@@ -117,6 +117,20 @@ export default function ContactoPage() {
               </p>
             </div>
           </div>
+
+          <h2 className="text-2xl font-bold text-surface-950 mb-4">Nuestro compromiso</h2>
+          <p className="text-surface-600 leading-relaxed mb-4">
+            En Automatic IA Lab nos tomamos en serio cada consulta que recibimos. Nuestro equipo de
+            soporte esta formado por personas reales que entienden de tecnologia, automatizacion e
+            inteligencia artificial. No vas a hablar con un bot generico: cada respuesta es personalizada
+            y pensada para resolver tu situacion concreta.
+          </p>
+          <p className="text-surface-600 leading-relaxed mb-12">
+            Si tu consulta requiere investigacion o una solucion tecnica compleja, te lo vamos a decir
+            con transparencia y te daremos un plazo estimado de resolucion. Valoramos tu tiempo tanto
+            como el nuestro, y por eso nos esforzamos en resolver cada caso en el menor tiempo posible
+            sin sacrificar la calidad de la respuesta.
+          </p>
 
           <div className="flex gap-4 pt-8 border-t border-surface-200">
             <Link

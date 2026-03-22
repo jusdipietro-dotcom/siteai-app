@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     description: 'Generá un sitio web profesional para tu negocio en 60 segundos. Sin programar, sin diseñadores, sin tarjeta de crédito.',
     url: 'https://automaticialab.com/gratis',
     type: 'website',
-    images: [{ url: 'https://automaticialab.com/logo.png', width: 512, height: 341, alt: 'Automatic IA Lab' }],
+    images: [{ url: 'https://automaticialab.com/og-image.png', width: 1200, height: 630, alt: 'Automatic IA Lab' }],
   },
   alternates: {
     canonical: 'https://automaticialab.com/gratis',

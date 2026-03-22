@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     title: 'Sobre nosotros — Automatic IA Lab',
     description: 'Plataforma argentina de automatizacion con IA. Conoce nuestra mision, equipo y valores.',
     url: 'https://automaticialab.com/about',
-    images: [{ url: 'https://automaticialab.com/logo.png', width: 512, height: 341, alt: 'Automatic IA Lab' }],
+    images: [{ url: 'https://automaticialab.com/og-image.png', width: 1200, height: 630, alt: 'Automatic IA Lab' }],
   },
 }
 

@@ -15,7 +15,7 @@ export const blogPosts: BlogPost[] = [
   {
     slug: 'por-que-tu-negocio-necesita-un-sitio-web-en-2026',
     title: '¿Por qué tu negocio necesita un sitio web en 2026?',
-    description: 'Descubri por que tener presencia online es clave para negocios locales en Argentina. Estadisticas y consejos.',
+    description: 'Descubri por que tu negocio necesita presencia online en 2026. Estadisticas reales de Argentina y consejos para ganar clientes.',
     author: 'Automatic IA Lab',
     date: '2026-03-19',
     readTime: '8 min',
@@ -93,7 +93,7 @@ export const blogPosts: BlogPost[] = [
   {
     slug: 'como-crear-sitio-web-gratis-sin-programar',
     title: 'Cómo crear un sitio web gratis sin saber programar',
-    description: 'Tutorial paso a paso para crear tu sitio web sin codigo ni diseñadores. La solucion mas facil con IA.',
+    description: 'Tutorial paso a paso para crear tu sitio web profesional sin programar ni contratar diseñadores. Usa inteligencia artificial gratis.',
     author: 'Automatic IA Lab',
     date: '2026-03-15',
     readTime: '9 min',
@@ -226,7 +226,7 @@ export const blogPosts: BlogPost[] = [
   {
     slug: '5-errores-comunes-sitios-web-negocios-locales',
     title: '5 errores comunes en sitios web de negocios locales',
-    description: 'Identifica los errores mas frecuentes en sitios web de pymes y como solucionarlos con acciones concretas.',
+    description: 'Identifica los 5 errores que mas clientes les cuestan a los negocios locales en sus sitios web y aprende como evitarlos.',
     author: 'Automatic IA Lab',
     date: '2026-03-10',
     readTime: '7 min',

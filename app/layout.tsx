@@ -32,13 +32,13 @@ export const metadata: Metadata = {
     title: 'Automatic IA Lab — Automatizaciones con IA',
     description: 'Plataforma de automatización con IA: sitios web, monitoreo judicial y más. Todo sin código.',
     url: 'https://automaticialab.com',
-    images: [{ url: 'https://automaticialab.com/logo.png', width: 1200, height: 630, alt: 'Automatic IA Lab' }],
+    images: [{ url: 'https://automaticialab.com/og-image.png', width: 1200, height: 630, alt: 'Automatic IA Lab' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Automatic IA Lab — Automatizaciones con IA',
     description: 'Plataforma de automatización con IA: sitios web, monitoreo judicial y más. Todo sin código.',
-    images: ['https://automaticialab.com/logo.png'],
+    images: ['https://automaticialab.com/og-image.png'],
   },
 }
 
