@@ -2,7 +2,7 @@ import Link from 'next/link'
 
 export const metadata = {
   title: 'Política de privacidad',
-  description: 'Conoce como Automatic IA Lab recopila, usa y protege tus datos personales. Informacion sobre cookies, almacenamiento seguro, retencion de datos y tus derechos como usuario.',
+  description: 'Conoce como Automatic IA Lab recopila, usa y protege tus datos personales. Cookies, seguridad, retencion y tus derechos.',
 }
 
 const sections = [
