@@ -1,5 +1,6 @@
 'use client'
 import Link from 'next/link'
+import NextImage from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -58,7 +59,7 @@ export function DashboardSidebar() {
               exit={{ opacity: 0, x: -10 }}
               className="flex items-center gap-2.5 flex-1 min-w-0"
             >
-              <img src="/logo.png" alt="Automatic IA Lab" className="h-8 w-8 object-contain rounded-xl shrink-0" />
+              <NextImage src="/logo.png" alt="Automatic IA Lab" width={32} height={32} className="h-8 w-8 object-contain rounded-xl shrink-0" />
               <div className="min-w-0">
                 <p className="text-sm font-bold text-white truncate">Automatic IA Lab</p>
                 <p className="text-[10px] text-white/40 truncate">Website Builder</p>
@@ -72,7 +73,7 @@ export function DashboardSidebar() {
               exit={{ opacity: 0 }}
               className="flex items-center justify-center mx-auto"
             >
-              <img src="/logo.png" alt="Automatic IA Lab" className="h-8 w-8 object-contain rounded-xl" />
+              <NextImage src="/logo.png" alt="Automatic IA Lab" width={32} height={32} className="h-8 w-8 object-contain rounded-xl" />
             </motion.div>
           )}
         </AnimatePresence>

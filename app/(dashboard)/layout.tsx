@@ -1,6 +1,7 @@
 'use client'
 import { useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useRouter, usePathname } from 'next/navigation'
 import { Plus } from 'lucide-react'
 import { useUIStore } from '@/store/useUIStore'
@@ -29,7 +30,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {!hideMobileBar && (
         <div className="md:hidden fixed top-0 left-0 right-0 z-20 flex items-center justify-between h-14 px-4 bg-surface-950 border-b border-white/10">
           <Link href="/dashboard">
-            <img src="/logo.png" alt="Automatic IA Lab" className="h-7 w-7 object-contain rounded-lg" />
+            <Image src="/logo.png" alt="Automatic IA Lab" width={28} height={28} className="h-7 w-7 object-contain rounded-lg" />
           </Link>
           <button
             type="button"

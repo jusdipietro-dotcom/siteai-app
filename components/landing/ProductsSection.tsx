@@ -1,7 +1,7 @@
 'use client'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { ArrowRight, Globe, Scale, Bot, Check, Zap, Bell, FileText, Shield, Clock, Mail, Webhook } from 'lucide-react'
+import { ArrowRight, Globe, Scale, Bot, Check, Zap, Bell, FileText, Shield, Clock, Mail, Webhook, MessageSquare } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 const products = [
@@ -42,6 +42,25 @@ const products = [
     ctaHref: '/register?next=monitoreo',
     price: 'Desde $19.000/mes',
     priceNote: 'Por CUIT monitoreado',
+  },
+  {
+    id: 'resenas-google',
+    badge: 'Nuevo',
+    title: 'Reseñas Google IA',
+    subtitle: 'Respondé cada reseña en minutos, no en días',
+    description: 'Un agente de IA monitorea tus reseñas de Google Business y responde automáticamente con el tono de tu marca. Respuestas personalizadas según la puntuación, el contenido y el nombre del cliente. Tu reputación online, siempre atendida.',
+    icon: MessageSquare,
+    gradient: 'from-amber-500 to-orange-500',
+    bgGlow: 'bg-amber-500/10',
+    features: [
+      { icon: Zap, text: 'Respuestas automáticas con IA' },
+      { icon: Clock, text: 'Monitoreo cada 30 minutos' },
+      { icon: Shield, text: 'Tono personalizado por negocio' },
+    ],
+    cta: 'Activar respuestas IA',
+    ctaHref: '/register?next=resenas',
+    price: 'Desde $15.000/mes',
+    priceNote: 'Por perfil de Google Business',
   },
   {
     id: 'automatizaciones',

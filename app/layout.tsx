@@ -8,7 +8,7 @@ import { WhatsAppButton } from '@/components/shared/WhatsAppButton'
 
 export const metadata: Metadata = {
   title: { default: 'Automatic IA Lab — Automatizaciones con IA', template: '%s · Automatic IA Lab' },
-  description: 'Plataforma de automatización con IA: creá tu sitio web en minutos, monitoreá notificaciones judiciales y automatizá procesos de tu negocio.',
+  description: 'Plataforma de automatización con IA: creá tu sitio web en minutos, monitoreá notificaciones judiciales, respondé reseñas de Google con IA y automatizá procesos de tu negocio.',
   keywords: [
     'automatizacion con inteligencia artificial',
     'crear sitio web gratis',
@@ -17,6 +17,8 @@ export const metadata: Metadata = {
     'monitoreo judicial Argentina',
     'automatizacion para abogados',
     'pagina web para negocios',
+    'responder resenas google con ia',
+    'gestion de resenas google business',
     'automatic ia lab',
   ],
   icons: { icon: '/favicon.ico' },
@@ -30,14 +32,14 @@ export const metadata: Metadata = {
     locale: 'es_AR',
     siteName: 'Automatic IA Lab',
     title: 'Automatic IA Lab — Automatizaciones con IA',
-    description: 'Plataforma de automatización con IA: sitios web, monitoreo judicial y más. Todo sin código.',
+    description: 'Plataforma de automatización con IA: sitios web, monitoreo judicial, reseñas Google y más. Todo sin código.',
     url: 'https://automaticialab.com',
     images: [{ url: 'https://automaticialab.com/og-image.png', width: 1200, height: 630, alt: 'Automatic IA Lab' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Automatic IA Lab — Automatizaciones con IA',
-    description: 'Plataforma de automatización con IA: sitios web, monitoreo judicial y más. Todo sin código.',
+    description: 'Plataforma de automatización con IA: sitios web, monitoreo judicial, reseñas Google y más. Todo sin código.',
     images: ['https://automaticialab.com/og-image.png'],
   },
 }

@@ -52,6 +52,18 @@ const faqs = [
     q: '¿Qué tipo de automatizaciones hacen a medida?',
     a: 'Desarrollamos flujos con IA: scraping de datos, integraciones API, agentes LLM (GPT, Gemini, Groq), procesamiento de documentos, notificaciones inteligentes y más. Cada proyecto se adapta a la necesidad del cliente.',
   },
+  {
+    q: '¿Cómo funciona el respondedor de reseñas de Google?',
+    a: 'Un agente de IA monitorea tu perfil de Google Business cada 30 minutos. Cuando detecta una reseña nueva, genera una respuesta personalizada basada en la puntuación, el contenido del comentario y el nombre del cliente. La respuesta se publica automáticamente con el tono de tu marca.',
+  },
+  {
+    q: '¿Puedo personalizar el tono de las respuestas a reseñas?',
+    a: 'Sí. Durante la configuración inicial definís el tono y estilo de comunicación de tu negocio (formal, cercano, profesional, etc.). La IA adapta cada respuesta respetando esas directrices, y podés ajustarlas en cualquier momento desde tu panel.',
+  },
+  {
+    q: '¿Funciona con cualquier negocio de Google Business?',
+    a: 'Sí, funciona con cualquier perfil de Google Business verificado, sin importar el rubro. Solo necesitás autorizar el acceso a tu perfil y la IA se encarga del resto. Podés gestionar múltiples perfiles desde una misma cuenta.',
+  },
 ]
 
 function FaqItem({ q, a }: { q: string; a: string }) {
