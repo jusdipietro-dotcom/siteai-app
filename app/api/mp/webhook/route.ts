@@ -198,6 +198,9 @@ export async function POST(req: NextRequest) {
           })
           console.log(`[MP Webhook] Reviews ${reviewsSubId} → provisioning (plan: ${reviewsPlan})`)
 
+          // Trigger auto-provisioning via n8n webhook
+          await triggerReviewsProvisioning(reviewsSubId)
+
           // Send payment confirmation email
           try {
             const subForEmail = await prisma.reviewsSubscription.findUnique({
@@ -221,6 +224,9 @@ export async function POST(req: NextRequest) {
             data: { status: 'suspended' },
           })
           console.log(`[MP Webhook] Reviews ${reviewsSubId} suspended (${status})`)
+
+          // Trigger deprovisioning
+          await triggerReviewsDeprovisioning(reviewsSubId)
 
           try {
             const subForEmail = await prisma.reviewsSubscription.findUnique({
@@ -410,6 +416,86 @@ async function cancelOldSubscription(oldSubId: string) {
     })
   } catch (err) {
     console.error(`[MP Webhook] Error cancelling old subscription ${oldSubId}:`, err)
+  }
+}
+
+/** Trigger n8n reviews provisioning webhook with retry */
+async function triggerReviewsProvisioning(subscriptionId: string) {
+  const webhookUrl = process.env.N8N_REVIEWS_PROVISIONING_WEBHOOK
+  if (!webhookUrl) {
+    console.warn('[MP Webhook] N8N_REVIEWS_PROVISIONING_WEBHOOK not configured — manual provisioning required')
+    return
+  }
+
+  const sub = await prisma.reviewsSubscription.findUnique({
+    where: { id: subscriptionId },
+    include: { user: { select: { email: true, name: true } } },
+  })
+  if (!sub) return
+
+  const payload = JSON.stringify({
+    subscriptionId: sub.id,
+    userId: sub.userId,
+    userEmail: sub.user.email,
+    userName: sub.user.name,
+    plan: sub.plan,
+    businessName: sub.businessName,
+    businessType: sub.businessType,
+    searchUrl: sub.searchUrl,
+    googleEmail: sub.googleEmail,
+    responseTone: sub.responseTone,
+    notificationEmail: sub.notificationEmail,
+  })
+
+  const MAX_RETRIES = 3
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const res = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: payload,
+      })
+
+      if (res.ok) {
+        console.log(`[MP Webhook] Reviews provisioning OK (attempt ${attempt}): ${res.status}`)
+        return
+      }
+
+      console.warn(`[MP Webhook] Reviews provisioning attempt ${attempt}/${MAX_RETRIES} failed: HTTP ${res.status}`)
+    } catch (err) {
+      console.error(`[MP Webhook] Reviews provisioning attempt ${attempt}/${MAX_RETRIES} error:`, err)
+    }
+
+    if (attempt < MAX_RETRIES) {
+      const delay = attempt * 2000
+      await new Promise(r => setTimeout(r, delay))
+    }
+  }
+
+  console.error(`[MP Webhook] Reviews provisioning FAILED after ${MAX_RETRIES} attempts for ${subscriptionId}`)
+}
+
+/** Trigger n8n reviews deprovisioning */
+async function triggerReviewsDeprovisioning(subscriptionId: string) {
+  const webhookUrl = process.env.N8N_REVIEWS_PROVISIONING_WEBHOOK
+  if (!webhookUrl) return
+
+  try {
+    const sub = await prisma.reviewsSubscription.findUnique({
+      where: { id: subscriptionId },
+    })
+    if (!sub?.n8nTenantId) return
+
+    const deprovisionUrl = webhookUrl.replace('reviews-provision', 'reviews-deprovision')
+    const res = await fetch(deprovisionUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ subscriptionId, tenantId: sub.n8nTenantId }),
+    })
+
+    console.log(`[MP Webhook] Reviews deprovision tenant ${sub.n8nTenantId}: ${res.status}`)
+  } catch (err) {
+    console.error('[MP Webhook] Failed to trigger reviews deprovisioning:', err)
   }
 }
 
