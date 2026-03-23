@@ -85,16 +85,21 @@ export async function POST(req: NextRequest) {
         const replacesSubId = parts[3] || null // Optional: old subscription being replaced
 
         if (status === 'authorized' && subscriptionId) {
-          // Idempotency: skip if already provisioned/active
-          const currentSub = await prisma.monitoringSubscription.findUnique({
-            where: { id: subscriptionId },
+          // Atomic idempotency: only update if still pending_payment
+          const { count } = await prisma.monitoringSubscription.updateMany({
+            where: { id: subscriptionId, status: 'pending_payment' },
+            data: { status: 'provisioning', preapprovalId },
           })
-          if (currentSub && ['active', 'provisioning'].includes(currentSub.status)) {
-            console.log(`[MP Webhook] Monitoring ${subscriptionId} already ${currentSub.status} — skipping`)
+
+          if (count === 0) {
+            console.log(`[MP Webhook] Monitoring ${subscriptionId} already processed — skipping`)
             return NextResponse.json({ received: true })
           }
 
-          // Increment coupon usage now that payment is confirmed
+          // Increment coupon usage (safe: only reaches here once due to atomic update above)
+          const currentSub = await prisma.monitoringSubscription.findUnique({
+            where: { id: subscriptionId },
+          })
           if (currentSub?.couponId) {
             await prisma.coupon.update({
               where: { id: currentSub.couponId },
@@ -109,10 +114,6 @@ export async function POST(req: NextRequest) {
             console.log(`[MP Webhook] Old subscription ${replacesSubId} cancelled (replaced by ${subscriptionId})`)
           }
 
-          await prisma.monitoringSubscription.update({
-            where: { id: subscriptionId },
-            data: { status: 'provisioning', preapprovalId },
-          })
           console.log(`[MP Webhook] Monitoring ${subscriptionId} → provisioning (plan: ${plan})`)
 
           // Trigger auto-provisioning via n8n webhook (with retry)
@@ -176,15 +177,21 @@ export async function POST(req: NextRequest) {
         const reviewsPlan = parts[2]
 
         if (status === 'authorized' && reviewsSubId) {
-          const currentSub = await prisma.reviewsSubscription.findUnique({
-            where: { id: reviewsSubId },
+          // Atomic idempotency: only update if still pending_payment
+          const { count } = await prisma.reviewsSubscription.updateMany({
+            where: { id: reviewsSubId, status: 'pending_payment' },
+            data: { status: 'provisioning', preapprovalId },
           })
-          if (currentSub && ['active', 'provisioning'].includes(currentSub.status)) {
-            console.log(`[MP Webhook] Reviews ${reviewsSubId} already ${currentSub.status} — skipping`)
+
+          if (count === 0) {
+            console.log(`[MP Webhook] Reviews ${reviewsSubId} already processed — skipping`)
             return NextResponse.json({ received: true })
           }
 
-          // Increment coupon usage
+          // Increment coupon usage (safe: only reaches here once due to atomic update above)
+          const currentSub = await prisma.reviewsSubscription.findUnique({
+            where: { id: reviewsSubId },
+          })
           if (currentSub?.couponId) {
             await prisma.coupon.update({
               where: { id: currentSub.couponId },
@@ -192,10 +199,6 @@ export async function POST(req: NextRequest) {
             })
           }
 
-          await prisma.reviewsSubscription.update({
-            where: { id: reviewsSubId },
-            data: { status: 'provisioning', preapprovalId },
-          })
           console.log(`[MP Webhook] Reviews ${reviewsSubId} → provisioning (plan: ${reviewsPlan})`)
 
           // Trigger auto-provisioning via n8n webhook
@@ -257,15 +260,21 @@ export async function POST(req: NextRequest) {
         const linkedinPlan = parts[2]
 
         if (status === 'authorized' && linkedinSubId) {
-          const currentSub = await prisma.linkedInSubscription.findUnique({
-            where: { id: linkedinSubId },
+          // Atomic idempotency: only update if still pending_payment
+          const { count } = await prisma.linkedInSubscription.updateMany({
+            where: { id: linkedinSubId, status: 'pending_payment' },
+            data: { status: 'active', preapprovalId, provisionedAt: new Date() },
           })
-          if (currentSub && ['active', 'provisioning'].includes(currentSub.status)) {
-            console.log(`[MP Webhook] LinkedIn ${linkedinSubId} already ${currentSub.status} — skipping`)
+
+          if (count === 0) {
+            console.log(`[MP Webhook] LinkedIn ${linkedinSubId} already processed — skipping`)
             return NextResponse.json({ received: true })
           }
 
-          // Increment coupon usage
+          // Increment coupon usage (safe: only reaches here once)
+          const currentSub = await prisma.linkedInSubscription.findUnique({
+            where: { id: linkedinSubId },
+          })
           if (currentSub?.couponId) {
             await prisma.coupon.update({
               where: { id: currentSub.couponId },
@@ -273,10 +282,6 @@ export async function POST(req: NextRequest) {
             })
           }
 
-          await prisma.linkedInSubscription.update({
-            where: { id: linkedinSubId },
-            data: { status: 'active', preapprovalId, provisionedAt: new Date() },
-          })
           console.log(`[MP Webhook] LinkedIn ${linkedinSubId} → active (plan: ${linkedinPlan})`)
 
           // Send payment confirmation email

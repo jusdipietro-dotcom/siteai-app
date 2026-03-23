@@ -18,7 +18,7 @@ const PLANS = [
     name: 'Básico',
     price: 15000,
     profiles: 1,
-    features: ['1 perfil de Google Business', 'Monitoreo cada 30 minutos', 'Respuestas automáticas con IA', 'Tono personalizado'],
+    features: ['1 perfil de Google Business', 'Monitoreo cada 30 minutos', 'Respuestas automáticas con IA', 'Tono personalizado', 'Alertas solo reseñas negativas'],
   },
   {
     id: 'profesional',
@@ -26,14 +26,14 @@ const PLANS = [
     price: 25000,
     profiles: 3,
     popular: true,
-    features: ['Hasta 3 perfiles', 'Monitoreo cada 30 minutos', 'Respuestas automáticas con IA', 'Tono personalizado', 'Soporte prioritario'],
+    features: ['Hasta 3 perfiles', 'Monitoreo cada 30 minutos', 'Respuestas automáticas con IA', 'Tono personalizado', 'Email de cada respuesta enviada', 'Soporte prioritario (24hs)'],
   },
   {
     id: 'premium',
     name: 'Premium',
     price: 45000,
     profiles: 10,
-    features: ['Hasta 10 perfiles', 'Monitoreo cada 30 minutos', 'Respuestas automáticas con IA', 'Tono personalizado', 'Soporte prioritario', 'Notificaciones por email'],
+    features: ['Hasta 10 perfiles', 'Monitoreo cada 30 minutos', 'Respuestas automáticas con IA', 'Tono personalizado por perfil', 'Email de cada respuesta + alerta negativas', 'Soporte dedicado (mismo día)'],
   },
 ]
 

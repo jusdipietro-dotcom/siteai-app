@@ -4,9 +4,14 @@ import { prisma } from '@/lib/prisma'
 const PROVISIONING_SECRET = process.env.SCRAPER_API_KEY
 
 function authenticateRequest(req: NextRequest): boolean {
-  const apiKey = req.nextUrl.searchParams.get('apiKey')
-    || req.headers.get('x-api-key')
-  return !!PROVISIONING_SECRET && apiKey === PROVISIONING_SECRET
+  // Prefer header auth over query params (query params leak in logs)
+  const apiKey = req.headers.get('x-api-key')
+    || req.nextUrl.searchParams.get('apiKey')
+  if (!PROVISIONING_SECRET) {
+    console.error('[Reviews Provision] SCRAPER_API_KEY not configured')
+    return false
+  }
+  return apiKey === PROVISIONING_SECRET
 }
 
 /**
@@ -86,18 +91,20 @@ export async function PATCH(
       if (!n8nTenantId) {
         return NextResponse.json({ error: 'n8nTenantId required for activation' }, { status: 400 })
       }
-      if (sub.status !== 'provisioning') {
-        return NextResponse.json({ error: `Cannot activate subscription with status: ${sub.status}` }, { status: 400 })
-      }
 
-      await prisma.reviewsSubscription.update({
-        where: { id: params.id },
+      // Atomic: only activate if still in provisioning state
+      const { count } = await prisma.reviewsSubscription.updateMany({
+        where: { id: params.id, status: 'provisioning' },
         data: {
           status: 'active',
           n8nTenantId,
           provisionedAt: new Date(),
         },
       })
+
+      if (count === 0) {
+        return NextResponse.json({ error: `Cannot activate subscription with status: ${sub.status}` }, { status: 400 })
+      }
 
       console.log(`[Reviews Provision] Subscription ${params.id} activated — tenantId: ${n8nTenantId}`)
       return NextResponse.json({ status: 'active', n8nTenantId })

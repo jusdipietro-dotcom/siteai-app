@@ -25,12 +25,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Suscripción no encontrada' }, { status: 404 })
     }
 
-    if (sub.status === 'cancelled' || sub.status === 'suspended') {
+    if (sub.status === 'cancelled') {
       return NextResponse.json({ error: 'La suscripción ya está cancelada' }, { status: 400 })
     }
 
-    // Cancel MercadoPago preapproval
-    if (sub.preapprovalId && MP_ACCESS_TOKEN) {
+    // Cancel MercadoPago preapproval (skip if no preapprovalId or free subscription)
+    if (sub.preapprovalId && !sub.preapprovalId.startsWith('free-') && MP_ACCESS_TOKEN) {
       try {
         await fetch(`https://api.mercadopago.com/preapproval/${sub.preapprovalId}`, {
           method: 'PUT',

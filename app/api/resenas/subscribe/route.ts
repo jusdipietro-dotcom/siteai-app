@@ -10,7 +10,7 @@ const REVIEWS_PLANS: Record<string, { monthly: number; title: string; maxProfile
   premium:   { monthly: 45000, title: 'Reseñas Google IA Premium',   maxProfiles: 10 },
 }
 
-export { REVIEWS_PLANS }
+// Note: REVIEWS_PLANS also defined in create-reviews-subscription/route.ts
 
 export async function POST(req: NextRequest) {
   try {
@@ -72,11 +72,11 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Enforce max profiles per plan
+    // Enforce max profiles per plan (only count truly active subscriptions)
     const activeSubs = await prisma.reviewsSubscription.count({
       where: {
         userId: session.user.id,
-        status: { in: ['active', 'provisioning', 'pending_payment'] },
+        status: { in: ['active', 'provisioning'] },
       },
     })
     if (activeSubs >= planConfig.maxProfiles) {
@@ -86,11 +86,11 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Cancel stale pending_payment records for same business
+    // Cancel ALL stale pending_payment records for this user (not just same business)
+    // This prevents orphaned pending_payment records from accumulating
     await prisma.reviewsSubscription.updateMany({
       where: {
         userId: session.user.id,
-        businessName: businessName.trim(),
         status: 'pending_payment',
       },
       data: { status: 'cancelled' },

@@ -47,10 +47,47 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Plan inválido' }, { status: 400 })
     }
 
-    const isFreeTrial = sub.discountApplied >= 100
-    const finalPrice = isFreeTrial
-      ? planConfig.monthly
-      : Math.round(planConfig.monthly * (1 - sub.discountApplied / 100))
+    const finalPrice = Math.round(planConfig.monthly * (1 - sub.discountApplied / 100))
+
+    // 100% discount: skip MercadoPago, activate directly
+    if (finalPrice <= 0) {
+      await prisma.reviewsSubscription.update({
+        where: { id: subscriptionId },
+        data: { status: 'provisioning', preapprovalId: `free-${subscriptionId}` },
+      })
+      console.log(`[MP Reviews] 100% discount — skipping MP, direct provisioning for ${subscriptionId}`)
+
+      // Trigger provisioning directly
+      const webhookUrl = process.env.N8N_REVIEWS_PROVISIONING_WEBHOOK
+      if (webhookUrl) {
+        try {
+          await fetch(webhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              subscriptionId: sub.id,
+              userId: sub.userId,
+              plan: sub.plan,
+              businessName: sub.businessName,
+              businessType: sub.businessType,
+              searchUrl: sub.searchUrl,
+              googleEmail: sub.googleEmail,
+              responseTone: sub.responseTone,
+              notificationEmail: sub.notificationEmail,
+            }),
+          })
+        } catch (err) {
+          console.error('[MP Reviews] Free provisioning webhook failed:', err)
+        }
+      }
+
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? process.env.APP_URL ?? 'https://automaticialab.com'
+      return NextResponse.json({
+        init_point: `${baseUrl}/resenas?mp_return=true&status=approved&sub=${subscriptionId}`,
+        id: `free-${subscriptionId}`,
+        free: true,
+      })
+    }
 
     const configuredUrl = process.env.NEXT_PUBLIC_APP_URL ?? process.env.APP_URL
     const requestHost = req.headers.get('x-forwarded-host') ?? req.headers.get('host') ?? 'localhost:3000'
@@ -72,7 +109,6 @@ export async function POST(req: NextRequest) {
         start_date: startDate,
         transaction_amount: finalPrice,
         currency_id: 'ARS',
-        ...(isFreeTrial ? { free_trial: { frequency: 1, frequency_type: 'months' } } : {}),
       },
       back_url: backUrl,
     }
