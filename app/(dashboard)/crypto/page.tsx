@@ -47,7 +47,7 @@ type Subscription = {
   id: string
   status: string
   plan: string
-  symbols: string[]
+  symbols: string
   timeframe: string
   telegramChatId: string
   signalsSent: number
@@ -72,6 +72,7 @@ function CryptoPage() {
   const searchParams = useSearchParams()
   const mpReturn = searchParams.get('mp_return')
   const mpStatus = searchParams.get('status')
+  const mpSubId = searchParams.get('sub')
   const [step, setStep] = useState<Step>(mpReturn ? 'done' : 'plan')
   const paymentOk = mpStatus === 'approved' || mpStatus === 'pending'
   const [selectedPlan, setSelectedPlan] = useState('')
@@ -215,7 +216,7 @@ function CryptoPage() {
                       <div>
                         <p className="font-medium text-surface-900 text-sm">Plan {sub.plan}</p>
                         <p className="text-xs text-surface-400">
-                          {sub.symbols?.length ?? 0} pares — {sub.timeframe ?? 'multi-timeframe'}
+                          {sub.symbols?.split(',').length ?? 0} pares — {sub.timeframe ?? 'multi-timeframe'}
                         </p>
                       </div>
                     </div>
@@ -524,6 +525,22 @@ function CryptoPage() {
                           <span className="text-surface-700">Revisá tu email para los próximos pasos</span>
                         </div>
                       </div>
+
+                      {mpSubId && (
+                        <div className="mb-6">
+                          <p className="text-sm text-surface-600 mb-3">
+                            Para recibir las señales, conectá tu Telegram haciendo click en el botón:
+                          </p>
+                          <a
+                            href={`https://t.me/ClaudecodeLAB_bot?start=${mpSubId}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 px-6 py-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors font-medium"
+                          >
+                            Conectar Telegram
+                          </a>
+                        </div>
+                      )}
                     </>
                   ) : (
                     <>
