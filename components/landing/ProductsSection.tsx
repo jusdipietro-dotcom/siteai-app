@@ -1,7 +1,7 @@
 'use client'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { ArrowRight, Globe, Scale, Bot, Check, Zap, Bell, FileText, Shield, Clock, Mail, Webhook, MessageSquare, Linkedin, TrendingUp, Users, PenTool } from 'lucide-react'
+import { ArrowRight, Globe, Scale, Bot, Check, Zap, Bell, FileText, Shield, Clock, Mail, Webhook, MessageSquare, Linkedin, TrendingUp, Users, PenTool, CandlestickChart, Activity, BarChart3 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 const products = [
@@ -80,6 +80,25 @@ const products = [
     ctaHref: '/register?next=linkedin',
     price: 'Desde $12.000/mes',
     priceNote: 'Por perfil de LinkedIn',
+  },
+  {
+    id: 'trading-signals',
+    badge: 'Nuevo',
+    title: 'Trading Signals IA',
+    subtitle: 'Señales cripto con análisis técnico real',
+    description: 'Bot inteligente que analiza 5 criptomonedas en tiempo real combinando 6 indicadores técnicos (RSI, MACD, EMA, Bollinger, ATR, Volumen). Solo envía señales cuando hay confluencia real. Incluye Stop Loss, Take Profit y gestión de riesgo automática. Directo a tu Telegram.',
+    icon: CandlestickChart,
+    gradient: 'from-yellow-500 to-orange-600',
+    bgGlow: 'bg-yellow-500/10',
+    features: [
+      { icon: Activity, text: 'Análisis multi-indicador en tiempo real' },
+      { icon: Shield, text: 'Stop Loss y Take Profit automáticos' },
+      { icon: BarChart3, text: 'Score de confluencia 0-10 por señal' },
+    ],
+    cta: 'Activar señales',
+    ctaHref: '/register?next=trading',
+    price: 'Desde $15.000/mes',
+    priceNote: 'Señales ilimitadas 24/7',
   },
   {
     id: 'automatizaciones',

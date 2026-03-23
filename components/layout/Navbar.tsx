@@ -14,6 +14,7 @@ const navLinks = [
   { label: 'Monitoreo Judicial', href: '/#monitoreo-judicial' },
   { label: 'Reseñas Google', href: '/#resenas-google' },
   { label: 'LinkedIn IA', href: '/#linkedin-optimizer' },
+  { label: 'Trading Signals', href: '/#trading-signals' },
   { label: 'Precios', href: '/#pricing' },
   { label: 'Blog', href: '/blog' },
 ]
