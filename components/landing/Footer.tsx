@@ -4,6 +4,7 @@ const links: Record<string, { label: string; href: string }[]> = {
   Productos: [
     { label: 'Sitios Web con IA', href: '/#sitios-web' },
     { label: 'Monitoreo Judicial', href: '/#monitoreo-judicial' },
+    { label: 'Reseñas Google IA', href: '/#resenas-google' },
     { label: 'Automatizaciones', href: '/#automatizaciones' },
     { label: 'Precios', href: '/#pricing' },
     { label: 'Plan Gratuito', href: '/gratis' },

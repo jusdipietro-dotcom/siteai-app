@@ -52,6 +52,23 @@ export async function POST(req: NextRequest) {
 
     console.log(`[Reviews Cancel] Subscription ${subscriptionId} cancelled by user ${session.user.id}`)
 
+    // Trigger deprovisioning — remove tenant from n8n review bot
+    try {
+      const webhookUrl = process.env.N8N_REVIEWS_PROVISIONING_WEBHOOK
+      const deprovisionUrl = process.env.N8N_REVIEWS_DEPROVISION_WEBHOOK
+        || (webhookUrl ? webhookUrl.replace('reviews-provision', 'reviews-deprovision') : '')
+      if (deprovisionUrl && sub.n8nTenantId) {
+        const dpRes = await fetch(deprovisionUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subscriptionId, tenantId: sub.n8nTenantId }),
+        })
+        console.log(`[Reviews Cancel] Deprovision tenant ${sub.n8nTenantId}: ${dpRes.status}`)
+      }
+    } catch (dpErr) {
+      console.error('[Reviews Cancel] Failed to trigger deprovisioning:', dpErr)
+    }
+
     return NextResponse.json({ status: 'cancelled' })
   } catch (err) {
     console.error('[Reviews Cancel] Error:', err)

@@ -561,7 +561,8 @@ async function triggerReviewsDeprovisioning(subscriptionId: string) {
     })
     if (!sub?.n8nTenantId) return
 
-    const deprovisionUrl = webhookUrl.replace('reviews-provision', 'reviews-deprovision')
+    const deprovisionUrl = process.env.N8N_REVIEWS_DEPROVISION_WEBHOOK
+      || webhookUrl.replace('reviews-provision', 'reviews-deprovision')
     const res = await fetch(deprovisionUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, Suspense } from 'react'
-import { useSession } from 'next-auth/react'
+import { useSession, signIn } from 'next-auth/react'
 import { useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -33,7 +33,7 @@ const PLANS = [
     name: 'Premium',
     price: 45000,
     profiles: 10,
-    features: ['Hasta 10 perfiles', 'Monitoreo cada 15 minutos', 'Respuestas automáticas con IA', 'Tono personalizado', 'Soporte prioritario', 'Dashboard de reseñas'],
+    features: ['Hasta 10 perfiles', 'Monitoreo cada 30 minutos', 'Respuestas automáticas con IA', 'Tono personalizado', 'Soporte prioritario', 'Notificaciones por email'],
   },
 ]
 
@@ -73,7 +73,9 @@ function ResenasPage() {
   const { data: session } = useSession()
   const searchParams = useSearchParams()
   const mpReturn = searchParams.get('mp_return')
+  const mpStatus = searchParams.get('status') // MP returns status=approved/pending/null
   const [step, setStep] = useState<Step>(mpReturn ? 'done' : 'plan')
+  const paymentOk = mpStatus === 'approved' || mpStatus === 'pending'
   const [selectedPlan, setSelectedPlan] = useState('')
   const [businessName, setBusinessName] = useState('')
   const [businessType, setBusinessType] = useState('')
@@ -95,6 +97,13 @@ function ResenasPage() {
     }
   }, [session?.user?.email])
 
+  // Redirect unauthenticated users to login
+  useEffect(() => {
+    if (session === null) {
+      signIn(undefined, { callbackUrl: '/resenas' })
+    }
+  }, [session])
+
   const fetchSubscriptions = () => {
     fetch('/api/resenas/status')
       .then(r => r.json())
@@ -111,7 +120,7 @@ function ResenasPage() {
     if (!couponCode.trim()) return
     setLoading(true)
     try {
-      const res = await fetch('/api/monitoreo/validate-coupon', {
+      const res = await fetch('/api/resenas/validate-coupon', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code: couponCode }),
@@ -605,27 +614,37 @@ function ResenasPage() {
             {step === 'done' && (
               <motion.div key="done" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
                 <div className="text-center py-8 max-w-md mx-auto">
-                  <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
-                    <CheckCircle2 className="w-8 h-8 text-emerald-600" />
-                  </div>
-                  <h2 className="text-xl font-bold text-surface-900 mb-2">Pago procesado</h2>
-                  <p className="text-sm text-surface-500 mb-6">Tu suscripción está siendo configurada.</p>
-
-                  <div className="space-y-3 text-left bg-surface-50 rounded-2xl p-5 mb-6">
-                    <div className="flex items-center gap-3 text-sm">
-                      <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
-                      <span className="text-surface-700">Pago confirmado</span>
-                    </div>
-                    <div className="flex items-center gap-3 text-sm">
-                      <Clock className="w-5 h-5 text-blue-500 shrink-0" />
-                      <span className="text-surface-700">Configuración en proceso (hasta 48hs hábiles)</span>
-                    </div>
-                    <div className="flex items-center gap-3 text-sm">
-                      <Mail className="w-5 h-5 text-surface-400 shrink-0" />
-                      <span className="text-surface-700">Te notificamos por email cuando esté activo</span>
-                    </div>
-                  </div>
-
+                  {paymentOk ? (
+                    <>
+                      <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
+                        <CheckCircle2 className="w-8 h-8 text-emerald-600" />
+                      </div>
+                      <h2 className="text-xl font-bold text-surface-900 mb-2">Pago procesado</h2>
+                      <p className="text-sm text-surface-500 mb-6">Tu suscripción está siendo configurada.</p>
+                      <div className="space-y-3 text-left bg-surface-50 rounded-2xl p-5 mb-6">
+                        <div className="flex items-center gap-3 text-sm">
+                          <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
+                          <span className="text-surface-700">{mpStatus === 'approved' ? 'Pago confirmado' : 'Pago pendiente de acreditación'}</span>
+                        </div>
+                        <div className="flex items-center gap-3 text-sm">
+                          <Clock className="w-5 h-5 text-blue-500 shrink-0" />
+                          <span className="text-surface-700">Configuración en proceso (hasta 48hs hábiles)</span>
+                        </div>
+                        <div className="flex items-center gap-3 text-sm">
+                          <Mail className="w-5 h-5 text-surface-400 shrink-0" />
+                          <span className="text-surface-700">Te notificamos por email cuando esté activo</span>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="w-16 h-16 rounded-full bg-yellow-100 flex items-center justify-center mx-auto mb-4">
+                        <AlertCircle className="w-8 h-8 text-yellow-600" />
+                      </div>
+                      <h2 className="text-xl font-bold text-surface-900 mb-2">Pago no completado</h2>
+                      <p className="text-sm text-surface-500 mb-6">El pago no se procesó correctamente. Podés intentar nuevamente.</p>
+                    </>
+                  )}
                   <Button
                     variant="gradient"
                     onClick={() => {
