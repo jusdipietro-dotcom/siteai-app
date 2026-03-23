@@ -5,7 +5,7 @@ import { Footer } from '@/components/landing/Footer'
 import { Download, FileText, BookOpen, Video, ArrowRight, CheckCircle2 } from 'lucide-react'
 
 export const metadata: Metadata = {
-  title: 'Recursos Gratis para tu Negocio Online — Automatic IA Lab',
+  title: 'Recursos Gratis para tu Negocio Online',
   description: 'Descargá guías, checklists y recursos gratuitos para llevar tu negocio a internet. Aprendé a crear tu sitio web, mejorar tu SEO y conseguir más clientes.',
   keywords: [
     'recursos gratis negocio online',
@@ -17,6 +17,7 @@ export const metadata: Metadata = {
     title: 'Recursos Gratis para tu Negocio — Automatic IA Lab',
     description: 'Guías, checklists y recursos gratuitos para llevar tu negocio a internet.',
     url: 'https://automaticialab.com/recursos',
+    images: [{ url: 'https://automaticialab.com/og-image.png', width: 1200, height: 630, alt: 'Recursos Gratis — Automatic IA Lab' }],
   },
   alternates: { canonical: 'https://automaticialab.com/recursos' },
 }
@@ -28,8 +29,8 @@ const resources = [
     badgeColor: 'bg-emerald-100 text-emerald-700',
     title: 'Checklist: ¿Tu negocio está listo para tener su sitio web?',
     description: '10 preguntas clave para saber si tu negocio necesita presencia online. Si respondés SÍ a 3 o más, necesitás un sitio web ya.',
-    cta: 'Descargar gratis',
-    href: '/marketing/lead-magnet-checklist-negocio.pdf',
+    cta: 'Hacer el checklist gratis',
+    href: '/gratis',
     featured: true,
   },
   {
@@ -107,15 +108,13 @@ export default function RecursosPage() {
                   </span>
                   <h2 className="text-2xl font-bold text-white mb-3">{r.title}</h2>
                   <p className="text-surface-300 mb-6">{r.description}</p>
-                  <a
+                  <Link
                     href={r.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-semibold px-6 py-3 rounded-xl transition-colors"
                   >
                     <Download className="w-4 h-4" />
                     {r.cta}
-                  </a>
+                  </Link>
                 </div>
               </div>
             </div>
@@ -151,8 +150,42 @@ export default function RecursosPage() {
         </div>
       </section>
 
+      {/* Why these resources */}
+      <section className="py-16 sm:py-20 bg-white">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-2xl sm:text-3xl font-bold text-surface-900 mb-6 text-center">
+            ¿Por qué creamos estos recursos?
+          </h2>
+          <div className="prose prose-surface max-w-none text-surface-600 space-y-4">
+            <p>
+              Sabemos que dar el primer paso hacia la presencia digital puede ser abrumador.
+              Hay demasiada información, muchas herramientas y poco tiempo. Por eso creamos
+              esta biblioteca de recursos gratuitos: para que puedas avanzar a tu ritmo, con
+              guías claras y accionables, sin necesidad de conocimientos técnicos.
+            </p>
+            <p>
+              Cada recurso fue diseñado pensando en negocios locales de Argentina y Latinoamérica.
+              Desde profesionales independientes hasta comercios con local a la calle, nuestro
+              objetivo es que cualquier emprendedor pueda entender qué necesita para estar
+              online y cómo lograrlo de forma simple.
+            </p>
+            <p>
+              Los artículos cubren temas esenciales como la creación de sitios web sin programar,
+              los errores más frecuentes que cometen los negocios con su presencia digital, y
+              estrategias comprobadas para atraer más clientes desde internet. Además, actualizamos
+              el contenido regularmente para que siempre tengas información vigente y relevante.
+            </p>
+            <p>
+              Si después de explorar estos recursos querés ir más allá, nuestra plataforma te
+              permite crear tu sitio web profesional en menos de 60 segundos con inteligencia
+              artificial. Sin diseñadores, sin código, sin complicaciones.
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* CTA */}
-      <section className="py-20 bg-white">
+      <section className="py-20 bg-surface-50">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl font-bold text-surface-900 mb-4">
             ¿Listo para crear tu sitio web?
