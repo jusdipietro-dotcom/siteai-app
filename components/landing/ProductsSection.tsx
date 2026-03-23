@@ -1,7 +1,7 @@
 'use client'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { ArrowRight, Globe, Scale, Bot, Check, Zap, Bell, FileText, Shield, Clock, Mail, Webhook, MessageSquare, Linkedin, TrendingUp, Users, PenTool, CandlestickChart, Activity, BarChart3 } from 'lucide-react'
+import { ArrowRight, Globe, Scale, Bot, Check, Zap, Bell, FileText, Shield, Clock, Mail, Webhook, MessageSquare, Linkedin, TrendingUp, Users, PenTool, CandlestickChart, Activity, BarChart3, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 const products = [
@@ -82,25 +82,6 @@ const products = [
     priceNote: 'Por perfil de LinkedIn',
   },
   {
-    id: 'trading-signals',
-    badge: 'Nuevo',
-    title: 'Trading Signals IA',
-    subtitle: 'Señales cripto con análisis técnico real',
-    description: 'Bot inteligente que analiza 5 criptomonedas en tiempo real combinando 6 indicadores técnicos (RSI, MACD, EMA, Bollinger, ATR, Volumen). Solo envía señales cuando hay confluencia real. Incluye Stop Loss, Take Profit y gestión de riesgo automática. Directo a tu Telegram.',
-    icon: CandlestickChart,
-    gradient: 'from-yellow-500 to-orange-600',
-    bgGlow: 'bg-yellow-500/10',
-    features: [
-      { icon: Activity, text: 'Análisis multi-indicador en tiempo real' },
-      { icon: Shield, text: 'Stop Loss y Take Profit automáticos' },
-      { icon: BarChart3, text: 'Score de confluencia 0-10 por señal' },
-    ],
-    cta: 'Activar señales',
-    ctaHref: '/register?next=trading',
-    price: 'Desde $15.000/mes',
-    priceNote: 'Señales ilimitadas 24/7',
-  },
-  {
     id: 'senales-crypto',
     badge: 'Nuevo',
     title: 'Señales Crypto IA',
@@ -118,6 +99,25 @@ const products = [
     ctaHref: '/register?next=crypto',
     price: '$20.000/mes',
     priceNote: '30 pares | Señales 24/7',
+  },
+  {
+    id: 'captacion-leads',
+    badge: 'Nuevo',
+    title: 'Captación de Leads IA',
+    subtitle: 'Prospectos reales con email verificado, en piloto automático',
+    description: 'Sistema automatizado que busca negocios reales en toda Argentina, extrae sus datos de contacto y te arma una base de leads lista para vender. Funciona 24/7 sin intervención: elige nichos, ciudades y valida cada email contra el dominio del negocio. Ideal para agencias, vendedores B2B y freelancers.',
+    icon: Search,
+    gradient: 'from-rose-500 to-pink-600',
+    bgGlow: 'bg-rose-500/10',
+    features: [
+      { icon: Mail, text: 'Emails verificados contra dominio real' },
+      { icon: Users, text: '45 nichos y 25 ciudades argentinas' },
+      { icon: Clock, text: 'Captura automática 24/7 sin límites' },
+    ],
+    cta: 'Activar captación de leads',
+    ctaHref: '/register?next=leads',
+    price: 'Desde $18.000/mes',
+    priceNote: 'Leads ilimitados en Google Sheets',
   },
   {
     id: 'automatizaciones',
