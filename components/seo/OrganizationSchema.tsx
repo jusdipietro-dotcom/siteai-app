@@ -13,7 +13,7 @@ export function OrganizationSchema() {
       addressCountry: 'AR',
     },
     sameAs: ['https://www.instagram.com/automaticialab'],
-    description: 'Plataforma de automatización inteligente. Sitios web con IA, monitoreo judicial automático y automatizaciones a medida para negocios de Argentina.',
+    description: 'Plataforma de automatización inteligente. Sitios web con IA, monitoreo judicial automático, captación de leads y automatizaciones a medida para negocios de Argentina.',
   }
 
   const softwareApplicationSchema = {
@@ -63,6 +63,13 @@ export function OrganizationSchema() {
         price: '75000',
         priceCurrency: 'ARS',
         description: 'Monitoreo judicial para estudios jurídicos, hasta 8 CUITs',
+      },
+      {
+        '@type': 'Offer',
+        name: 'Captación de Leads IA',
+        price: '18000',
+        priceCurrency: 'ARS',
+        description: 'Sistema automatizado de captación de leads con emails verificados para negocios de toda Argentina, 24/7',
       },
     ],
     operatingSystem: 'Web',

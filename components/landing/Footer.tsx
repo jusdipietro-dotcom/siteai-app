@@ -6,6 +6,7 @@ const links: Record<string, { label: string; href: string }[]> = {
     { label: 'Monitoreo Judicial', href: '/#monitoreo-judicial' },
     { label: 'Reseñas Google IA', href: '/#resenas-google' },
     { label: 'Trading Signals IA', href: '/#trading-signals' },
+    { label: 'Captación de Leads IA', href: '/#captacion-leads' },
     { label: 'Automatizaciones', href: '/#automatizaciones' },
     { label: 'Precios', href: '/#pricing' },
     { label: 'Plan Gratuito', href: '/gratis' },

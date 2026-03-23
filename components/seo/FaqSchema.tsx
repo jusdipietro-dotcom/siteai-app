@@ -93,6 +93,14 @@ export function FaqSchema() {
           text: 'Actualmente monitoreamos PJN (Poder Judicial de la Nación) y SCBA (Suprema Corte de Buenos Aires), con expansión planificada a otros portales durante 2026.',
         },
       },
+      {
+        '@type': 'Question',
+        name: '¿Cómo funciona la Captación de Leads IA?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: 'Nuestro sistema busca automáticamente negocios reales en toda Argentina, extrae sus datos de contacto (email, teléfono, web) y valida cada email contra el dominio del negocio. Captura entre 50 y 150 leads únicos por día en tu Google Sheets, 24/7.',
+        },
+      },
     ],
   }
 

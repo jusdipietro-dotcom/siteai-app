@@ -15,6 +15,7 @@ const navLinks = [
   { label: 'Reseñas Google', href: '/#resenas-google' },
   { label: 'LinkedIn IA', href: '/#linkedin-optimizer' },
   { label: 'Trading Signals', href: '/#trading-signals' },
+  { label: 'Leads IA', href: '/#captacion-leads' },
   { label: 'Precios', href: '/#pricing' },
   { label: 'Blog', href: '/blog' },
 ]

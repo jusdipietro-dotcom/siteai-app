@@ -49,6 +49,18 @@ const faqs = [
     a: 'Sí, cada producto es independiente. Podés contratar solo el monitoreo judicial (desde $19.000/mes por CUIT), solo el sitio web, o ambos. El alta es 100% online desde tu panel.',
   },
   {
+    q: '¿Cómo funciona la Captación de Leads IA?',
+    a: 'Nuestro sistema busca automáticamente negocios reales en toda Argentina usando inteligencia artificial. Extrae nombre, teléfono, email y sitio web de cada negocio, valida que el email pertenezca al dominio real del negocio (no de terceros) y lo agrega a tu Google Sheets. Funciona 24/7 sin que tengas que hacer nada. Podés elegir nichos específicos o dejar que el sistema explore todos.',
+  },
+  {
+    q: '¿Qué datos incluye cada lead capturado?',
+    a: 'Cada lead incluye: nombre del negocio, email verificado, teléfono, sitio web, ciudad y nicho/rubro. Todo se guarda automáticamente en una planilla de Google Sheets compartida con tu cuenta, lista para usar con tu CRM o herramienta de email marketing favorita.',
+  },
+  {
+    q: '¿Cuántos leads puedo capturar por día?',
+    a: 'El sistema captura entre 50 y 150 leads únicos por día dependiendo de los nichos y ciudades. Los leads se deduplicar automáticamente para evitar repeticiones. No hay límite mensual: cuanto más tiempo esté activo, más grande tu base de datos.',
+  },
+  {
     q: '¿Qué tipo de automatizaciones hacen a medida?',
     a: 'Desarrollamos flujos con IA: scraping de datos, integraciones API, agentes LLM (GPT, Gemini, Groq), procesamiento de documentos, notificaciones inteligentes y más. Cada proyecto se adapta a la necesidad del cliente.',
   },
