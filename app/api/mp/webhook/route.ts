@@ -404,6 +404,83 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ received: true })
       }
 
+      // ─── Leads subscription: "leads:subscriptionId:plan" ───
+      if (parts[0] === 'leads') {
+        if (parts.length < 3 || !parts[1] || !parts[2]) {
+          console.warn('[MP Webhook] Invalid leads external_reference:', external_reference)
+          return NextResponse.json({ received: true })
+        }
+        const leadsSubId = parts[1]
+        const leadsPlan = parts[2]
+
+        if (status === 'authorized' && leadsSubId) {
+          const { count } = await prisma.leadsSubscription.updateMany({
+            where: { id: leadsSubId, status: 'pending_payment' },
+            data: { status: 'provisioning', preapprovalId },
+          })
+
+          if (count === 0) {
+            console.log(`[MP Webhook] Leads ${leadsSubId} already processed — skipping`)
+            return NextResponse.json({ received: true })
+          }
+
+          const currentSub = await prisma.leadsSubscription.findUnique({
+            where: { id: leadsSubId },
+          })
+          if (currentSub?.couponId) {
+            await prisma.coupon.update({
+              where: { id: currentSub.couponId },
+              data: { usedCount: { increment: 1 } },
+            })
+          }
+
+          console.log(`[MP Webhook] Leads ${leadsSubId} → provisioning (plan: ${leadsPlan})`)
+
+          // Trigger leads provisioning via n8n
+          await triggerLeadsProvisioning(leadsSubId)
+
+          try {
+            const subForEmail = await prisma.leadsSubscription.findUnique({
+              where: { id: leadsSubId },
+              include: { user: { select: { email: true } } },
+            })
+            if (subForEmail?.user.email) {
+              await sendPaymentConfirmationEmail(subForEmail.user.email, {
+                type: 'leads',
+                plan: leadsPlan,
+              })
+            }
+          } catch (emailErr) {
+            console.error('[MP Webhook] Failed to send leads payment email:', emailErr)
+          }
+        }
+
+        if ((status === 'cancelled' || status === 'paused') && leadsSubId) {
+          await prisma.leadsSubscription.update({
+            where: { id: leadsSubId },
+            data: { status: 'suspended' },
+          })
+          console.log(`[MP Webhook] Leads ${leadsSubId} suspended (${status})`)
+
+          try {
+            const subForEmail = await prisma.leadsSubscription.findUnique({
+              where: { id: leadsSubId },
+              include: { user: { select: { email: true } } },
+            })
+            if (subForEmail?.user.email) {
+              await sendSubscriptionCancelledEmail(subForEmail.user.email, {
+                type: 'leads',
+                plan: leadsPlan,
+              })
+            }
+          } catch (emailErr) {
+            console.error('[MP Webhook] Failed to send leads cancellation email:', emailErr)
+          }
+        }
+
+        return NextResponse.json({ received: true })
+      }
+
       // ─── Website project subscription: "projectId:plan" ───
       const [projectId, plan] = parts
 
@@ -655,6 +732,61 @@ async function triggerReviewsDeprovisioning(subscriptionId: string) {
   } catch (err) {
     console.error('[MP Webhook] Failed to trigger reviews deprovisioning:', err)
   }
+}
+
+/** Trigger n8n leads provisioning webhook with retry */
+async function triggerLeadsProvisioning(subscriptionId: string) {
+  const webhookUrl = process.env.N8N_LEADS_PROVISIONING_WEBHOOK
+  if (!webhookUrl) {
+    console.warn('[MP Webhook] N8N_LEADS_PROVISIONING_WEBHOOK not configured — manual provisioning required')
+    return
+  }
+
+  const sub = await prisma.leadsSubscription.findUnique({
+    where: { id: subscriptionId },
+    include: { user: { select: { email: true, name: true } } },
+  })
+  if (!sub) return
+
+  const payload = JSON.stringify({
+    subscriptionId: sub.id,
+    userId: sub.userId,
+    userEmail: sub.user.email,
+    userName: sub.user.name,
+    plan: sub.plan,
+    googleSheetUrl: sub.googleSheetUrl,
+    nichesList: sub.nichesList,
+    citiesList: sub.citiesList,
+    captureFrequency: sub.captureFrequency,
+    notificationEmail: sub.notificationEmail,
+  })
+
+  const MAX_RETRIES = 3
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const res = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: payload,
+      })
+
+      if (res.ok) {
+        console.log(`[MP Webhook] Leads provisioning OK (attempt ${attempt}): ${res.status}`)
+        return
+      }
+
+      console.warn(`[MP Webhook] Leads provisioning attempt ${attempt}/${MAX_RETRIES} failed: HTTP ${res.status}`)
+    } catch (err) {
+      console.error(`[MP Webhook] Leads provisioning attempt ${attempt}/${MAX_RETRIES} error:`, err)
+    }
+
+    if (attempt < MAX_RETRIES) {
+      const delay = attempt * 2000
+      await new Promise(r => setTimeout(r, delay))
+    }
+  }
+
+  console.error(`[MP Webhook] Leads provisioning FAILED after ${MAX_RETRIES} attempts for ${subscriptionId}`)
 }
 
 // MP verifica el endpoint con GET al registrarlo
