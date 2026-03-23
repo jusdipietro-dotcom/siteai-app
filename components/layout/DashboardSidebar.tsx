@@ -267,6 +267,7 @@ export function DashboardSidebar() {
       <button
         type="button"
         onClick={toggleSidebar}
+        aria-label={sidebarCollapsed ? 'Expandir menú lateral' : 'Colapsar menú lateral'}
         className="absolute -right-3 top-20 h-6 w-6 rounded-full bg-surface-800 border border-white/10 flex items-center justify-center text-white/50 hover:text-white/80 hover:bg-surface-700 transition-all shadow-soft"
       >
         {sidebarCollapsed
