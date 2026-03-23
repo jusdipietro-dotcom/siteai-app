@@ -13,6 +13,7 @@ const PROTECTED_PATHS = [
   '/monitoreo',
   '/linkedin',
   '/resenas',
+  '/crypto',
   '/admin',
 ]
 
@@ -63,6 +64,8 @@ export async function middleware(req: NextRequest) {
         loginUrl.searchParams.set('next', 'linkedin')
       } else if (pathname.startsWith('/resenas')) {
         loginUrl.searchParams.set('next', 'resenas')
+      } else if (pathname.startsWith('/crypto')) {
+        loginUrl.searchParams.set('next', 'crypto')
       } else {
         loginUrl.searchParams.set('callbackUrl', `${baseUrl}${req.nextUrl.pathname}`)
       }

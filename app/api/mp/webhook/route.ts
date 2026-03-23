@@ -327,6 +327,83 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ received: true })
       }
 
+      // ─── Trading subscription: "trading:subscriptionId:plan" ───
+      if (parts[0] === 'trading') {
+        if (parts.length < 3 || !parts[1] || !parts[2]) {
+          console.warn('[MP Webhook] Invalid trading external_reference:', external_reference)
+          return NextResponse.json({ received: true })
+        }
+        const tradingSubId = parts[1]
+        const tradingPlan = parts[2]
+
+        if (status === 'authorized' && tradingSubId) {
+          // Atomic idempotency: only update if still pending_payment
+          const { count } = await prisma.tradingSubscription.updateMany({
+            where: { id: tradingSubId, status: 'pending_payment' },
+            data: { status: 'provisioning', preapprovalId },
+          })
+
+          if (count === 0) {
+            console.log(`[MP Webhook] Trading ${tradingSubId} already processed — skipping`)
+            return NextResponse.json({ received: true })
+          }
+
+          // Increment coupon usage (safe: only reaches here once)
+          const currentSub = await prisma.tradingSubscription.findUnique({
+            where: { id: tradingSubId },
+          })
+          if (currentSub?.couponId) {
+            await prisma.coupon.update({
+              where: { id: currentSub.couponId },
+              data: { usedCount: { increment: 1 } },
+            })
+          }
+
+          console.log(`[MP Webhook] Trading ${tradingSubId} → provisioning (plan: ${tradingPlan})`)
+
+          // Send payment confirmation email
+          try {
+            const subForEmail = await prisma.tradingSubscription.findUnique({
+              where: { id: tradingSubId },
+              include: { user: { select: { email: true } } },
+            })
+            if (subForEmail?.user.email) {
+              await sendPaymentConfirmationEmail(subForEmail.user.email, {
+                type: 'trading',
+                plan: tradingPlan,
+              })
+            }
+          } catch (emailErr) {
+            console.error('[MP Webhook] Failed to send trading payment email:', emailErr)
+          }
+        }
+
+        if ((status === 'cancelled' || status === 'paused') && tradingSubId) {
+          await prisma.tradingSubscription.update({
+            where: { id: tradingSubId },
+            data: { status: 'suspended' },
+          })
+          console.log(`[MP Webhook] Trading ${tradingSubId} suspended (${status})`)
+
+          try {
+            const subForEmail = await prisma.tradingSubscription.findUnique({
+              where: { id: tradingSubId },
+              include: { user: { select: { email: true } } },
+            })
+            if (subForEmail?.user.email) {
+              await sendSubscriptionCancelledEmail(subForEmail.user.email, {
+                type: 'trading',
+                plan: tradingPlan,
+              })
+            }
+          } catch (emailErr) {
+            console.error('[MP Webhook] Failed to send trading cancellation email:', emailErr)
+          }
+        }
+
+        return NextResponse.json({ received: true })
+      }
+
       // ─── Website project subscription: "projectId:plan" ───
       const [projectId, plan] = parts
 

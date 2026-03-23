@@ -24,7 +24,7 @@ function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const next = searchParams.get('next')
-  const NEXT_ROUTES: Record<string, string> = { monitoreo: '/monitoreo', linkedin: '/linkedin', resenas: '/resenas' }
+  const NEXT_ROUTES: Record<string, string> = { monitoreo: '/monitoreo', linkedin: '/linkedin', resenas: '/resenas', crypto: '/crypto' }
   const redirectTo = (next && NEXT_ROUTES[next]) ?? '/dashboard'
   const [showPassword, setShowPassword] = useState(false)
 

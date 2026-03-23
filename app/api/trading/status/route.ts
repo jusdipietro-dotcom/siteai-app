@@ -12,8 +12,23 @@ export async function GET() {
 
     const subscriptions = await prisma.tradingSubscription.findMany({
       where: { userId: session.user.id },
+      select: {
+        id: true,
+        status: true,
+        plan: true,
+        symbols: true,
+        timeframe: true,
+        telegramChatId: true,
+        notificationEmail: true,
+        payerEmail: true,
+        signalsSent: true,
+        discountApplied: true,
+        provisionedAt: true,
+        createdAt: true,
+        updatedAt: true,
+        coupon: { select: { code: true, discount: true } },
+      },
       orderBy: { createdAt: 'desc' },
-      include: { coupon: { select: { code: true, discount: true } } },
     })
 
     return NextResponse.json({ subscriptions })
