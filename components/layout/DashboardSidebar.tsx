@@ -5,8 +5,8 @@ import { usePathname, useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard, BookTemplate, Settings, HelpCircle,
-  Plus, LogOut, Search, Image, ChevronLeft, ChevronRight,
-  Scale, Tag, Users, MessageSquare, Linkedin,
+  Plus, LogOut, Search as SearchIcon, Image, ChevronLeft, ChevronRight,
+  Scale, Tag, Users, MessageSquare, Linkedin, TrendingUp,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useUIStore } from '@/store/useUIStore'
@@ -21,6 +21,8 @@ const NAV_ITEMS = [
   { href: '/monitoreo',  label: 'Monitoreo Judicial', icon: Scale },
   { href: '/resenas',    label: 'Reseñas Google IA',  icon: MessageSquare },
   { href: '/linkedin',   label: 'LinkedIn IA',         icon: Linkedin },
+  { href: '/crypto',     label: 'Señales Crypto',      icon: TrendingUp },
+  { href: '/leads',      label: 'Captación Leads',     icon: Users },
 ]
 
 const BOTTOM_ITEMS = [
@@ -90,7 +92,7 @@ export function DashboardSidebar() {
               onClick={openCommandPalette}
               className="w-full flex items-center gap-2 h-8 px-3 rounded-lg bg-white/5 text-white/40 hover:bg-white/10 hover:text-white/70 text-xs transition-colors"
             >
-              <Search className="h-3.5 w-3.5" />
+              <SearchIcon className="h-3.5 w-3.5" />
               <span className="flex-1 text-left">Buscar...</span>
               <kbd className="text-[10px] bg-white/10 px-1.5 py-0.5 rounded font-mono">⌘K</kbd>
             </button>
