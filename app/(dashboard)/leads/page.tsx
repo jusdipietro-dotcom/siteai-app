@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, useCallback, Suspense } from 'react'
 import { useSession, signIn } from 'next-auth/react'
 import { useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -106,7 +106,9 @@ function LeadsPage() {
   const [googleSheetUrl, setGoogleSheetUrl] = useState('')
   const [couponCode, setCouponCode] = useState('')
   const [couponValid, setCouponValid] = useState<{ valid: boolean; discount: number } | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [validatingCoupon, setValidatingCoupon] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [cancellingId, setCancellingId] = useState<string | null>(null)
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
   const [loadingSubs, setLoadingSubs] = useState(true)
   const [selectedNichos, setSelectedNichos] = useState<string[]>([])
@@ -130,21 +132,22 @@ function LeadsPage() {
     }
   }, [session])
 
-  const fetchSubscriptions = () => {
+  const fetchSubscriptions = useCallback(() => {
+    setLoadingSubs(true)
     fetch('/api/leads/status')
       .then(r => r.json())
       .then(data => setSubscriptions(data.subscriptions ?? []))
       .catch(() => toast.error('Error al cargar suscripciones'))
       .finally(() => setLoadingSubs(false))
-  }
-  useEffect(() => { fetchSubscriptions() }, [])
+  }, [])
+  useEffect(() => { fetchSubscriptions() }, [fetchSubscriptions])
   useEffect(() => {
     if (mpReturn) fetchSubscriptions()
-  }, [mpReturn])
+  }, [mpReturn, fetchSubscriptions])
 
   const validateCoupon = async () => {
     if (!couponCode.trim()) return
-    setLoading(true)
+    setValidatingCoupon(true)
     try {
       const res = await fetch('/api/leads/validate-coupon', {
         method: 'POST',
@@ -161,12 +164,12 @@ function LeadsPage() {
     } catch {
       toast.error('Error al validar cupon')
     } finally {
-      setLoading(false)
+      setValidatingCoupon(false)
     }
   }
 
   const handleSubmit = async () => {
-    setLoading(true)
+    setSubmitting(true)
     try {
       // Step 1: Create subscription
       const subRes = await fetch('/api/leads/subscribe', {
@@ -185,7 +188,7 @@ function LeadsPage() {
       const subData = await subRes.json()
       if (!subRes.ok) {
         toast.error(subData.error)
-        setLoading(false)
+        setSubmitting(false)
         return
       }
 
@@ -201,7 +204,7 @@ function LeadsPage() {
       const mpData = await mpRes.json()
       if (!mpRes.ok) {
         toast.error(mpData.error ?? 'Error al crear el pago')
-        setLoading(false)
+        setSubmitting(false)
         return
       }
 
@@ -210,7 +213,7 @@ function LeadsPage() {
     } catch {
       toast.error('Error al procesar la solicitud')
     } finally {
-      setLoading(false)
+      setSubmitting(false)
     }
   }
 
@@ -252,6 +255,7 @@ function LeadsPage() {
     active: { text: 'Activo', color: 'bg-emerald-100 text-emerald-800' },
     provisioning: { text: 'Configurando', color: 'bg-blue-100 text-blue-800' },
     suspended: { text: 'Suspendido', color: 'bg-red-100 text-red-800' },
+    provision_failed: { text: 'Error de activacion', color: 'bg-red-100 text-red-800' },
     cancelled: { text: 'Cancelado', color: 'bg-surface-100 text-surface-600' },
   }
 
@@ -333,8 +337,10 @@ function LeadsPage() {
                       <div className="flex justify-end">
                         <button
                           type="button"
+                          disabled={cancellingId === sub.id}
                           onClick={async () => {
                             if (!confirm('Seguro que queres cancelar esta suscripcion? Se dejaran de generar leads automaticamente.')) return
+                            setCancellingId(sub.id)
                             try {
                               const res = await fetch('/api/leads/cancel', {
                                 method: 'POST',
@@ -350,11 +356,13 @@ function LeadsPage() {
                               }
                             } catch {
                               toast.error('Error al cancelar la suscripcion')
+                            } finally {
+                              setCancellingId(null)
                             }
                           }}
-                          className="text-xs text-red-500 hover:text-red-700 font-medium transition-colors"
+                          className="text-xs text-red-500 hover:text-red-700 font-medium transition-colors disabled:opacity-50"
                         >
-                          Cancelar suscripcion
+                          {cancellingId === sub.id ? 'Cancelando...' : 'Cancelar suscripcion'}
                         </button>
                       </div>
                     </div>
@@ -370,16 +378,20 @@ function LeadsPage() {
       <div className="bg-white rounded-3xl border border-surface-100 shadow-sm overflow-hidden">
         {/* Progress bar */}
         <div className="flex border-b border-surface-100">
-          {(['plan', 'details', 'coupon', 'payment'] as Step[]).map((s, i) => {
-            const steps: Step[] = ['plan', 'details', 'coupon', 'payment']
-            const currentIdx = steps.indexOf(step === 'done' ? 'payment' : step)
+          {([
+            { key: 'plan' as Step, label: 'Plan' },
+            { key: 'details' as Step, label: 'Datos' },
+            { key: 'coupon' as Step, label: 'Cupon' },
+            { key: 'payment' as Step, label: 'Pago' },
+          ]).map(({ key, label }, i, arr) => {
+            const currentIdx = arr.findIndex(s => s.key === (step === 'done' ? 'payment' : step))
             const isDone = i < currentIdx
             const isCurrent = i === currentIdx
             return (
-              <div key={s} className="flex-1 relative">
+              <div key={key} className="flex-1 relative">
                 <div className={`h-1 ${isDone ? 'bg-rose-500' : isCurrent ? 'bg-rose-300' : 'bg-surface-100'}`} />
                 <p className={`text-[10px] text-center py-2 font-medium ${isCurrent ? 'text-rose-600' : isDone ? 'text-emerald-600' : 'text-surface-400'}`}>
-                  {['Plan', 'Datos', 'Cupon', 'Pago'][i]}
+                  {label}
                 </p>
               </div>
             )
@@ -439,7 +451,7 @@ function LeadsPage() {
                       <Briefcase className="w-3.5 h-3.5 inline mr-1.5 -mt-0.5" />
                       Nichos de negocio
                       <span className="text-surface-400 font-normal ml-1.5">
-                        ({selectedNichos.length}{limits.maxNichos < Infinity ? `/${limits.maxNichos}` : ''})
+                        ({selectedNichos.length}{Number.isFinite(limits.maxNichos) ? `/${limits.maxNichos}` : ''})
                       </span>
                     </label>
                     <input
@@ -457,7 +469,6 @@ function LeadsPage() {
                           <button
                             key={n}
                             type="button"
-
                             onClick={() => toggleNicho(n)}
                             disabled={disabled}
                             className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
@@ -495,7 +506,7 @@ function LeadsPage() {
                         </button>
                       </div>
                     )}
-                    {limits.maxNichos < Infinity && (
+                    {Number.isFinite(limits.maxNichos) && (
                       <p className="text-[11px] text-surface-400 mt-1">
                         Plan Basico: hasta {limits.maxNichos} nichos. Upgrade a Profesional para nichos ilimitados y personalizados.
                       </p>
@@ -508,7 +519,7 @@ function LeadsPage() {
                       <MapPin className="w-3.5 h-3.5 inline mr-1.5 -mt-0.5" />
                       Ciudades
                       <span className="text-surface-400 font-normal ml-1.5">
-                        ({selectedCiudades.length}{limits.maxCiudades < Infinity ? `/${limits.maxCiudades}` : ''})
+                        ({selectedCiudades.length}{Number.isFinite(limits.maxCiudades) ? `/${limits.maxCiudades}` : ''})
                       </span>
                     </label>
                     <input
@@ -526,7 +537,6 @@ function LeadsPage() {
                           <button
                             key={c}
                             type="button"
-
                             onClick={() => toggleCiudad(c)}
                             disabled={disabled}
                             className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
@@ -564,7 +574,7 @@ function LeadsPage() {
                         </button>
                       </div>
                     )}
-                    {limits.maxCiudades < Infinity && (
+                    {Number.isFinite(limits.maxCiudades) && (
                       <p className="text-[11px] text-surface-400 mt-1">
                         Plan Basico: hasta {limits.maxCiudades} ciudades. Upgrade a Profesional para ciudades ilimitadas.
                       </p>
@@ -646,8 +656,8 @@ function LeadsPage() {
                     placeholder="CODIGO2026"
                     className="flex-1 h-10 px-3 rounded-xl border border-surface-200 text-sm uppercase focus:border-rose-500 focus:ring-1 focus:ring-rose-500 outline-none"
                   />
-                  <Button variant="outline" onClick={validateCoupon} disabled={loading || !couponCode.trim()}>
-                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Validar'}
+                  <Button variant="outline" onClick={validateCoupon} disabled={validatingCoupon || !couponCode.trim()}>
+                    {validatingCoupon ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Validar'}
                   </Button>
                 </div>
                 {couponValid && (
@@ -753,10 +763,10 @@ function LeadsPage() {
                   <Button
                     variant="gradient"
                     onClick={handleSubmit}
-                    disabled={loading}
+                    disabled={submitting}
                     className="gap-2"
                   >
-                    {loading ? (
+                    {submitting ? (
                       <><Loader2 className="w-4 h-4 animate-spin" /> Procesando...</>
                     ) : (
                       <>Pagar con MercadoPago <ArrowRight className="w-4 h-4" /></>

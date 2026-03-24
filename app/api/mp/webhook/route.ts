@@ -775,7 +775,8 @@ async function triggerLeadsProvisioning(subscriptionId: string) {
         return
       }
 
-      console.warn(`[MP Webhook] Leads provisioning attempt ${attempt}/${MAX_RETRIES} failed: HTTP ${res.status}`)
+      const body = await res.text().catch(() => '')
+      console.warn(`[MP Webhook] Leads provisioning attempt ${attempt}/${MAX_RETRIES} failed: HTTP ${res.status} — ${body.slice(0, 300)}`)
     } catch (err) {
       console.error(`[MP Webhook] Leads provisioning attempt ${attempt}/${MAX_RETRIES} error:`, err)
     }
@@ -786,7 +787,16 @@ async function triggerLeadsProvisioning(subscriptionId: string) {
     }
   }
 
+  // Mark subscription as failed so admin can investigate
   console.error(`[MP Webhook] Leads provisioning FAILED after ${MAX_RETRIES} attempts for ${subscriptionId}`)
+  try {
+    await prisma.leadsSubscription.update({
+      where: { id: subscriptionId },
+      data: { status: 'provision_failed' },
+    })
+  } catch (dbErr) {
+    console.error(`[MP Webhook] Failed to mark subscription as provision_failed:`, dbErr)
+  }
 }
 
 // MP verifica el endpoint con GET al registrarlo
