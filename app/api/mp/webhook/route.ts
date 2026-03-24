@@ -755,8 +755,8 @@ async function triggerLeadsProvisioning(subscriptionId: string) {
     userName: sub.user.name,
     plan: sub.plan,
     googleSheetUrl: sub.googleSheetUrl,
-    nichesList: sub.nichesList,
-    citiesList: sub.citiesList,
+    nichesList: (() => { try { return JSON.parse(sub.nichesList) } catch { return [] } })(),
+    citiesList: (() => { try { return JSON.parse(sub.citiesList) } catch { return [] } })(),
     captureFrequency: sub.captureFrequency,
     notificationEmail: sub.notificationEmail,
   })

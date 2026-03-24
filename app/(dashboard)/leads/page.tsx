@@ -44,8 +44,8 @@ const PLANS = [
     name: 'Básico',
     price: 18000,
     features: [
-      '45 nichos de negocio monitoreados',
-      '25 ciudades de Argentina',
+      'Hasta 10 nichos de negocio a elegir',
+      'Hasta 5 ciudades de Argentina',
       '~50-150 leads verificados por día',
       'Exportación automática a Google Sheets',
       'Datos: nombre, teléfono, email, dirección',
@@ -57,12 +57,12 @@ const PLANS = [
     price: 35000,
     popular: true,
     features: [
-      'Todo lo del plan Básico',
-      'Nichos personalizados a tu medida',
+      'Nichos ilimitados + personalizados',
+      'Ciudades ilimitadas + personalizadas',
       'Leads ilimitados por día',
       'Reportes semanales de captación',
       'Soporte prioritario',
-      'Ciudades ilimitadas',
+      'Exportación automática a Google Sheets',
     ],
   },
 ]
@@ -87,7 +87,7 @@ type Subscription = {
 
 export default function LeadsPageWrapper() {
   return (
-    <Suspense>
+    <Suspense fallback={<div className="flex items-center justify-center min-h-[60vh]"><Loader2 className="w-6 h-6 animate-spin text-surface-400" /></div>}>
       <LeadsPage />
     </Suspense>
   )
@@ -214,6 +214,7 @@ function LeadsPage() {
     }
   }
 
+  const isValidEmail = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)
   const planConfig = PLANS.find(p => p.id === selectedPlan)
   const limits = PLAN_LIMITS[selectedPlan as keyof typeof PLAN_LIMITS] ?? PLAN_LIMITS.basico
   const discount = couponValid?.valid ? couponValid.discount : 0
@@ -232,15 +233,15 @@ function LeadsPage() {
     )
   }
   const addCustomNicho = () => {
-    const v = customNicho.trim()
-    if (!v || selectedNichos.includes(v)) return
+    const v = customNicho.trim().slice(0, 100)
+    if (!v || selectedNichos.some(n => n.toLowerCase() === v.toLowerCase())) return
     if (selectedNichos.length >= limits.maxNichos) return
     setSelectedNichos(prev => [...prev, v])
     setCustomNicho('')
   }
   const addCustomCiudad = () => {
-    const v = customCiudad.trim()
-    if (!v || selectedCiudades.includes(v)) return
+    const v = customCiudad.trim().slice(0, 100)
+    if (!v || selectedCiudades.some(c => c.toLowerCase() === v.toLowerCase())) return
     if (selectedCiudades.length >= limits.maxCiudades) return
     setSelectedCiudades(prev => [...prev, v])
     setCustomCiudad('')
@@ -252,6 +253,11 @@ function LeadsPage() {
     provisioning: { text: 'Configurando', color: 'bg-blue-100 text-blue-800' },
     suspended: { text: 'Suspendido', color: 'bg-red-100 text-red-800' },
     cancelled: { text: 'Cancelado', color: 'bg-surface-100 text-surface-600' },
+  }
+
+  // Show loading while session is being resolved
+  if (session === undefined) {
+    return <div className="flex items-center justify-center min-h-[60vh]"><Loader2 className="w-6 h-6 animate-spin text-surface-400" /></div>
   }
 
   return (
@@ -451,6 +457,7 @@ function LeadsPage() {
                           <button
                             key={n}
                             type="button"
+
                             onClick={() => toggleNicho(n)}
                             disabled={disabled}
                             className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
@@ -519,6 +526,7 @@ function LeadsPage() {
                           <button
                             key={c}
                             type="button"
+
                             onClick={() => toggleCiudad(c)}
                             disabled={disabled}
                             className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
@@ -615,7 +623,7 @@ function LeadsPage() {
                   </Button>
                   <Button
                     variant="gradient"
-                    disabled={!notificationEmail.includes('@') || !payerEmail.includes('@') || selectedNichos.length === 0 || selectedCiudades.length === 0}
+                    disabled={!isValidEmail(notificationEmail) || !isValidEmail(payerEmail) || selectedNichos.length === 0 || selectedCiudades.length === 0}
                     onClick={() => setStep('coupon')}
                     className="gap-2"
                   >
@@ -797,6 +805,12 @@ function LeadsPage() {
                     variant="gradient"
                     onClick={() => {
                       setStep('plan')
+                      setSelectedPlan('')
+                      setSelectedNichos([])
+                      setSelectedCiudades([])
+                      setCouponCode('')
+                      setCouponValid(null)
+                      setGoogleSheetUrl('')
                       fetchSubscriptions()
                     }}
                     className="gap-2"

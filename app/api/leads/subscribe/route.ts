@@ -4,10 +4,12 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 
-const LEADS_PLANS: Record<string, { monthly: number; title: string }> = {
-  basico:      { monthly: 18000, title: 'Captación de Leads IA Básico' },
-  profesional: { monthly: 35000, title: 'Captación de Leads IA Profesional' },
+const LEADS_PLANS: Record<string, { monthly: number; title: string; maxNichos: number; maxCiudades: number }> = {
+  basico:      { monthly: 18000, title: 'Captación de Leads IA Básico', maxNichos: 10, maxCiudades: 5 },
+  profesional: { monthly: 35000, title: 'Captación de Leads IA Profesional', maxNichos: 999, maxCiudades: 999 },
 }
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 export async function POST(req: NextRequest) {
   try {
@@ -22,8 +24,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
 
-    const body = await req.json()
-    const { plan, notificationEmail, payerEmail, couponCode, googleSheetUrl, nichesList, citiesList } = body
+    // Per-user rate limit
+    const rlUser = checkRateLimit(`leads-subscribe:user:${session.user.id}`, { maxRequests: 5, windowSeconds: 600 })
+    if (!rlUser.allowed) {
+      return NextResponse.json({ error: 'Demasiados intentos. Esperá unos minutos.' }, { status: 429 })
+    }
+
+    let body: Record<string, unknown>
+    try {
+      body = await req.json()
+    } catch {
+      return NextResponse.json({ error: 'Body JSON inválido' }, { status: 400 })
+    }
+    const { plan, notificationEmail, payerEmail, couponCode, googleSheetUrl, nichesList, citiesList } = body as {
+      plan: string; notificationEmail: string; payerEmail: string; couponCode?: string;
+      googleSheetUrl?: string; nichesList?: string[]; citiesList?: string[]
+    }
 
     // Validate plan
     const planConfig = LEADS_PLANS[plan]
@@ -31,74 +47,96 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Plan inválido' }, { status: 400 })
     }
 
-    // Validate required fields
-    if (!notificationEmail?.includes('@')) {
+    // Validate emails (proper regex, max 254 chars per RFC 5321)
+    if (typeof notificationEmail !== 'string' || notificationEmail.length > 254 || !EMAIL_REGEX.test(notificationEmail)) {
       return NextResponse.json({ error: 'Email de notificaciones inválido' }, { status: 400 })
     }
-    if (!payerEmail?.includes('@')) {
+    if (typeof payerEmail !== 'string' || payerEmail.length > 254 || !EMAIL_REGEX.test(payerEmail)) {
       return NextResponse.json({ error: 'Email de facturación inválido' }, { status: 400 })
     }
 
-    // Validate nichos and ciudades
-    const nichesArr = Array.isArray(nichesList) ? nichesList.filter((n: unknown) => typeof n === 'string' && n.trim()) : []
-    const citiesArr = Array.isArray(citiesList) ? citiesList.filter((c: unknown) => typeof c === 'string' && c.trim()) : []
+    // Validate and sanitize nichos and ciudades
+    const nichesArr = Array.isArray(nichesList)
+      ? nichesList.map(n => typeof n === 'string' ? n.trim().slice(0, 100) : '').filter(n => n.length > 0)
+      : []
+    const citiesArr = Array.isArray(citiesList)
+      ? citiesList.map(c => typeof c === 'string' ? c.trim().slice(0, 100) : '').filter(c => c.length > 0)
+      : []
     if (nichesArr.length === 0) {
       return NextResponse.json({ error: 'Seleccioná al menos un nicho' }, { status: 400 })
     }
     if (citiesArr.length === 0) {
       return NextResponse.json({ error: 'Seleccioná al menos una ciudad' }, { status: 400 })
     }
-    // Enforce plan limits
-    const planLimits = { basico: { maxNichos: 10, maxCiudades: 5 }, profesional: { maxNichos: 999, maxCiudades: 999 } }
-    const lim = planLimits[plan as keyof typeof planLimits] ?? planLimits.basico
-    if (nichesArr.length > lim.maxNichos) {
-      return NextResponse.json({ error: `Plan ${plan} permite hasta ${lim.maxNichos} nichos` }, { status: 400 })
+    if (nichesArr.length > planConfig.maxNichos) {
+      return NextResponse.json({ error: `Plan ${planConfig.title} permite hasta ${planConfig.maxNichos} nichos` }, { status: 400 })
     }
-    if (citiesArr.length > lim.maxCiudades) {
-      return NextResponse.json({ error: `Plan ${plan} permite hasta ${lim.maxCiudades} ciudades` }, { status: 400 })
+    if (citiesArr.length > planConfig.maxCiudades) {
+      return NextResponse.json({ error: `Plan ${planConfig.title} permite hasta ${planConfig.maxCiudades} ciudades` }, { status: 400 })
     }
 
-    // Cancel ALL stale pending_payment records for this user
-    await prisma.leadsSubscription.updateMany({
-      where: {
-        userId: session.user.id,
-        status: 'pending_payment',
-      },
-      data: { status: 'cancelled' },
-    })
+    // Validate Google Sheet URL (optional, must be HTTPS Google Sheets if provided)
+    let sanitizedSheetUrl: string | null = null
+    if (typeof googleSheetUrl === 'string' && googleSheetUrl.trim()) {
+      const trimmed = googleSheetUrl.trim().slice(0, 500)
+      if (!trimmed.startsWith('https://docs.google.com/spreadsheets/')) {
+        return NextResponse.json({ error: 'URL de Google Sheet inválida' }, { status: 400 })
+      }
+      sanitizedSheetUrl = trimmed
+    }
 
-    // Validate coupon
+    // Validate coupon atomically (increment usedCount in a transaction)
     let couponId: string | null = null
     let discountApplied = 0
 
-    if (couponCode) {
-      const coupon = await prisma.coupon.findUnique({ where: { code: couponCode.toUpperCase() } })
-      if (!coupon || !coupon.active) {
+    if (couponCode && typeof couponCode === 'string' && couponCode.length <= 50) {
+      const code = couponCode.toUpperCase().trim()
+      const now = new Date()
+
+      // Atomic: find and increment in one step to prevent race conditions
+      try {
+        const updated = await prisma.coupon.update({
+          where: {
+            code,
+            active: true,
+            validFrom: { lte: now },
+            validUntil: { gte: now },
+          },
+          data: { usedCount: { increment: 1 } },
+        })
+        // Check if we exceeded maxUses (rollback if so)
+        if (updated.usedCount > updated.maxUses) {
+          await prisma.coupon.update({ where: { code }, data: { usedCount: { decrement: 1 } } })
+          return NextResponse.json({ error: 'Cupón agotado' }, { status: 400 })
+        }
+        couponId = updated.id
+        discountApplied = Math.min(Math.max(updated.discount, 0), 100)
+      } catch {
         return NextResponse.json({ error: 'Cupón inválido o expirado' }, { status: 400 })
       }
-      if (coupon.usedCount >= coupon.maxUses) {
-        return NextResponse.json({ error: 'Cupón agotado' }, { status: 400 })
-      }
-      const now = new Date()
-      if (now < coupon.validFrom || now > coupon.validUntil) {
-        return NextResponse.json({ error: 'Cupón fuera del período de validez' }, { status: 400 })
-      }
-      couponId = coupon.id
-      discountApplied = Math.min(Math.max(coupon.discount, 0), 100)
+    } else if (couponCode) {
+      return NextResponse.json({ error: 'Código de cupón inválido' }, { status: 400 })
     }
 
-    const subscription = await prisma.leadsSubscription.create({
-      data: {
-        userId: session.user.id,
-        plan,
-        notificationEmail: notificationEmail.toLowerCase().trim(),
-        payerEmail: payerEmail.toLowerCase().trim(),
-        googleSheetUrl: googleSheetUrl?.trim() || null,
-        nichesList: JSON.stringify(nichesArr),
-        citiesList: JSON.stringify(citiesArr),
-        couponId,
-        discountApplied,
-      },
+    // Cancel stale pending_payment + create subscription atomically
+    const subscription = await prisma.$transaction(async (tx) => {
+      await tx.leadsSubscription.updateMany({
+        where: { userId: session.user.id, status: 'pending_payment' },
+        data: { status: 'cancelled' },
+      })
+      return tx.leadsSubscription.create({
+        data: {
+          userId: session.user.id,
+          plan,
+          notificationEmail: notificationEmail.toLowerCase().trim(),
+          payerEmail: payerEmail.toLowerCase().trim(),
+          googleSheetUrl: sanitizedSheetUrl,
+          nichesList: JSON.stringify(nichesArr),
+          citiesList: JSON.stringify(citiesArr),
+          couponId,
+          discountApplied,
+        },
+      })
     })
 
     const finalPrice = Math.round(planConfig.monthly * (1 - discountApplied / 100))
