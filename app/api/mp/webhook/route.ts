@@ -571,6 +571,97 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ received: true })
       }
 
+      // ─── Prospeccion subscription: "prospeccion:subscriptionId:plan" ───
+      if (parts[0] === 'prospeccion') {
+        if (parts.length < 3 || !parts[1] || !parts[2]) {
+          console.warn('[MP Webhook] Invalid prospeccion external_reference:', external_reference)
+          return NextResponse.json({ received: true })
+        }
+        const prospSubId = parts[1]
+        const prospPlan = parts[2]
+
+        // Validate plan exists
+        const validProspPlans = ['starter', 'profesional', 'enterprise']
+        if (!validProspPlans.includes(prospPlan)) {
+          console.warn(`[MP Webhook] Invalid prospeccion plan in external_reference: ${prospPlan}`)
+          return NextResponse.json({ received: true })
+        }
+
+        if (status === 'authorized' && prospSubId) {
+          // Atomic idempotency: only update if still pending_payment
+          const { count } = await prisma.prospeccionSubscription.updateMany({
+            where: { id: prospSubId, status: 'pending_payment' },
+            data: { status: 'provisioning', preapprovalId },
+          })
+
+          if (count === 0) {
+            console.log(`[MP Webhook] Prospeccion ${prospSubId} already processed — skipping`)
+            return NextResponse.json({ received: true })
+          }
+
+          // Increment coupon usage (only if atomic update succeeded — prevents double-increment)
+          const currentSub = await prisma.prospeccionSubscription.findUnique({
+            where: { id: prospSubId },
+          })
+          if (currentSub?.couponId) {
+            await prisma.coupon.update({
+              where: { id: currentSub.couponId },
+              data: { usedCount: { increment: 1 } },
+            })
+          }
+
+          const activatedPlan = currentSub?.plan ?? prospPlan
+          console.log(`[MP Webhook] Prospeccion ${prospSubId} → provisioning (plan: ${activatedPlan})`)
+
+          // Trigger prospeccion provisioning via n8n
+          await triggerProspeccionProvisioning(prospSubId)
+
+          // Send payment confirmation email
+          try {
+            const subForEmail = await prisma.prospeccionSubscription.findUnique({
+              where: { id: prospSubId },
+              include: { user: { select: { email: true } } },
+            })
+            if (subForEmail?.user.email) {
+              await sendPaymentConfirmationEmail(subForEmail.user.email, {
+                type: 'prospeccion',
+                plan: activatedPlan,
+              })
+            }
+          } catch (emailErr) {
+            console.error('[MP Webhook] Failed to send prospeccion payment email:', emailErr)
+          }
+        }
+
+        if ((status === 'cancelled' || status === 'paused') && prospSubId) {
+          await prisma.prospeccionSubscription.update({
+            where: { id: prospSubId },
+            data: { status: 'suspended' },
+          })
+          console.log(`[MP Webhook] Prospeccion ${prospSubId} suspended (${status})`)
+
+          // Trigger deprovisioning (disable n8n workflows)
+          await triggerProspeccionDeprovisioning(prospSubId)
+
+          try {
+            const subForEmail = await prisma.prospeccionSubscription.findUnique({
+              where: { id: prospSubId },
+              include: { user: { select: { email: true } } },
+            })
+            if (subForEmail?.user.email) {
+              await sendSubscriptionCancelledEmail(subForEmail.user.email, {
+                type: 'prospeccion',
+                plan: prospPlan,
+              })
+            }
+          } catch (emailErr) {
+            console.error('[MP Webhook] Failed to send prospeccion cancellation email:', emailErr)
+          }
+        }
+
+        return NextResponse.json({ received: true })
+      }
+
       // ─── Website project subscription: "projectId:plan" ───
       const [projectId, plan] = parts
 
@@ -974,6 +1065,108 @@ async function triggerEmailMarketingDeprovisioning(subscriptionId: string) {
     console.log(`[MP Webhook] Email Marketing deprovisioning triggered for ${subscriptionId}`)
   } catch (err) {
     console.error(`[MP Webhook] Email Marketing deprovisioning failed for ${subscriptionId}:`, err)
+  }
+}
+
+/** Trigger n8n prospeccion provisioning webhook with retry */
+async function triggerProspeccionProvisioning(subscriptionId: string) {
+  const webhookUrl = process.env.N8N_PROSPECCION_PROVISIONING_WEBHOOK
+  if (!webhookUrl) {
+    console.warn('[MP Webhook] N8N_PROSPECCION_PROVISIONING_WEBHOOK not configured — manual provisioning required')
+    return
+  }
+
+  const sub = await prisma.prospeccionSubscription.findUnique({
+    where: { id: subscriptionId },
+    include: { user: { select: { email: true, name: true } } },
+  })
+  if (!sub) return
+
+  const payload = JSON.stringify({
+    subscriptionId: sub.id,
+    userId: sub.userId,
+    userEmail: sub.user.email,
+    userName: sub.user.name,
+    plan: sub.plan,
+    businessName: sub.businessName,
+    senderName: sub.senderName,
+    senderEmail: sub.senderEmail,
+    website: sub.website,
+    nichesList: (() => { try { return JSON.parse(sub.nichesList) } catch { return [] } })(),
+    citiesList: (() => { try { return JSON.parse(sub.citiesList) } catch { return [] } })(),
+    serviciosDesc: sub.serviciosDesc,
+    colorPrimario: sub.colorPrimario,
+    notificationEmail: sub.notificationEmail,
+  })
+
+  const MAX_RETRIES = 3
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const res = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: payload,
+      })
+
+      if (res.ok) {
+        console.log(`[MP Webhook] Prospeccion provisioning OK (attempt ${attempt}): ${res.status}`)
+        return
+      }
+
+      const body = await res.text().catch(() => '')
+      console.warn(`[MP Webhook] Prospeccion provisioning attempt ${attempt}/${MAX_RETRIES} failed: HTTP ${res.status} — ${body.slice(0, 300)}`)
+    } catch (err) {
+      console.error(`[MP Webhook] Prospeccion provisioning attempt ${attempt}/${MAX_RETRIES} error:`, err)
+    }
+
+    if (attempt < MAX_RETRIES) {
+      const delay = attempt * 2000
+      await new Promise(r => setTimeout(r, delay))
+    }
+  }
+
+  // Mark subscription as failed so admin can investigate
+  console.error(`[MP Webhook] Prospeccion provisioning FAILED after ${MAX_RETRIES} attempts for ${subscriptionId}`)
+  try {
+    await prisma.prospeccionSubscription.update({
+      where: { id: subscriptionId },
+      data: { status: 'provision_failed' },
+    })
+  } catch (dbErr) {
+    console.error(`[MP Webhook] Failed to mark prospeccion subscription as provision_failed:`, dbErr)
+  }
+}
+
+/** Deprovisioning: disable n8n workflows when prospeccion subscription is cancelled/paused */
+async function triggerProspeccionDeprovisioning(subscriptionId: string) {
+  const webhookUrl = process.env.N8N_PROSPECCION_PROVISIONING_WEBHOOK
+  if (!webhookUrl) {
+    console.warn('[MP Webhook] N8N_PROSPECCION_PROVISIONING_WEBHOOK not configured — manual deprovisioning required')
+    return
+  }
+
+  const sub = await prisma.prospeccionSubscription.findUnique({
+    where: { id: subscriptionId },
+    include: { user: { select: { email: true, name: true } } },
+  })
+  if (!sub) return
+
+  try {
+    await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'deprovision',
+        subscriptionId: sub.id,
+        userId: sub.userId,
+        n8nLeadWorkflowId: sub.n8nLeadWorkflowId,
+        n8nIcebreakerWorkflowId: sub.n8nIcebreakerWorkflowId,
+        businessName: sub.businessName,
+      }),
+    })
+    console.log(`[MP Webhook] Prospeccion deprovisioning triggered for ${subscriptionId}`)
+  } catch (err) {
+    console.error(`[MP Webhook] Prospeccion deprovisioning failed for ${subscriptionId}:`, err)
   }
 }
 

@@ -27,6 +27,7 @@ model User {
   tradingSubscriptions  TradingSubscription[]
   leadsSubscriptions    LeadsSubscription[]
   emailMarketingSubscriptions EmailMarketingSubscription[]
+  prospeccionSubscriptions ProspeccionSubscription[]
   passwordResetTokens   PasswordResetToken[]
 }
 
@@ -103,6 +104,7 @@ model Coupon {
   tradingSubscriptions  TradingSubscription[]
   leadsSubscriptions    LeadsSubscription[]
   emailMarketingSubscriptions EmailMarketingSubscription[]
+  prospeccionSubscriptions ProspeccionSubscription[]
 }
 
 model TradingSubscription {
@@ -226,6 +228,37 @@ model EmailMarketingSubscription {
 
   @@index([userId, status])
   @@index([userId, businessName])
+}
+
+model ProspeccionSubscription {
+  id              String   @id @default(cuid())
+  userId          String
+  status          String   @default("pending_payment")
+  plan            String   // starter, profesional, enterprise
+  businessName    String
+  senderName      String
+  senderEmail     String
+  website         String
+  nichesList      String   @default("[]")
+  citiesList      String   @default("[]")
+  serviciosDesc   String   @default("")
+  colorPrimario   String   @default("#2563eb")
+  notificationEmail String
+  payerEmail      String
+  preapprovalId   String?
+  couponId        String?
+  discountApplied Int      @default(0)
+  provisionedAt   DateTime?
+  n8nLeadWorkflowId    String?
+  n8nIcebreakerWorkflowId String?
+  googleSheetId   String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  coupon Coupon? @relation(fields: [couponId], references: [id])
+
+  @@index([userId, status])
 }
 
 model Project {

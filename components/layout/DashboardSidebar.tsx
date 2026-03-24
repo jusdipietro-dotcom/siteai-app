@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard, BookTemplate, Settings, HelpCircle,
   Plus, LogOut, Search as SearchIcon, Image, ChevronLeft, ChevronRight,
-  Scale, Tag, Users, MessageSquare, Linkedin, TrendingUp, Send,
+  Scale, Tag, Users, MessageSquare, Linkedin, TrendingUp, Send, Target,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useUIStore } from '@/store/useUIStore'
@@ -24,6 +24,7 @@ const NAV_ITEMS = [
   { href: '/crypto',     label: 'Señales Crypto',      icon: TrendingUp },
   { href: '/leads',      label: 'Captación Leads',     icon: Users },
   { href: '/email-marketing', label: 'Email Marketing', icon: Send },
+  { href: '/prospeccion', label: 'Prospeccion IA', icon: Target },
 ]
 
 const BOTTOM_ITEMS = [

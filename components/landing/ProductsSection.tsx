@@ -1,7 +1,7 @@
 'use client'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { ArrowRight, Globe, Scale, Bot, Check, Zap, Bell, FileText, Shield, Clock, Mail, Webhook, MessageSquare, Linkedin, TrendingUp, Users, PenTool, CandlestickChart, Activity, BarChart3, Search, Send, UserCheck, MailX } from 'lucide-react'
+import { ArrowRight, Globe, Scale, Bot, Check, Zap, Bell, FileText, Shield, Clock, Mail, Webhook, MessageSquare, Linkedin, TrendingUp, Users, PenTool, CandlestickChart, Activity, BarChart3, Search, Send, UserCheck, MailX, Target } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 const products = [
@@ -137,6 +137,26 @@ const products = [
     ctaHref: '/servicios/email-marketing#planes',
     price: 'Desde $15.000/mes',
     priceNote: 'En pesos, sin plataformas en USD',
+  },
+  {
+    id: 'prospeccion',
+    badge: 'Nuevo',
+    title: 'Prospeccion B2B con IA',
+    subtitle: 'LeadGen + Icebreaker',
+    description: 'Sistema completo de captacion de leads y envio de emails personalizados con IA. Busca prospectos en tu nicho, extrae emails de sus webs y envia emails unicos generados por IA. Todo automatico, 24/5.',
+    icon: Target,
+    gradient: 'from-orange-500 to-red-600',
+    bgGlow: 'bg-orange-500/10',
+    features: [
+      { icon: Search, text: 'Captacion automatica de leads por nicho y ciudad' },
+      { icon: Mail, text: 'Emails personalizados generados por IA' },
+      { icon: Shield, text: 'Anti-spam profesional con unsubscribe' },
+      { icon: BarChart3, text: 'Google Sheets en tiempo real' },
+    ],
+    cta: 'Activar Prospeccion',
+    ctaHref: '/register?next=prospeccion',
+    price: 'Desde $25.000/mes',
+    priceNote: 'Stack 100% gratuito — $0 en infraestructura adicional',
   },
   {
     id: 'automatizaciones',
