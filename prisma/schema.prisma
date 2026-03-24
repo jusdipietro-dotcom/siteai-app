@@ -221,6 +221,9 @@ model EmailMarketingSubscription {
 
   user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   coupon Coupon? @relation(fields: [couponId], references: [id])
+
+  @@index([userId, status])
+  @@index([userId, businessName])
 }
 
 model Project {

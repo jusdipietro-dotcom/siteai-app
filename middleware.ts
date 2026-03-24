@@ -14,6 +14,9 @@ const PROTECTED_PATHS = [
   '/linkedin',
   '/resenas',
   '/crypto',
+  '/leads',
+  '/email-marketing',
+  '/trading',
   '/admin',
 ]
 

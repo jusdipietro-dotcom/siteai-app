@@ -15,7 +15,7 @@ const WA_LINK = 'https://wa.me/5491171311465?text=Hola%2C%20quiero%20info%20sobr
 const plans = [
   {
     id: 'basico',
-    name: 'Basico',
+    name: 'Básico',
     price: 15000,
     popular: false,
     desc: 'Para emprendedores y negocios que arrancan',
@@ -140,7 +140,7 @@ const steps = [
 ]
 
 const comparison = [
-  { feature: 'Costo mensual', mailchimp: '$13-350 USD', brevo: '$9-65 USD', ours: '$0' },
+  { feature: 'Costo mensual', mailchimp: '$13-350 USD', brevo: '$9-65 USD', ours: 'Desde $15.000 ARS' },
   { feature: 'Moneda', mailchimp: 'Dólares', brevo: 'Dólares', ours: 'Pesos AR' },
   { feature: 'Contactos ilimitados', mailchimp: 'No', brevo: 'No', ours: 'Sí' },
   { feature: 'Personalización', mailchimp: 'Sí', brevo: 'Sí', ours: 'Sí' },
@@ -226,7 +226,7 @@ export default function EmailMarketingPage() {
           {[
             { num: '360', label: 'emails/día' },
             { num: '100%', label: 'automático' },
-            { num: '$0', label: 'costo de plataforma' },
+            { num: 'ARS', label: 'pagás en pesos' },
             { num: '24hs', label: 'implementación' },
           ].map(s => (
             <motion.div key={s.label} initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
@@ -313,10 +313,10 @@ export default function EmailMarketingPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-surface-900 text-white">
-                  <th className="text-left py-3 px-4 font-semibold" />
-                  <th className="py-3 px-4 font-semibold">Mailchimp</th>
-                  <th className="py-3 px-4 font-semibold">Brevo</th>
-                  <th className="py-3 px-4 font-semibold bg-rose-600">Automatic IA Lab</th>
+                  <th scope="col" className="text-left py-3 px-4 font-semibold">Característica</th>
+                  <th scope="col" className="py-3 px-4 font-semibold">Mailchimp</th>
+                  <th scope="col" className="py-3 px-4 font-semibold">Brevo</th>
+                  <th scope="col" className="py-3 px-4 font-semibold bg-rose-600">Automatic IA Lab</th>
                 </tr>
               </thead>
               <tbody>
@@ -465,9 +465,9 @@ export default function EmailMarketingPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-surface-900 text-white">
-                  <th className="text-left py-3 px-4 font-semibold">Caracteristica</th>
+                  <th scope="col" className="text-left py-3 px-4 font-semibold">Característica</th>
                   {plans.map(p => (
-                    <th key={p.id} className={`py-3 px-4 font-semibold text-center ${p.popular ? 'bg-rose-600' : ''}`}>
+                    <th scope="col" key={p.id} className={`py-3 px-4 font-semibold text-center ${p.popular ? 'bg-rose-600' : ''}`}>
                       {p.name}
                       <div className="font-normal text-xs opacity-80 mt-0.5">${p.price.toLocaleString('es-AR')}/mes</div>
                     </th>

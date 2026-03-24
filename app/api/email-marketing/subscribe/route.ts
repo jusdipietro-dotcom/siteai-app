@@ -5,6 +5,17 @@ import { prisma } from '@/lib/prisma'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 import { getPlanConfig } from '@/lib/email-marketing-plans'
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
+const MAX_NAME_LENGTH = 200
+
+function sanitizeStr(val: unknown): string {
+  return typeof val === 'string' ? val.trim().slice(0, MAX_NAME_LENGTH) : ''
+}
+
+function sanitizeEmail(val: unknown): string {
+  return typeof val === 'string' ? val.toLowerCase().trim().slice(0, 254) : ''
+}
+
 export async function POST(req: NextRequest) {
   try {
     const ip = getClientIp(req)
@@ -17,35 +28,56 @@ export async function POST(req: NextRequest) {
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
+    const userId = session.user.id
 
-    const body = await req.json()
-    const { plan, businessName, contactCount, senderName, senderEmail, notificationEmail, payerEmail, couponCode } = body
+    // ── Parse and sanitize body ──
+    let body: Record<string, unknown>
+    try {
+      body = await req.json()
+    } catch {
+      return NextResponse.json({ error: 'Body JSON inválido' }, { status: 400 })
+    }
+    if (!body || typeof body !== 'object') {
+      return NextResponse.json({ error: 'Body requerido' }, { status: 400 })
+    }
 
-    // ── Validar plan ──
+    const plan = typeof body.plan === 'string' ? body.plan : ''
+    const businessName = sanitizeStr(body.businessName)
+    const senderName = sanitizeStr(body.senderName)
+    const senderEmail = sanitizeEmail(body.senderEmail)
+    const notificationEmail = sanitizeEmail(body.notificationEmail)
+    const payerEmail = sanitizeEmail(body.payerEmail)
+    const couponCode = typeof body.couponCode === 'string' ? body.couponCode.toUpperCase().trim().slice(0, 50) : ''
+
+    // ── Validate plan ──
     const planConfig = getPlanConfig(plan)
     if (!planConfig) {
       return NextResponse.json({ error: 'Plan inválido' }, { status: 400 })
     }
 
-    // ── Validar campos requeridos ──
-    if (!businessName?.trim()) {
+    // ── Validate required fields ──
+    if (!businessName) {
       return NextResponse.json({ error: 'Nombre del negocio requerido' }, { status: 400 })
     }
-    if (!senderName?.trim()) {
+    if (!senderName) {
       return NextResponse.json({ error: 'Nombre del remitente requerido' }, { status: 400 })
     }
-    if (!senderEmail?.includes('@')) {
+    if (!EMAIL_RE.test(senderEmail)) {
       return NextResponse.json({ error: 'Email de envío inválido' }, { status: 400 })
     }
-    if (!notificationEmail?.includes('@')) {
+    if (!EMAIL_RE.test(notificationEmail)) {
       return NextResponse.json({ error: 'Email de notificaciones inválido' }, { status: 400 })
     }
-    if (!payerEmail?.includes('@')) {
+    if (!EMAIL_RE.test(payerEmail)) {
       return NextResponse.json({ error: 'Email de facturación inválido' }, { status: 400 })
     }
 
-    // ── Validar límite de contactos del plan ──
-    const parsedContactCount = parseInt(contactCount, 10) || 0
+    // ── Validate contact count ──
+    const rawCount = typeof body.contactCount === 'number' ? body.contactCount : parseInt(String(body.contactCount), 10)
+    const parsedContactCount = Number.isFinite(rawCount) ? Math.floor(rawCount) : 0
+    if (parsedContactCount < 0) {
+      return NextResponse.json({ error: 'La cantidad de contactos no puede ser negativa' }, { status: 400 })
+    }
     if (parsedContactCount > planConfig.maxContacts) {
       return NextResponse.json(
         { error: `El plan ${planConfig.name} permite hasta ${planConfig.maxContacts.toLocaleString()} contactos. Necesitás un plan superior.` },
@@ -53,22 +85,20 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // ── Validar tipo de remitente según plan ──
-    const emailDomain = senderEmail.toLowerCase().trim().split('@')[1]
+    // ── Validate sender type per plan ──
+    const emailDomain = senderEmail.split('@').pop() ?? ''
     if (planConfig.senderType === 'gmail' && emailDomain !== 'gmail.com') {
       return NextResponse.json(
         { error: `El plan ${planConfig.name} solo permite enviar desde Gmail (@gmail.com). Para usar tu dominio propio necesitás el plan Profesional o superior.` },
         { status: 400 }
       )
     }
-    // workspace = cualquier dominio excepto gmail (se asume Google Workspace)
-    // any = sin restricción
 
-    // ── Verificar duplicado activo para el mismo negocio ──
+    // ── Check duplicate active subscription for same business (case-insensitive) ──
     const existing = await prisma.emailMarketingSubscription.findFirst({
       where: {
-        userId: session.user.id,
-        businessName: businessName.trim(),
+        userId,
+        businessName: { equals: businessName, mode: 'insensitive' },
         status: { in: ['active', 'provisioning'] },
       },
     })
@@ -79,12 +109,9 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // ── Verificar límite de campañas activas del plan ──
+    // ── Check active campaigns limit ──
     const activeSubs = await prisma.emailMarketingSubscription.count({
-      where: {
-        userId: session.user.id,
-        status: { in: ['active', 'provisioning'] },
-      },
+      where: { userId, status: { in: ['active', 'provisioning'] } },
     })
     if (activeSubs >= planConfig.maxCampaigns) {
       const label = planConfig.maxCampaigns >= 99 ? 'campañas ilimitadas' : `${planConfig.maxCampaigns} campaña${planConfig.maxCampaigns > 1 ? 's' : ''}`
@@ -94,18 +121,14 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // ── Verificar límite de remitentes distintos del plan ──
-    const distinctSenders = await prisma.emailMarketingSubscription.findMany({
-      where: {
-        userId: session.user.id,
-        status: { in: ['active', 'provisioning'] },
-      },
+    // ── Check distinct senders limit (case-insensitive) ──
+    const distinctSendersRaw = await prisma.emailMarketingSubscription.findMany({
+      where: { userId, status: { in: ['active', 'provisioning'] } },
       select: { senderEmail: true },
       distinct: ['senderEmail'],
     })
-    const newSender = senderEmail.toLowerCase().trim()
-    const existingSenders = distinctSenders.map(s => s.senderEmail)
-    const isNewSender = !existingSenders.includes(newSender)
+    const existingSenders = distinctSendersRaw.map(s => s.senderEmail.toLowerCase())
+    const isNewSender = !existingSenders.includes(senderEmail)
     if (isNewSender && existingSenders.length >= planConfig.maxSenders) {
       const label = planConfig.maxSenders >= 99 ? 'remitentes ilimitados' : `${planConfig.maxSenders} remitente${planConfig.maxSenders > 1 ? 's' : ''}`
       return NextResponse.json(
@@ -114,21 +137,18 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // ── Cancelar suscripciones pendientes viejas ──
+    // ── Cancel stale pending_payment records ──
     await prisma.emailMarketingSubscription.updateMany({
-      where: {
-        userId: session.user.id,
-        status: 'pending_payment',
-      },
+      where: { userId, status: 'pending_payment' },
       data: { status: 'cancelled' },
     })
 
-    // ── Validar cupón ──
+    // ── Validate coupon ──
     let couponId: string | null = null
     let discountApplied = 0
 
     if (couponCode) {
-      const coupon = await prisma.coupon.findUnique({ where: { code: couponCode.toUpperCase() } })
+      const coupon = await prisma.coupon.findUnique({ where: { code: couponCode } })
       if (!coupon || !coupon.active) {
         return NextResponse.json({ error: 'Cupón inválido o expirado' }, { status: 400 })
       }
@@ -143,17 +163,17 @@ export async function POST(req: NextRequest) {
       discountApplied = Math.min(Math.max(coupon.discount, 0), 100)
     }
 
-    // ── Crear suscripción ──
+    // ── Create subscription ──
     const subscription = await prisma.emailMarketingSubscription.create({
       data: {
-        userId: session.user.id,
+        userId,
         plan,
-        businessName: businessName.trim(),
+        businessName,
         contactCount: parsedContactCount,
-        senderName: senderName.trim(),
-        senderEmail: newSender,
-        notificationEmail: notificationEmail.toLowerCase().trim(),
-        payerEmail: payerEmail.toLowerCase().trim(),
+        senderName,
+        senderEmail,
+        notificationEmail,
+        payerEmail,
         couponId,
         discountApplied,
       },

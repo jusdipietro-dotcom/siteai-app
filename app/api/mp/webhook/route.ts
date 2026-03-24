@@ -490,7 +490,15 @@ export async function POST(req: NextRequest) {
         const emSubId = parts[1]
         const emPlan = parts[2]
 
+        // Validate plan exists
+        const validPlans = ['basico', 'profesional', 'premium']
+        if (!validPlans.includes(emPlan)) {
+          console.warn(`[MP Webhook] Invalid email marketing plan in external_reference: ${emPlan}`)
+          return NextResponse.json({ received: true })
+        }
+
         if (status === 'authorized' && emSubId) {
+          // Atomic update: only transitions from pending_payment to provisioning
           const { count } = await prisma.emailMarketingSubscription.updateMany({
             where: { id: emSubId, status: 'pending_payment' },
             data: { status: 'provisioning', preapprovalId },
@@ -501,6 +509,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ received: true })
           }
 
+          // Increment coupon usage (only if atomic update succeeded — prevents double-increment)
           const currentSub = await prisma.emailMarketingSubscription.findUnique({
             where: { id: emSubId },
           })
@@ -511,7 +520,9 @@ export async function POST(req: NextRequest) {
             })
           }
 
-          console.log(`[MP Webhook] Email Marketing ${emSubId} → provisioning (plan: ${emPlan})`)
+          // Use the plan from the DB (source of truth), not from external_reference
+          const activatedPlan = currentSub?.plan ?? emPlan
+          console.log(`[MP Webhook] Email Marketing ${emSubId} → provisioning (plan: ${activatedPlan})`)
 
           // Trigger provisioning via n8n
           await triggerEmailMarketingProvisioning(emSubId)
@@ -524,7 +535,7 @@ export async function POST(req: NextRequest) {
             if (subForEmail?.user.email) {
               await sendPaymentConfirmationEmail(subForEmail.user.email, {
                 type: 'email-marketing',
-                plan: emPlan,
+                plan: activatedPlan,
               })
             }
           } catch (emailErr) {
@@ -538,6 +549,9 @@ export async function POST(req: NextRequest) {
             data: { status: 'suspended' },
           })
           console.log(`[MP Webhook] Email Marketing ${emSubId} suspended (${status})`)
+
+          // Trigger deprovisioning (disable n8n workflow)
+          await triggerEmailMarketingDeprovisioning(emSubId)
 
           try {
             const subForEmail = await prisma.emailMarketingSubscription.findUnique({
@@ -930,6 +944,38 @@ async function triggerEmailMarketingProvisioning(subscriptionId: string) {
   }
 
   console.error(`[MP Webhook] Email Marketing provisioning FAILED after ${MAX_RETRIES} attempts for ${subscriptionId}`)
+}
+
+/** Deprovisioning: disable n8n workflow when subscription is cancelled/paused */
+async function triggerEmailMarketingDeprovisioning(subscriptionId: string) {
+  const webhookUrl = process.env.N8N_EMAIL_MARKETING_PROVISIONING_WEBHOOK
+  if (!webhookUrl) {
+    console.warn('[MP Webhook] N8N_EMAIL_MARKETING_PROVISIONING_WEBHOOK not configured — manual deprovisioning required')
+    return
+  }
+
+  const sub = await prisma.emailMarketingSubscription.findUnique({
+    where: { id: subscriptionId },
+    include: { user: { select: { email: true, name: true } } },
+  })
+  if (!sub) return
+
+  try {
+    await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'deprovision',
+        subscriptionId: sub.id,
+        userId: sub.userId,
+        n8nWorkflowId: sub.n8nWorkflowId,
+        businessName: sub.businessName,
+      }),
+    })
+    console.log(`[MP Webhook] Email Marketing deprovisioning triggered for ${subscriptionId}`)
+  } catch (err) {
+    console.error(`[MP Webhook] Email Marketing deprovisioning failed for ${subscriptionId}:`, err)
+  }
 }
 
 // MP verifica el endpoint con GET al registrarlo

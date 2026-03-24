@@ -18,7 +18,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
 
-    const { subscriptionId, payerEmail } = await req.json()
+    let body: Record<string, unknown>
+    try {
+      body = await req.json()
+    } catch {
+      return NextResponse.json({ error: 'Body JSON inválido' }, { status: 400 })
+    }
+
+    const subscriptionId = typeof body.subscriptionId === 'string' ? body.subscriptionId : ''
+    const payerEmail = typeof body.payerEmail === 'string' ? body.payerEmail.toLowerCase().trim() : ''
 
     if (!subscriptionId) {
       return NextResponse.json({ error: 'subscriptionId requerido' }, { status: 400 })
@@ -92,10 +100,10 @@ export async function POST(req: NextRequest) {
 
     const extRef = `emailmarketing:${subscriptionId}:${sub.plan}`
 
-    const body: Record<string, unknown> = {
+    const mpBody: Record<string, unknown> = {
       reason: planConfig.title,
       external_reference: extRef,
-      payer_email: (payerEmail ?? sub.payerEmail).toLowerCase(),
+      payer_email: (payerEmail || sub.payerEmail || '').toLowerCase(),
       auto_recurring: {
         frequency: 1,
         frequency_type: 'months',
@@ -114,7 +122,7 @@ export async function POST(req: NextRequest) {
         Authorization: `Bearer ${ACCESS_TOKEN}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify(mpBody),
     })
 
     const data = await res.json()
