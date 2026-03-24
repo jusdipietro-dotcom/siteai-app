@@ -4,21 +4,26 @@ const links: Record<string, { label: string; href: string }[]> = {
   Productos: [
     { label: 'Sitios Web con IA', href: '/#sitios-web' },
     { label: 'Monitoreo Judicial', href: '/#monitoreo-judicial' },
-    { label: 'Reseñas Google IA', href: '/#resenas-google' },
-    { label: 'Trading Signals IA', href: '/#trading-signals' },
-    { label: 'Captación de Leads IA', href: '/#captacion-leads' },
+    { label: 'Prospeccion B2B', href: '/#prospeccion' },
+    { label: 'Captacion de Leads', href: '/#captacion-leads' },
+    { label: 'Resenas Google IA', href: '/#resenas-google' },
+    { label: 'LinkedIn Optimizer', href: '/#linkedin-optimizer' },
+    { label: 'Email Marketing', href: '/#email-marketing' },
+    { label: 'Senales Crypto', href: '/#senales-crypto' },
+    { label: 'Redes Sociales', href: '/#redes-sociales' },
+    { label: 'Turnos Online', href: '/#turnos-online' },
     { label: 'Automatizaciones', href: '/#automatizaciones' },
-    { label: 'Precios', href: '/#pricing' },
-    { label: 'Plan Gratuito', href: '/gratis' },
   ],
   Recursos: [
     { label: 'Blog', href: '/blog' },
     { label: 'Preguntas frecuentes', href: '/#faq' },
+    { label: 'Precios', href: '/#pricing' },
+    { label: 'Plan Gratuito', href: '/gratis' },
     { label: 'Sobre nosotros', href: '/about' },
     { label: 'Contacto', href: '/contacto' },
   ],
   Legal: [
-    { label: 'Términos de uso', href: '/terms' },
+    { label: 'Terminos de uso', href: '/terms' },
     { label: 'Privacidad', href: '/privacy' },
   ],
 }
@@ -35,7 +40,7 @@ export function Footer() {
               <span className="text-lg font-bold text-white">Automatic IA Lab</span>
             </div>
             <p className="text-sm text-surface-500 leading-relaxed max-w-xs">
-              Plataforma de automatización con IA. Sitios web, monitoreo judicial y soluciones a medida para negocios de Argentina.
+              Plataforma de automatizacion con IA. 11 productos para escalar tu negocio: sitios web, monitoreo judicial, prospeccion B2B, email marketing, resenas, LinkedIn, trading y mas.
             </p>
           </div>
 

@@ -1,75 +1,112 @@
 'use client'
-import { useState } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { Check, Zap, Shield } from 'lucide-react'
+import { ArrowRight, Globe, Scale, Target, Search, MessageSquare, Linkedin, Send, CandlestickChart, Instagram, CalendarCheck, Bot } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
-const plans = [
+const productPricing = [
   {
-    name: 'Free',
-    monthlyPrice: 0,
-    annualPrice: 0,
-    description: 'Para explorar la plataforma',
-    cta: 'Empezar gratis',
-    ctaVariant: 'outline' as const,
+    icon: Globe,
+    name: 'Sitios Web con IA',
+    price: 'Desde $0',
+    period: '/mes',
+    note: 'Plan gratuito disponible',
+    gradient: 'from-brand-500 to-cyan-500',
     href: '/register',
-    popular: false,
-    features: [
-      'Generación de sitio con IA',
-      'Vista previa completa del sitio',
-      'Editor visual incluido',
-      'Sin tarjeta de crédito',
-    ],
-    missing: ['Publicación online', 'URL pública', 'SSL', 'WhatsApp integrado'],
   },
   {
-    name: 'Essential',
-    monthlyPrice: 12000,
-    annualPrice: 8400,
-    description: 'Para negocios que quieren presencia online',
-    cta: 'Elegir Essential',
-    ctaVariant: 'gradient' as const,
-    href: '/register?plan=essential',
-    popular: true,
-    features: [
-      'Sitio publicado con URL pública',
-      'Certificado SSL incluido',
-      'Editor visual: ediciones ilimitadas',
-      'Botón de WhatsApp integrado',
-      'SEO básico (título, descripción, keywords)',
-      'Soporte por email',
-    ],
-    missing: ['Hasta 3 proyectos', 'SEO avanzado + sitemap', 'Google Analytics'],
+    icon: Scale,
+    name: 'Monitoreo Judicial',
+    price: 'Desde $15.000',
+    period: '/mes',
+    note: 'Por CUIT monitoreado',
+    gradient: 'from-violet-500 to-purple-600',
+    href: '/register?next=monitoreo',
   },
   {
-    name: 'Professional',
-    monthlyPrice: 29000,
-    annualPrice: 20300,
-    description: 'Para negocios que quieren el máximo impacto',
-    cta: 'Elegir Professional',
-    ctaVariant: 'gradient' as const,
-    href: '/register?plan=professional',
-    popular: false,
-    features: [
-      'Todo lo de Essential',
-      'Hasta 3 proyectos activos',
-      'SEO avanzado + sitemap.xml',
-      'Google Analytics integrado',
-      'Soporte prioritario',
-    ],
-    missing: [],
+    icon: Target,
+    name: 'Prospeccion B2B',
+    price: 'Desde $25.000',
+    period: '/mes',
+    note: 'Leads + emails con IA',
+    gradient: 'from-orange-500 to-red-600',
+    href: '/register?next=prospeccion',
+  },
+  {
+    icon: Search,
+    name: 'Captacion de Leads',
+    price: 'Desde $18.000',
+    period: '/mes',
+    note: 'Leads ilimitados',
+    gradient: 'from-rose-500 to-pink-600',
+    href: '/register?next=leads',
+  },
+  {
+    icon: MessageSquare,
+    name: 'Resenas Google IA',
+    price: 'Desde $15.000',
+    period: '/mes',
+    note: 'Por perfil de Google Business',
+    gradient: 'from-amber-500 to-orange-500',
+    href: '/register?next=resenas',
+  },
+  {
+    icon: Linkedin,
+    name: 'LinkedIn Optimizer',
+    price: 'Desde $12.000',
+    period: '/mes',
+    note: 'Por perfil de LinkedIn',
+    gradient: 'from-blue-600 to-sky-500',
+    href: '/register?next=linkedin',
+  },
+  {
+    icon: Send,
+    name: 'Email Marketing',
+    price: 'Desde $15.000',
+    period: '/mes',
+    note: 'En pesos, sin USD',
+    gradient: 'from-pink-500 to-rose-600',
+    href: '/servicios/email-marketing#planes',
+  },
+  {
+    icon: CandlestickChart,
+    name: 'Senales Crypto',
+    price: '$20.000',
+    period: '/mes',
+    note: '18 pares | 60% win rate',
+    gradient: 'from-emerald-500 to-green-600',
+    href: '/register?next=crypto',
+  },
+  {
+    icon: Instagram,
+    name: 'Redes Sociales IA',
+    price: 'A medida',
+    period: '',
+    note: 'Setup + publicacion diaria',
+    gradient: 'from-fuchsia-500 to-purple-600',
+    href: 'https://wa.me/5491171311465?text=Hola,%20me%20interesa%20la%20automatizacion%20de%20redes%20sociales',
+  },
+  {
+    icon: CalendarCheck,
+    name: 'Turnos Online',
+    price: 'Desde $10.000',
+    period: '/mes',
+    note: 'Setup incluido',
+    gradient: 'from-teal-500 to-cyan-600',
+    href: 'https://wa.me/5491171311465?text=Hola,%20me%20interesa%20el%20sistema%20de%20turnos%20online',
+  },
+  {
+    icon: Bot,
+    name: 'Automatizaciones IA',
+    price: 'Desde $50.000',
+    period: '',
+    note: 'Presupuesto a medida',
+    gradient: 'from-slate-600 to-slate-800',
+    href: 'https://wa.me/5491171311465?text=Hola,%20necesito%20una%20automatizacion%20personalizada',
   },
 ]
 
-function formatPrice(n: number) {
-  if (n === 0) return '0'
-  return n.toLocaleString('es-AR')
-}
-
 export function Pricing() {
-  const [annual, setAnnual] = useState(false)
-
   return (
     <section id="pricing" className="py-24 bg-surface-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -88,134 +125,66 @@ export function Pricing() {
             viewport={{ once: true }}
             className="text-4xl font-extrabold text-surface-900 mb-4"
           >
-            Planes simples, sin sorpresas
+            Un precio para cada necesidad
           </motion.h2>
           <motion.p
             initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.1 }}
-            className="text-lg text-surface-500 mb-8"
+            className="text-lg text-surface-500"
           >
-            Sin contratos, sin costos ocultos. Cancelá cuando quieras. Sin tarjeta para empezar.
+            Todos los precios en pesos argentinos. Sin contratos, sin costos ocultos. Cancela cuando quieras.
           </motion.p>
-
-          {/* Toggle mensual / anual */}
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.15 }}
-            className="inline-flex items-center gap-3 bg-white border border-surface-200 rounded-full p-1 shadow-soft"
-          >
-            <button
-              type="button"
-              onClick={() => setAnnual(false)}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
-                !annual
-                  ? 'bg-surface-900 text-white shadow-soft'
-                  : 'text-surface-500 hover:text-surface-700'
-              }`}
-            >
-              Mensual
-            </button>
-            <button
-              type="button"
-              onClick={() => setAnnual(true)}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all flex items-center gap-1.5 ${
-                annual
-                  ? 'bg-surface-900 text-white shadow-soft'
-                  : 'text-surface-500 hover:text-surface-700'
-              }`}
-            >
-              Anual
-              <span className="bg-emerald-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none">
-                -30%
-              </span>
-            </button>
-          </motion.div>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-6 items-start">
-          {plans.map((plan, i) => {
-            const price = annual ? plan.annualPrice : plan.monthlyPrice
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {productPricing.map((product, i) => {
+            const Icon = product.icon
             return (
               <motion.div
-                key={plan.name}
-                initial={{ opacity: 0, y: 24 }}
+                key={product.name}
+                initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ delay: i * 0.12 }}
-                className={`relative bg-white rounded-2xl border shadow-soft ${
-                  plan.popular
-                    ? 'border-brand-400 shadow-brand ring-2 ring-brand-500/20 scale-105'
-                    : 'border-surface-100'
-                }`}
+                transition={{ delay: i * 0.05 }}
+                className="bg-white rounded-2xl border border-surface-100 p-5 hover:shadow-card hover:-translate-y-0.5 transition-all duration-200 flex flex-col"
               >
-                {plan.popular && (
-                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
-                    <span className="gradient-brand text-white text-xs font-bold px-3 py-1 rounded-full shadow-brand flex items-center gap-1">
-                      <Zap className="w-3 h-3" /> Más popular
-                    </span>
-                  </div>
-                )}
-
-                <div className="p-6">
-                  <h3 className="text-lg font-bold text-surface-900 mb-1">{plan.name}</h3>
-                  <p className="text-sm text-surface-500 mb-5">{plan.description}</p>
-
-                  <div className="flex items-baseline gap-1 mb-1">
-                    <span className="text-sm text-surface-500">$</span>
-                    <span className="text-5xl font-extrabold text-surface-900">
-                      {formatPrice(price)}
-                    </span>
-                    <span className="text-sm text-surface-500">/ mes</span>
-                  </div>
-
-                  {annual && plan.monthlyPrice > 0 && (
-                    <p className="text-xs text-emerald-600 font-medium mb-4">
-                      Ahorrás $ {formatPrice((plan.monthlyPrice - plan.annualPrice) * 12)} al año
-                    </p>
-                  )}
-                  {!annual && <div className="mb-4" />}
-
-                  <Link href={plan.monthlyPrice > 0 ? `${plan.href}${annual ? '&billing=annual' : ''}` : plan.href}>
-                    <Button variant={plan.ctaVariant} className="w-full mb-4">
-                      {plan.cta}
-                    </Button>
-                  </Link>
-
-                  {/* Garantía */}
-                  {plan.monthlyPrice > 0 && (
-                    <div className="flex items-center justify-center gap-1.5 text-xs text-surface-400 mb-5">
-                      <Shield className="w-3.5 h-3.5 text-emerald-500" />
-                      <span>Garantía de devolución 7 días</span>
-                    </div>
-                  )}
-                  {plan.monthlyPrice === 0 && <div className="mb-5" />}
-
-                  <ul className="space-y-2.5">
-                    {plan.features.map((f) => (
-                      <li key={f} className="flex items-start gap-2.5 text-sm text-surface-700">
-                        <Check className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-                        {f}
-                      </li>
-                    ))}
-                    {plan.missing.map((f) => (
-                      <li key={f} className="flex items-start gap-2.5 text-sm text-surface-400 line-through">
-                        <Check className="w-4 h-4 text-surface-200 shrink-0 mt-0.5" />
-                        {f}
-                      </li>
-                    ))}
-                  </ul>
+                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${product.gradient} flex items-center justify-center mb-4`}>
+                  <Icon className="w-5 h-5 text-white" />
                 </div>
+                <h3 className="font-semibold text-surface-900 text-sm mb-1">{product.name}</h3>
+                <div className="flex items-baseline gap-0.5 mb-1">
+                  <span className="text-2xl font-extrabold text-surface-900">{product.price}</span>
+                  {product.period && <span className="text-sm text-surface-400">{product.period}</span>}
+                </div>
+                <p className="text-xs text-surface-400 mb-4 flex-1">{product.note}</p>
+                <Link href={product.href}>
+                  <Button variant="outline" size="sm" className="w-full gap-1.5 text-xs">
+                    Ver mas <ArrowRight className="w-3 h-3" />
+                  </Button>
+                </Link>
               </motion.div>
             )
           })}
         </div>
-        <p className="text-center text-xs text-surface-400 mt-6">
-          * Dominio personalizado requiere configuración DNS manual. Consultar soporte.
-        </p>
+
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.3 }}
+          className="text-center mt-10"
+        >
+          <p className="text-sm text-surface-500 mb-4">
+            Necesitas algo diferente? Armate un combo de productos o pedinos un presupuesto a medida.
+          </p>
+          <Link href="https://wa.me/5491171311465?text=Hola,%20quiero%20consultar%20por%20precios">
+            <Button variant="gradient" className="gap-2">
+              Consultar por WhatsApp <ArrowRight className="w-4 h-4" />
+            </Button>
+          </Link>
+        </motion.div>
       </div>
     </section>
   )

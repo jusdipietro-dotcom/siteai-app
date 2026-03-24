@@ -23,14 +23,14 @@ export function CtaSection() {
             <span className="block text-brand-400">Enfocate en lo que importa.</span>
           </h2>
           <p className="text-lg text-surface-400 mb-10">
-            Ya sea tu sitio web, el seguimiento de causas judiciales o procesos de tu negocio,
-            tenemos la solución. Empezá hoy.
+            Sitios web, monitoreo judicial, prospeccion B2B, email marketing, resenas,
+            LinkedIn, trading y mas. 11 productos listos para vos. Empeza hoy.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/register">
               <Button size="xl" variant="gradient" className="gap-2 w-full sm:w-auto shadow-brand">
                 <Zap className="w-5 h-5" />
-                Crear mi sitio gratis
+                Empezar gratis
                 <ArrowRight className="w-4 h-4" />
               </Button>
             </Link>

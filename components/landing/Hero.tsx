@@ -1,7 +1,7 @@
 'use client'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { ArrowRight, Sparkles, Zap, Star, Bot, Globe, Scale } from 'lucide-react'
+import { ArrowRight, Sparkles, Zap, Star, Bot, Globe, Scale, Target, MessageSquare, Send } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 const fadeUp = {
@@ -17,21 +17,42 @@ const products = [
   {
     icon: Globe,
     label: 'Sitios Web con IA',
-    desc: 'Generá tu web en 60 segundos',
+    desc: 'Tu web en 60 segundos',
     color: 'from-brand-500 to-cyan-500',
     href: '#productos',
   },
   {
     icon: Scale,
     label: 'Monitoreo Judicial',
-    desc: 'Notificaciones PJN y SCBA',
+    desc: 'Alertas PJN y SCBA',
     color: 'from-violet-500 to-purple-600',
     href: '#productos',
   },
   {
+    icon: Target,
+    label: 'Prospeccion B2B',
+    desc: 'Leads + emails con IA',
+    color: 'from-orange-500 to-red-600',
+    href: '#productos',
+  },
+  {
+    icon: MessageSquare,
+    label: 'Resenas Google',
+    desc: 'Respuestas automaticas',
+    color: 'from-amber-500 to-orange-500',
+    href: '#productos',
+  },
+  {
+    icon: Send,
+    label: 'Email Marketing',
+    desc: 'Campanas sin Mailchimp',
+    color: 'from-pink-500 to-rose-600',
+    href: '#productos',
+  },
+  {
     icon: Bot,
-    label: 'Automatizaciones',
-    desc: 'Flujos inteligentes a medida',
+    label: '+6 productos mas',
+    desc: 'LinkedIn, Crypto, Turnos...',
     color: 'from-emerald-500 to-teal-600',
     href: '#productos',
   },
@@ -84,9 +105,9 @@ export function Hero() {
           custom={2}
           className="text-lg sm:text-xl text-surface-400 max-w-2xl mx-auto mb-12 leading-relaxed"
         >
-          Sitios web generados con IA, monitoreo judicial automático y
-          automatizaciones a medida. Todo en una plataforma, sin código,
-          sin complicaciones.
+          Sitios web, monitoreo judicial, prospeccion B2B, email marketing,
+          resenas de Google, LinkedIn, trading y mas. 11 productos listos para
+          automatizar tu negocio. Sin codigo, sin complicaciones.
         </motion.p>
 
         {/* Product cards */}
@@ -95,7 +116,7 @@ export function Hero() {
           initial="hidden"
           animate="visible"
           custom={3}
-          className="grid sm:grid-cols-3 gap-4 max-w-3xl mx-auto mb-12"
+          className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-w-3xl mx-auto mb-12"
         >
           {products.map((p) => {
             const Icon = p.icon

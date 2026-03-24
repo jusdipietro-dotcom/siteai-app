@@ -1,33 +1,33 @@
 'use client'
 import { motion } from 'framer-motion'
-import { Zap, Globe, Star, Building2 } from 'lucide-react'
+import { Zap, Package, Star, Building2 } from 'lucide-react'
 
 const stats = [
   {
     icon: Building2,
     value: '+500',
-    label: 'negocios con su sitio',
+    label: 'negocios automatizados',
     color: 'text-brand-400',
     bg: 'bg-brand-500/10',
   },
   {
-    icon: Zap,
-    value: '58s',
-    label: 'promedio de generación',
+    icon: Package,
+    value: '11',
+    label: 'productos listos para usar',
     color: 'text-amber-400',
     bg: 'bg-amber-500/10',
   },
   {
-    icon: Globe,
-    value: '12',
-    label: 'rubros disponibles',
+    icon: Zap,
+    value: '24/7',
+    label: 'automatizaciones activas',
     color: 'text-emerald-400',
     bg: 'bg-emerald-500/10',
   },
   {
     icon: Star,
     value: '4.9/5',
-    label: 'calificación promedio',
+    label: 'calificacion promedio',
     color: 'text-violet-400',
     bg: 'bg-violet-500/10',
   },

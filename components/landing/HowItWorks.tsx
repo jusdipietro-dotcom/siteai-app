@@ -1,32 +1,32 @@
 'use client'
 import { motion } from 'framer-motion'
-import { ClipboardList, Sparkles, Globe } from 'lucide-react'
+import { MessageSquare, Sparkles, Rocket } from 'lucide-react'
 
 const steps = [
   {
     step: '01',
-    icon: ClipboardList,
-    title: 'Completás el formulario',
+    icon: MessageSquare,
+    title: 'Elegis tu producto',
     description:
-      'Ingresás el nombre de tu negocio, rubro, servicios, colores y estilo. En menos de 5 minutos tenés todo listo.',
+      'Explora nuestro catalogo de 11 productos. Sitios web, monitoreo judicial, prospeccion B2B, email marketing, resenas, LinkedIn, trading y mas. Cada uno resuelve un problema real.',
     color: 'from-brand-500 to-brand-600',
     bg: 'bg-brand-50',
   },
   {
     step: '02',
     icon: Sparkles,
-    title: 'La IA genera tu sitio',
+    title: 'Lo configuramos con IA',
     description:
-      'Nuestra IA crea el contenido, diseño y estructura de tu sitio web personalizado para tu rubro y estilo.',
+      'Activamos tu producto en minutos. La IA se encarga de personalizar todo: contenido, frecuencia, tono, integraciones y automatizaciones adaptadas a tu negocio.',
     color: 'from-violet-500 to-violet-600',
     bg: 'bg-violet-50',
   },
   {
     step: '03',
-    icon: Globe,
-    title: 'Tu sitio se publica',
+    icon: Rocket,
+    title: 'Funciona en piloto automatico',
     description:
-      'En segundos, tu sitio queda publicado con una URL propia. Podés editarlo, compartirlo y recibir consultas.',
+      'Tu producto trabaja 24/7 sin intervencion. Recibes resultados, alertas y reportes. Vos te enfocas en lo que importa.',
     color: 'from-emerald-500 to-emerald-600',
     bg: 'bg-emerald-50',
   },
@@ -53,7 +53,7 @@ export function HowItWorks() {
             transition={{ delay: 0.1 }}
             className="text-4xl font-extrabold text-surface-900 mb-4"
           >
-            Tres pasos para tener tu sitio online
+            Tres pasos para automatizar tu negocio
           </motion.h2>
           <motion.p
             initial={{ opacity: 0, y: 16 }}
@@ -62,7 +62,7 @@ export function HowItWorks() {
             transition={{ delay: 0.2 }}
             className="text-lg text-surface-500"
           >
-            Sin conocimientos técnicos, sin diseñadores, sin demoras.
+            Sin conocimientos tecnicos, sin equipos, sin demoras.
           </motion.p>
         </div>
 

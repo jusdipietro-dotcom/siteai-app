@@ -5,76 +5,64 @@ import { ChevronDown } from 'lucide-react'
 
 const faqs = [
   {
-    q: '¿Necesito saber programar o diseñar?',
-    a: 'No. Completás un formulario con los datos de tu negocio y nuestra IA hace todo: el contenido, el diseño y la publicación. No se requiere ningún conocimiento técnico.',
+    q: 'Necesito saber programar para usar la plataforma?',
+    a: 'No. Todos nuestros productos son plug & play. Vos elegis, nosotros configuramos y la IA hace el resto. No se requiere ningun conocimiento tecnico.',
   },
   {
-    q: '¿Puedo editar el sitio después de generarlo?',
-    a: 'Sí. Tenés un editor visual donde podés cambiar textos, imágenes, colores y secciones. Los cambios se reflejan en tiempo real en la preview antes de publicar.',
+    q: 'Puedo contratar un solo producto o tengo que contratar todo?',
+    a: 'Cada producto es 100% independiente. Podes contratar solo el que necesitas o combinar varios. El alta es online y la activacion es inmediata en la mayoria de los casos.',
   },
   {
-    q: '¿Dónde se publica mi sitio?',
-    a: 'Tu sitio se publica automáticamente en GitHub Pages con una URL propia. En el plan Professional podés conectar tu propio dominio (.com, .com.ar, etc.).',
+    q: 'Los precios son en dolares?',
+    a: 'No. Todos nuestros precios son en pesos argentinos (ARS). Aceptamos MercadoPago y transferencia bancaria. Sin tarjetas internacionales ni conversiones.',
   },
   {
-    q: '¿La IA genera el contenido o tengo que escribirlo?',
-    a: 'La IA genera todo el contenido inicial basándose en los datos que ingresás (nombre, rubro, servicios, estilo). Después podés ajustar cualquier texto desde el editor.',
+    q: 'Que pasa si cancelo?',
+    a: 'Podes cancelar cuando quieras, sin penalidades ni contratos de permanencia. Tu servicio seguira activo hasta que venza el periodo contratado.',
   },
   {
-    q: '¿Puedo usar mi propio dominio personalizado?',
-    a: 'Sí, está disponible en el plan Professional. Requiere una configuración DNS simple que te explicamos paso a paso desde el soporte.',
+    q: 'Que es el Monitoreo Judicial?',
+    a: 'Es un servicio que revisa automaticamente los portales PJN y SCBA cada 2 horas y te envia por email las nuevas notificaciones con el texto completo del PDF. No necesitas entrar al portal nunca mas.',
   },
   {
-    q: '¿Qué pasa si cancelo mi plan?',
-    a: 'Podés cancelar cuando quieras, sin penalidades. Tu sitio seguirá publicado hasta que venza el período contratado. No hay contratos anuales forzosos.',
+    q: 'Que portales judiciales monitorean?',
+    a: 'Actualmente PJN y SCBA, con expansion planificada a MEV, PJ Buenos Aires, Cordoba y Santa Fe durante 2026.',
   },
   {
-    q: '¿Cuánto tiempo tarda en generarse el sitio?',
-    a: 'El tiempo promedio de generación es de 58 segundos. Una vez generado, el sitio queda publicado y accesible inmediatamente.',
+    q: 'Como funciona la Prospeccion B2B con IA?',
+    a: 'El sistema busca prospectos en tu nicho y ciudad, extrae emails verificados de sus webs, y envia emails unicos generados por IA que mencionan datos reales de cada negocio. Todo automatico con seguimiento en Google Sheets.',
   },
   {
-    q: '¿Incluye botón de WhatsApp?',
-    a: 'Sí, todos los planes de Sitios Web incluyen el botón flotante de WhatsApp integrado automáticamente con el número que ingresés en el formulario.',
+    q: 'Cuantos leads puedo capturar por dia?',
+    a: 'Entre 50 y 150 leads unicos por dia dependiendo de los nichos y ciudades. Se deduplican automaticamente. No hay limite mensual.',
   },
   {
-    q: '¿Qué es el Monitoreo Judicial?',
-    a: 'Es un servicio que revisa automáticamente los portales PJN (Poder Judicial de la Nación) y SCBA (Suprema Corte de Buenos Aires) cada 2 horas y te envía por email las nuevas notificaciones con el texto completo del PDF. No necesitás entrar al portal nunca más.',
+    q: 'Como funciona el respondedor de resenas de Google?',
+    a: 'Un agente de IA monitorea tu perfil de Google Business cada 30 minutos. Cuando detecta una resena nueva, genera una respuesta personalizada segun la puntuacion, el contenido y el nombre del cliente. Se publica automaticamente con el tono de tu marca.',
   },
   {
-    q: '¿Qué portales judiciales monitorean?',
-    a: 'Actualmente monitoreamos PJN y SCBA, con expansión planificada a MEV, PJ Buenos Aires, Córdoba y Santa Fe durante 2026.',
+    q: 'Que hace el LinkedIn Optimizer?',
+    a: 'Analiza tu perfil de LinkedIn, genera recomendaciones de optimizacion y crea publicaciones profesionales de alto impacto. Lo confirmas desde Telegram y se publica automaticamente. Incluye plan de contenido semanal.',
   },
   {
-    q: '¿Puedo contratar solo el monitoreo judicial sin el sitio web?',
-    a: 'Sí, cada producto es independiente. Podés contratar solo el monitoreo judicial (desde $19.000/mes por CUIT), solo el sitio web, o ambos. El alta es 100% online desde tu panel.',
+    q: 'Como funcionan las Senales Crypto?',
+    a: 'Un bot analiza 18 pares crypto con 7 indicadores tecnicos + 3 macro. Cuando hay confluencia (score >= 6/10), te envia una alerta a Telegram con precio de entrada, Stop Loss, Take Profit y ratio riesgo/beneficio. 60% win rate verificado.',
   },
   {
-    q: '¿Cómo funciona la Captación de Leads IA?',
-    a: 'Nuestro sistema busca automáticamente negocios reales en toda Argentina usando inteligencia artificial. Extrae nombre, teléfono, email y sitio web de cada negocio, valida que el email pertenezca al dominio real del negocio (no de terceros) y lo agrega a tu Google Sheets. Funciona 24/7 sin que tengas que hacer nada. Podés elegir nichos específicos o dejar que el sistema explore todos.',
+    q: 'Que incluye la automatizacion de redes sociales?',
+    a: 'Un sistema 100% automatizado busca contenido de tu nicho, lo procesa con IA, genera imagenes y lo publica en Instagram automaticamente. Incluye 4 publicaciones diarias (fotos y reels) sin intervencion humana.',
   },
   {
-    q: '¿Qué datos incluye cada lead capturado?',
-    a: 'Cada lead incluye: nombre del negocio, email verificado, teléfono, sitio web, ciudad y nicho/rubro. Todo se guarda automáticamente en una planilla de Google Sheets compartida con tu cuenta, lista para usar con tu CRM o herramienta de email marketing favorita.',
+    q: 'Como funciona el sistema de Turnos Online?',
+    a: 'Tus clientes eligen dia, hora y servicio desde una web responsive. El turno se confirma automaticamente por email y se registra en Google Calendar. Incluye disponibilidad en tiempo real y personalizacion completa.',
   },
   {
-    q: '¿Cuántos leads puedo capturar por día?',
-    a: 'El sistema captura entre 50 y 150 leads únicos por día dependiendo de los nichos y ciudades. Los leads se deduplicar automáticamente para evitar repeticiones. No hay límite mensual: cuanto más tiempo esté activo, más grande tu base de datos.',
+    q: 'Que tipo de automatizaciones hacen a medida?',
+    a: 'Desarrollamos flujos con IA: scraping de datos, integraciones API, agentes LLM (GPT, Gemini, Groq), procesamiento de documentos, notificaciones inteligentes y mas. Cada proyecto se adapta a tu necesidad.',
   },
   {
-    q: '¿Qué tipo de automatizaciones hacen a medida?',
-    a: 'Desarrollamos flujos con IA: scraping de datos, integraciones API, agentes LLM (GPT, Gemini, Groq), procesamiento de documentos, notificaciones inteligentes y más. Cada proyecto se adapta a la necesidad del cliente.',
-  },
-  {
-    q: '¿Cómo funciona el respondedor de reseñas de Google?',
-    a: 'Un agente de IA monitorea tu perfil de Google Business cada 30 minutos. Cuando detecta una reseña nueva, genera una respuesta personalizada basada en la puntuación, el contenido del comentario y el nombre del cliente. La respuesta se publica automáticamente con el tono de tu marca.',
-  },
-  {
-    q: '¿Puedo personalizar el tono de las respuestas a reseñas?',
-    a: 'Sí. Durante la configuración inicial definís el tono y estilo de comunicación de tu negocio (formal, cercano, profesional, etc.). La IA adapta cada respuesta respetando esas directrices, y podés ajustarlas en cualquier momento desde tu panel.',
-  },
-  {
-    q: '¿Funciona con cualquier negocio de Google Business?',
-    a: 'Sí, funciona con cualquier perfil de Google Business verificado, sin importar el rubro. Solo necesitás autorizar el acceso a tu perfil y la IA se encarga del resto. Podés gestionar múltiples perfiles desde una misma cuenta.',
+    q: 'Como es el soporte?',
+    a: 'Soporte directo por WhatsApp. Sin bots, sin tickets, sin esperar dias. Respondemos consultas en horario comercial y emergencias criticas fuera de horario.',
   },
 ]
 

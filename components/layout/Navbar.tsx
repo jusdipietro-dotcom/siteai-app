@@ -10,14 +10,11 @@ import { cn } from '@/lib/utils'
 
 const navLinks = [
   { label: 'Productos', href: '/#productos' },
-  { label: 'Sitios Web', href: '/#sitios-web' },
-  { label: 'Monitoreo Judicial', href: '/#monitoreo-judicial' },
-  { label: 'Reseñas Google', href: '/#resenas-google' },
-  { label: 'LinkedIn IA', href: '/#linkedin-optimizer' },
-  { label: 'Trading Signals', href: '/#trading-signals' },
-  { label: 'Leads IA', href: '/#captacion-leads' },
+  { label: 'Como funciona', href: '/#how-it-works' },
   { label: 'Precios', href: '/#pricing' },
+  { label: 'FAQ', href: '/#faq' },
   { label: 'Blog', href: '/blog' },
+  { label: 'Contacto', href: '/contacto' },
 ]
 
 export function Navbar() {
