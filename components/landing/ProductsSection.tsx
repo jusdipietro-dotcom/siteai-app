@@ -1,7 +1,7 @@
 'use client'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { ArrowRight, Globe, Scale, Bot, Check, Zap, Bell, FileText, Shield, Clock, Mail, Webhook, MessageSquare, Linkedin, TrendingUp, Users, PenTool, CandlestickChart, Activity, BarChart3, Search } from 'lucide-react'
+import { ArrowRight, Globe, Scale, Bot, Check, Zap, Bell, FileText, Shield, Clock, Mail, Webhook, MessageSquare, Linkedin, TrendingUp, Users, PenTool, CandlestickChart, Activity, BarChart3, Search, Send, UserCheck, MailX } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 const products = [
@@ -118,6 +118,25 @@ const products = [
     ctaHref: '/register?next=leads',
     price: 'Desde $18.000/mes',
     priceNote: 'Leads ilimitados en Google Sheets',
+  },
+  {
+    id: 'email-marketing',
+    badge: 'Nuevo',
+    title: 'Email Marketing Automatizado',
+    subtitle: 'Llegá a todos tus clientes sin Mailchimp ni dólares',
+    description: 'Sistema que envía emails promocionales personalizados a toda tu base de contactos, de forma automática. Template profesional con tu marca, anti-spam integrado, desuscripción automática y seguimiento en tiempo real. Sin plataformas costosas, sin suscripciones en dólares.',
+    icon: Send,
+    gradient: 'from-pink-500 to-rose-600',
+    bgGlow: 'bg-pink-500/10',
+    features: [
+      { icon: UserCheck, text: 'Personalizado por nombre del contacto' },
+      { icon: Shield, text: 'Anti-spam: ritmo controlado + template optimizado' },
+      { icon: MailX, text: 'Desuscripción automática en cada email' },
+    ],
+    cta: 'Quiero saber más',
+    ctaHref: '/email-marketing',
+    price: 'Pago único',
+    priceNote: 'Sin suscripción mensual en USD',
   },
   {
     id: 'automatizaciones',
