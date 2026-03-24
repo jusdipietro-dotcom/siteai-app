@@ -26,6 +26,7 @@ model User {
   linkedinSubscriptions LinkedInSubscription[]
   tradingSubscriptions  TradingSubscription[]
   leadsSubscriptions    LeadsSubscription[]
+  emailMarketingSubscriptions EmailMarketingSubscription[]
   passwordResetTokens   PasswordResetToken[]
 }
 
@@ -101,6 +102,7 @@ model Coupon {
   linkedinSubscriptions LinkedInSubscription[]
   tradingSubscriptions  TradingSubscription[]
   leadsSubscriptions    LeadsSubscription[]
+  emailMarketingSubscriptions EmailMarketingSubscription[]
 }
 
 model TradingSubscription {
@@ -191,6 +193,29 @@ model LeadsSubscription {
   discountApplied Int      @default(0)
   provisionedAt   DateTime?
   n8nWorkflowId   String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  coupon Coupon? @relation(fields: [couponId], references: [id])
+}
+
+model EmailMarketingSubscription {
+  id              String   @id @default(cuid())
+  userId          String
+  status          String   @default("pending_payment") // pending_payment, active, provisioning, suspended, cancelled
+  plan            String   // basico, profesional, premium
+  businessName    String   // nombre del negocio/marca
+  contactCount    Int      @default(0) // cantidad de contactos en la base
+  senderName      String   // nombre del remitente en los emails
+  senderEmail     String   // email desde donde se envía (Gmail/Workspace)
+  notificationEmail String // email donde recibe reportes
+  payerEmail      String
+  preapprovalId   String?
+  couponId        String?
+  discountApplied Int      @default(0)
+  provisionedAt   DateTime?
+  n8nWorkflowId   String?  // ID del workflow en n8n una vez provisionado
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 

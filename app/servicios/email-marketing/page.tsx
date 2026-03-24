@@ -12,6 +12,93 @@ import {
 
 const WA_LINK = 'https://wa.me/5491171311465?text=Hola%2C%20quiero%20info%20sobre%20email%20marketing%20automatizado'
 
+const plans = [
+  {
+    id: 'basico',
+    name: 'Basico',
+    price: 15000,
+    popular: false,
+    desc: 'Para emprendedores y negocios que arrancan',
+    campaigns: '1',
+    contacts: '5.000',
+    emailsDay: '360',
+    senders: '1',
+    senderType: 'Gmail gratuito',
+    templates: 'Estandar con tu marca',
+    support: 'Email',
+    onboarding: false,
+    features: [
+      '1 campana activa',
+      'Hasta 5.000 contactos',
+      '360 envios por dia',
+      'Gmail gratuito como remitente',
+      'Template profesional con tu marca',
+      'Anti-spam + desuscripcion automatica',
+      'Seguimiento en Google Sheets',
+    ],
+  },
+  {
+    id: 'profesional',
+    name: 'Profesional',
+    price: 25000,
+    popular: true,
+    desc: 'Para negocios en crecimiento',
+    campaigns: '3',
+    contacts: '20.000',
+    emailsDay: '1.440',
+    senders: '3',
+    senderType: 'Gmail + Workspace',
+    templates: 'Personalizados por campana',
+    support: 'Prioritario',
+    onboarding: false,
+    features: [
+      'Hasta 3 campanas activas',
+      'Hasta 20.000 contactos',
+      '1.440 envios por dia',
+      'Hasta 3 remitentes distintos',
+      'Google Workspace (mas envios/dia)',
+      'Templates personalizados por campana',
+      'Anti-spam + desuscripcion automatica',
+      'Reportes y soporte prioritario',
+    ],
+  },
+  {
+    id: 'premium',
+    name: 'Premium',
+    price: 45000,
+    popular: false,
+    desc: 'Para agencias y multiples marcas',
+    campaigns: 'Ilimitadas',
+    contacts: '100.000',
+    emailsDay: '1.440',
+    senders: 'Ilimitados',
+    senderType: 'Cualquier email',
+    templates: 'A medida por marca',
+    support: 'Dedicado',
+    onboarding: true,
+    features: [
+      'Campanas ilimitadas',
+      'Hasta 100.000 contactos',
+      '1.440 envios por dia',
+      'Remitentes ilimitados',
+      'Cualquier tipo de email',
+      'Templates a medida por marca',
+      'Soporte prioritario dedicado',
+      'Onboarding asistido completo',
+    ],
+  },
+]
+
+const planComparisonRows = [
+  { label: 'Campanas activas',     key: 'campaigns' as const },
+  { label: 'Contactos por campana', key: 'contacts' as const },
+  { label: 'Envios por dia',       key: 'emailsDay' as const },
+  { label: 'Remitentes distintos',  key: 'senders' as const },
+  { label: 'Tipo de remitente',     key: 'senderType' as const },
+  { label: 'Templates',             key: 'templates' as const },
+  { label: 'Soporte',               key: 'support' as const },
+]
+
 const features = [
   {
     icon: Send,
@@ -118,9 +205,9 @@ export default function EmailMarketingPage() {
               transition={{ delay: 0.3 }}
               className="flex flex-wrap gap-4"
             >
-              <a href={WA_LINK} target="_blank" rel="noreferrer">
+              <a href="#planes">
                 <Button variant="secondary" size="lg" className="gap-2 bg-white text-rose-600 hover:bg-white/90 font-bold text-base px-8">
-                  Quiero saber más <ArrowRight className="w-4 h-4" />
+                  Ver planes y precios <ArrowRight className="w-4 h-4" />
                 </Button>
               </a>
               <a href="#como-funciona">
@@ -312,6 +399,131 @@ export default function EmailMarketingPage() {
         </div>
       </section>
 
+      {/* Pricing cards */}
+      <section id="planes" className="py-20">
+        <div className="max-w-5xl mx-auto px-4">
+          <div className="text-center mb-14">
+            <p className="text-rose-600 font-semibold text-sm uppercase tracking-wider mb-3">Planes</p>
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-surface-900 mb-4">
+              Elegi el plan que se adapte a tu negocio
+            </h2>
+            <p className="text-surface-500">Todos los planes incluyen anti-spam, desuscripcion automatica y seguimiento en tiempo real.</p>
+          </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {plans.map((p, i) => (
+              <motion.div
+                key={p.id}
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+                className={`relative bg-white rounded-2xl p-6 border ${p.popular ? 'border-rose-300 shadow-lg ring-2 ring-rose-500/20' : 'border-surface-100'}`}
+              >
+                {p.popular && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-rose-600 text-white text-xs font-bold px-3 py-1 rounded-full">
+                    Mas elegido
+                  </div>
+                )}
+                <h3 className="text-xl font-bold text-surface-900 mb-1">{p.name}</h3>
+                <p className="text-sm text-surface-400 mb-4">{p.desc}</p>
+                <div className="mb-6">
+                  <span className="text-3xl font-extrabold text-surface-900">${p.price.toLocaleString('es-AR')}</span>
+                  <span className="text-surface-400 text-sm">/mes</span>
+                </div>
+                <ul className="space-y-2 mb-6">
+                  {p.features.map(f => (
+                    <li key={f} className="flex items-start gap-2 text-sm text-surface-600">
+                      <Check className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+                <Link href={`/register?next=email-marketing&plan=${p.id}`}>
+                  <Button
+                    variant={p.popular ? 'gradient' : 'outline'}
+                    className={`w-full gap-2 ${p.popular ? '' : 'border-rose-200 text-rose-600 hover:bg-rose-50'}`}
+                  >
+                    Empezar ahora <ArrowRight className="w-4 h-4" />
+                  </Button>
+                </Link>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Plan comparison table */}
+      <section className="py-20 bg-surface-50">
+        <div className="max-w-4xl mx-auto px-4">
+          <div className="text-center mb-14">
+            <p className="text-rose-600 font-semibold text-sm uppercase tracking-wider mb-3">Detalle</p>
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-surface-900">
+              Compara los planes en detalle
+            </h2>
+          </div>
+          <div className="overflow-x-auto rounded-2xl border border-surface-100 bg-white">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-surface-900 text-white">
+                  <th className="text-left py-3 px-4 font-semibold">Caracteristica</th>
+                  {plans.map(p => (
+                    <th key={p.id} className={`py-3 px-4 font-semibold text-center ${p.popular ? 'bg-rose-600' : ''}`}>
+                      {p.name}
+                      <div className="font-normal text-xs opacity-80 mt-0.5">${p.price.toLocaleString('es-AR')}/mes</div>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {planComparisonRows.map((row, i) => (
+                  <tr key={row.key} className={i % 2 ? 'bg-surface-50' : 'bg-white'}>
+                    <td className="py-3 px-4 font-semibold text-surface-700">{row.label}</td>
+                    {plans.map(p => (
+                      <td key={p.id} className={`py-3 px-4 text-center ${p.popular ? 'bg-rose-50/50 font-medium text-surface-800' : 'text-surface-600'}`}>
+                        {p[row.key]}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+                {/* Boolean rows */}
+                <tr className="bg-white">
+                  <td className="py-3 px-4 font-semibold text-surface-700">Onboarding asistido</td>
+                  {plans.map(p => (
+                    <td key={p.id} className={`py-3 px-4 text-center ${p.popular ? 'bg-rose-50/50' : ''}`}>
+                      {p.onboarding ? <Check className="w-4 h-4 text-emerald-500 mx-auto" /> : <X className="w-4 h-4 text-surface-300 mx-auto" />}
+                    </td>
+                  ))}
+                </tr>
+                <tr className="bg-surface-50">
+                  <td className="py-3 px-4 font-semibold text-surface-700">Anti-spam integrado</td>
+                  {plans.map(p => (
+                    <td key={p.id} className={`py-3 px-4 text-center ${p.popular ? 'bg-rose-50/50' : ''}`}>
+                      <Check className="w-4 h-4 text-emerald-500 mx-auto" />
+                    </td>
+                  ))}
+                </tr>
+                <tr className="bg-white">
+                  <td className="py-3 px-4 font-semibold text-surface-700">Desuscripcion automatica</td>
+                  {plans.map(p => (
+                    <td key={p.id} className={`py-3 px-4 text-center ${p.popular ? 'bg-rose-50/50' : ''}`}>
+                      <Check className="w-4 h-4 text-emerald-500 mx-auto" />
+                    </td>
+                  ))}
+                </tr>
+                <tr className="bg-surface-50">
+                  <td className="py-3 px-4 font-semibold text-surface-700">Seguimiento en Sheets</td>
+                  {plans.map(p => (
+                    <td key={p.id} className={`py-3 px-4 text-center ${p.popular ? 'bg-rose-50/50' : ''}`}>
+                      <Check className="w-4 h-4 text-emerald-500 mx-auto" />
+                    </td>
+                  ))}
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
       {/* CTA */}
       <section className="py-20 bg-gradient-to-br from-rose-600 to-pink-700 text-white text-center">
         <div className="max-w-2xl mx-auto px-4">
@@ -319,13 +531,20 @@ export default function EmailMarketingPage() {
             Empezá a llegar a todos tus clientes
           </h2>
           <p className="text-white/80 text-lg mb-8">
-            Consulta gratis. Sin compromiso. Respuesta en menos de 24 horas.
+            Elegí un plan o consultanos por WhatsApp. Respuesta en menos de 24 horas.
           </p>
-          <a href={WA_LINK} target="_blank" rel="noreferrer">
-            <Button variant="secondary" size="lg" className="gap-2 bg-white text-rose-600 hover:bg-white/90 font-bold text-base px-8">
-              Contactar por WhatsApp <ArrowRight className="w-4 h-4" />
-            </Button>
-          </a>
+          <div className="flex flex-wrap justify-center gap-4">
+            <a href="#planes">
+              <Button variant="secondary" size="lg" className="gap-2 bg-white text-rose-600 hover:bg-white/90 font-bold text-base px-8">
+                Ver planes <ArrowRight className="w-4 h-4" />
+              </Button>
+            </a>
+            <a href={WA_LINK} target="_blank" rel="noreferrer">
+              <Button variant="outline" size="lg" className="gap-2 border-white/40 text-white hover:bg-white/10 font-medium">
+                Contactar por WhatsApp
+              </Button>
+            </a>
+          </div>
         </div>
       </section>
 

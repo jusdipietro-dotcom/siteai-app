@@ -56,7 +56,7 @@ export async function sendPasswordResetEmail(to: string, resetUrl: string) {
 export async function sendPaymentConfirmationEmail(
   to: string,
   details: {
-    type: 'monitoring' | 'project' | 'reviews' | 'linkedin'
+    type: 'monitoring' | 'project' | 'reviews' | 'linkedin' | 'trading' | 'leads' | 'email-marketing'
     plan: string
     amount?: string
   }
@@ -66,12 +66,18 @@ export async function sendPaymentConfirmationEmail(
     project: 'Sitio Web con IA',
     reviews: 'Reseñas Google IA',
     linkedin: 'LinkedIn Optimizer IA',
+    trading: 'Señales Crypto IA',
+    leads: 'Captación de Leads IA',
+    'email-marketing': 'Email Marketing Automatizado',
   }
   const dashboardUrls: Record<string, string> = {
     monitoring: `${APP_URL}/monitoreo`,
     project: `${APP_URL}/dashboard`,
     reviews: `${APP_URL}/resenas`,
     linkedin: `${APP_URL}/linkedin`,
+    trading: `${APP_URL}/crypto`,
+    leads: `${APP_URL}/leads`,
+    'email-marketing': `${APP_URL}/email-marketing`,
   }
   const productName = productNames[details.type] ?? 'Servicio'
   const dashboardUrl = dashboardUrls[details.type] ?? `${APP_URL}/dashboard`
@@ -112,13 +118,16 @@ export async function sendPaymentConfirmationEmail(
 
 export async function sendSubscriptionCancelledEmail(
   to: string,
-  details: { type: 'monitoring' | 'project' | 'reviews' | 'linkedin'; plan: string }
+  details: { type: 'monitoring' | 'project' | 'reviews' | 'linkedin' | 'trading' | 'leads' | 'email-marketing'; plan: string }
 ) {
   const productNames: Record<string, string> = {
     monitoring: 'Monitoreo Judicial',
     project: 'Sitio Web con IA',
     reviews: 'Reseñas Google IA',
     linkedin: 'LinkedIn Optimizer IA',
+    trading: 'Señales Crypto IA',
+    leads: 'Captación de Leads IA',
+    'email-marketing': 'Email Marketing Automatizado',
   }
   const productName = productNames[details.type] ?? 'Servicio'
 

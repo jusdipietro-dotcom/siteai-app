@@ -481,6 +481,83 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ received: true })
       }
 
+      // ─── Email Marketing subscription: "emailmarketing:subscriptionId:plan" ───
+      if (parts[0] === 'emailmarketing') {
+        if (parts.length < 3 || !parts[1] || !parts[2]) {
+          console.warn('[MP Webhook] Invalid emailmarketing external_reference:', external_reference)
+          return NextResponse.json({ received: true })
+        }
+        const emSubId = parts[1]
+        const emPlan = parts[2]
+
+        if (status === 'authorized' && emSubId) {
+          const { count } = await prisma.emailMarketingSubscription.updateMany({
+            where: { id: emSubId, status: 'pending_payment' },
+            data: { status: 'provisioning', preapprovalId },
+          })
+
+          if (count === 0) {
+            console.log(`[MP Webhook] Email Marketing ${emSubId} already processed — skipping`)
+            return NextResponse.json({ received: true })
+          }
+
+          const currentSub = await prisma.emailMarketingSubscription.findUnique({
+            where: { id: emSubId },
+          })
+          if (currentSub?.couponId) {
+            await prisma.coupon.update({
+              where: { id: currentSub.couponId },
+              data: { usedCount: { increment: 1 } },
+            })
+          }
+
+          console.log(`[MP Webhook] Email Marketing ${emSubId} → provisioning (plan: ${emPlan})`)
+
+          // Trigger provisioning via n8n
+          await triggerEmailMarketingProvisioning(emSubId)
+
+          try {
+            const subForEmail = await prisma.emailMarketingSubscription.findUnique({
+              where: { id: emSubId },
+              include: { user: { select: { email: true } } },
+            })
+            if (subForEmail?.user.email) {
+              await sendPaymentConfirmationEmail(subForEmail.user.email, {
+                type: 'email-marketing',
+                plan: emPlan,
+              })
+            }
+          } catch (emailErr) {
+            console.error('[MP Webhook] Failed to send email marketing payment email:', emailErr)
+          }
+        }
+
+        if ((status === 'cancelled' || status === 'paused') && emSubId) {
+          await prisma.emailMarketingSubscription.update({
+            where: { id: emSubId },
+            data: { status: 'suspended' },
+          })
+          console.log(`[MP Webhook] Email Marketing ${emSubId} suspended (${status})`)
+
+          try {
+            const subForEmail = await prisma.emailMarketingSubscription.findUnique({
+              where: { id: emSubId },
+              include: { user: { select: { email: true } } },
+            })
+            if (subForEmail?.user.email) {
+              await sendSubscriptionCancelledEmail(subForEmail.user.email, {
+                type: 'email-marketing',
+                plan: emPlan,
+              })
+            }
+          } catch (emailErr) {
+            console.error('[MP Webhook] Failed to send email marketing cancellation email:', emailErr)
+          }
+        }
+
+        return NextResponse.json({ received: true })
+      }
+
       // ─── Website project subscription: "projectId:plan" ───
       const [projectId, plan] = parts
 
@@ -797,6 +874,62 @@ async function triggerLeadsProvisioning(subscriptionId: string) {
   } catch (dbErr) {
     console.error(`[MP Webhook] Failed to mark subscription as provision_failed:`, dbErr)
   }
+}
+
+/** Trigger n8n email marketing provisioning webhook with retry */
+async function triggerEmailMarketingProvisioning(subscriptionId: string) {
+  const webhookUrl = process.env.N8N_EMAIL_MARKETING_PROVISIONING_WEBHOOK
+  if (!webhookUrl) {
+    console.warn('[MP Webhook] N8N_EMAIL_MARKETING_PROVISIONING_WEBHOOK not configured — manual provisioning required')
+    return
+  }
+
+  const sub = await prisma.emailMarketingSubscription.findUnique({
+    where: { id: subscriptionId },
+    include: { user: { select: { email: true, name: true } } },
+  })
+  if (!sub) return
+
+  const payload = JSON.stringify({
+    subscriptionId: sub.id,
+    userId: sub.userId,
+    userEmail: sub.user.email,
+    userName: sub.user.name,
+    plan: sub.plan,
+    businessName: sub.businessName,
+    contactCount: sub.contactCount,
+    senderName: sub.senderName,
+    senderEmail: sub.senderEmail,
+    notificationEmail: sub.notificationEmail,
+  })
+
+  const MAX_RETRIES = 3
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const res = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: payload,
+      })
+
+      if (res.ok) {
+        console.log(`[MP Webhook] Email Marketing provisioning OK (attempt ${attempt}): ${res.status}`)
+        return
+      }
+
+      const body = await res.text().catch(() => '')
+      console.warn(`[MP Webhook] Email Marketing provisioning attempt ${attempt}/${MAX_RETRIES} failed: HTTP ${res.status} — ${body.slice(0, 300)}`)
+    } catch (err) {
+      console.error(`[MP Webhook] Email Marketing provisioning attempt ${attempt}/${MAX_RETRIES} error:`, err)
+    }
+
+    if (attempt < MAX_RETRIES) {
+      const delay = attempt * 2000
+      await new Promise(r => setTimeout(r, delay))
+    }
+  }
+
+  console.error(`[MP Webhook] Email Marketing provisioning FAILED after ${MAX_RETRIES} attempts for ${subscriptionId}`)
 }
 
 // MP verifica el endpoint con GET al registrarlo
