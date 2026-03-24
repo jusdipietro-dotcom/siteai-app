@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json()
-    const { plan, notificationEmail, payerEmail, couponCode, googleSheetUrl } = body
+    const { plan, notificationEmail, payerEmail, couponCode, googleSheetUrl, nichesList, citiesList } = body
 
     // Validate plan
     const planConfig = LEADS_PLANS[plan]
@@ -37,6 +37,25 @@ export async function POST(req: NextRequest) {
     }
     if (!payerEmail?.includes('@')) {
       return NextResponse.json({ error: 'Email de facturación inválido' }, { status: 400 })
+    }
+
+    // Validate nichos and ciudades
+    const nichesArr = Array.isArray(nichesList) ? nichesList.filter((n: unknown) => typeof n === 'string' && n.trim()) : []
+    const citiesArr = Array.isArray(citiesList) ? citiesList.filter((c: unknown) => typeof c === 'string' && c.trim()) : []
+    if (nichesArr.length === 0) {
+      return NextResponse.json({ error: 'Seleccioná al menos un nicho' }, { status: 400 })
+    }
+    if (citiesArr.length === 0) {
+      return NextResponse.json({ error: 'Seleccioná al menos una ciudad' }, { status: 400 })
+    }
+    // Enforce plan limits
+    const planLimits = { basico: { maxNichos: 10, maxCiudades: 5 }, profesional: { maxNichos: 999, maxCiudades: 999 } }
+    const lim = planLimits[plan as keyof typeof planLimits] ?? planLimits.basico
+    if (nichesArr.length > lim.maxNichos) {
+      return NextResponse.json({ error: `Plan ${plan} permite hasta ${lim.maxNichos} nichos` }, { status: 400 })
+    }
+    if (citiesArr.length > lim.maxCiudades) {
+      return NextResponse.json({ error: `Plan ${plan} permite hasta ${lim.maxCiudades} ciudades` }, { status: 400 })
     }
 
     // Cancel ALL stale pending_payment records for this user
@@ -75,6 +94,8 @@ export async function POST(req: NextRequest) {
         notificationEmail: notificationEmail.toLowerCase().trim(),
         payerEmail: payerEmail.toLowerCase().trim(),
         googleSheetUrl: googleSheetUrl?.trim() || null,
+        nichesList: JSON.stringify(nichesArr),
+        citiesList: JSON.stringify(citiesArr),
         couponId,
         discountApplied,
       },

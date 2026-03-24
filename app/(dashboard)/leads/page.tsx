@@ -7,10 +7,36 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Search, Check, ArrowRight, ArrowLeft,
   Loader2, Tag, AlertCircle, Clock, Mail, CheckCircle2,
-  BarChart3, FileSpreadsheet, ExternalLink,
+  BarChart3, FileSpreadsheet, ExternalLink, X, Plus, MapPin, Briefcase,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
+
+const NICHOS = [
+  'Hoteles', 'Restaurantes', 'Clinicas', 'Inmobiliarias', 'Estudios contables',
+  'Abogados', 'Dentistas', 'Gimnasios', 'Escuelas', 'Universidades',
+  'Farmacias', 'Opticas', 'Veterinarias', 'Consultorios medicos',
+  'Empresas de seguridad', 'Empresas de limpieza', 'Catering', 'Imprentas',
+  'Fotografos', 'Arquitectos', 'Consultoras', 'Cafeterias', 'Pizzerias',
+  'Heladerias', 'Panaderias', 'Peluquerias', 'Ferreterias', 'Cervecerias',
+  'Talleres mecanicos', 'Floristerias', 'Lavaderos de autos', 'Guarderias',
+  'Academias de ingles',
+]
+
+const CIUDADES = [
+  'Buenos Aires', 'Cordoba', 'Rosario', 'Mendoza', 'La Plata',
+  'Mar del Plata', 'San Miguel de Tucuman', 'Salta', 'Santa Fe', 'San Juan',
+  'Bahia Blanca', 'Parana', 'Neuquen', 'Resistencia', 'Corrientes',
+  'Posadas', 'San Salvador de Jujuy', 'Formosa', 'San Luis',
+  'Santiago del Estero', 'Rio Cuarto', 'Tandil', 'Quilmes',
+  'Lomas de Zamora', 'San Isidro', 'Vicente Lopez', 'Pilar', 'Tigre',
+  'Avellaneda', 'Lanus',
+]
+
+const PLAN_LIMITS = {
+  basico: { maxNichos: 10, maxCiudades: 5, allowCustom: false },
+  profesional: { maxNichos: Infinity, maxCiudades: Infinity, allowCustom: true },
+}
 
 const PLANS = [
   {
@@ -83,6 +109,12 @@ function LeadsPage() {
   const [loading, setLoading] = useState(false)
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
   const [loadingSubs, setLoadingSubs] = useState(true)
+  const [selectedNichos, setSelectedNichos] = useState<string[]>([])
+  const [selectedCiudades, setSelectedCiudades] = useState<string[]>([])
+  const [customNicho, setCustomNicho] = useState('')
+  const [customCiudad, setCustomCiudad] = useState('')
+  const [nichoSearch, setNichoSearch] = useState('')
+  const [ciudadSearch, setCiudadSearch] = useState('')
 
   useEffect(() => {
     if (session?.user?.email) {
@@ -146,6 +178,8 @@ function LeadsPage() {
           payerEmail,
           googleSheetUrl: googleSheetUrl.trim() || undefined,
           couponCode: couponValid?.valid ? couponCode : undefined,
+          nichesList: selectedNichos,
+          citiesList: selectedCiudades,
         }),
       })
       const subData = await subRes.json()
@@ -181,8 +215,36 @@ function LeadsPage() {
   }
 
   const planConfig = PLANS.find(p => p.id === selectedPlan)
+  const limits = PLAN_LIMITS[selectedPlan as keyof typeof PLAN_LIMITS] ?? PLAN_LIMITS.basico
   const discount = couponValid?.valid ? couponValid.discount : 0
   const finalPrice = planConfig ? Math.round(planConfig.price * (1 - discount / 100)) : 0
+
+  const toggleNicho = (n: string) => {
+    setSelectedNichos(prev =>
+      prev.includes(n) ? prev.filter(x => x !== n) :
+      prev.length >= limits.maxNichos ? prev : [...prev, n]
+    )
+  }
+  const toggleCiudad = (c: string) => {
+    setSelectedCiudades(prev =>
+      prev.includes(c) ? prev.filter(x => x !== c) :
+      prev.length >= limits.maxCiudades ? prev : [...prev, c]
+    )
+  }
+  const addCustomNicho = () => {
+    const v = customNicho.trim()
+    if (!v || selectedNichos.includes(v)) return
+    if (selectedNichos.length >= limits.maxNichos) return
+    setSelectedNichos(prev => [...prev, v])
+    setCustomNicho('')
+  }
+  const addCustomCiudad = () => {
+    const v = customCiudad.trim()
+    if (!v || selectedCiudades.includes(v)) return
+    if (selectedCiudades.length >= limits.maxCiudades) return
+    setSelectedCiudades(prev => [...prev, v])
+    setCustomCiudad('')
+  }
 
   const statusLabel: Record<string, { text: string; color: string }> = {
     pending_payment: { text: 'Pendiente de pago', color: 'bg-yellow-100 text-yellow-800' },
@@ -361,37 +423,174 @@ function LeadsPage() {
             {/* Step 2: Details */}
             {step === 'details' && (
               <motion.div key="details" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-                <h2 className="text-xl font-bold text-surface-900 mb-2">Tus datos</h2>
-                <p className="text-sm text-surface-500 mb-6">Ingresa tu email y, opcionalmente, la URL de tu Google Sheet para recibir los leads.</p>
+                <h2 className="text-xl font-bold text-surface-900 mb-2">Configura tu captacion</h2>
+                <p className="text-sm text-surface-500 mb-6">Selecciona los nichos y ciudades donde queres captar leads, e ingresa tus datos de contacto.</p>
 
-                <div className="space-y-5 max-w-lg">
+                <div className="space-y-6">
+                  {/* Nichos selector */}
                   <div>
                     <label className="block text-sm font-medium text-surface-700 mb-1.5">
-                      <Mail className="w-3.5 h-3.5 inline mr-1.5 -mt-0.5" />
-                      Email de notificaciones
+                      <Briefcase className="w-3.5 h-3.5 inline mr-1.5 -mt-0.5" />
+                      Nichos de negocio
+                      <span className="text-surface-400 font-normal ml-1.5">
+                        ({selectedNichos.length}{limits.maxNichos < Infinity ? `/${limits.maxNichos}` : ''})
+                      </span>
                     </label>
                     <input
-                      type="email"
-                      value={notificationEmail}
-                      onChange={e => setNotificationEmail(e.target.value)}
-                      placeholder="tu@email.com"
-                      className="w-full h-10 px-3 rounded-xl border border-surface-200 text-sm focus:border-rose-500 focus:ring-1 focus:ring-rose-500 outline-none"
+                      type="text"
+                      value={nichoSearch}
+                      onChange={e => setNichoSearch(e.target.value)}
+                      placeholder="Buscar nichos..."
+                      className="w-full h-9 px-3 rounded-xl border border-surface-200 text-sm focus:border-rose-500 focus:ring-1 focus:ring-rose-500 outline-none mb-2"
                     />
-                    <p className="text-[11px] text-surface-400 mt-1">Te avisamos sobre el estado de tu suscripcion y novedades.</p>
+                    <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto p-1">
+                      {NICHOS.filter(n => !nichoSearch || n.toLowerCase().includes(nichoSearch.toLowerCase())).map(n => {
+                        const selected = selectedNichos.includes(n)
+                        const disabled = !selected && selectedNichos.length >= limits.maxNichos
+                        return (
+                          <button
+                            key={n}
+                            type="button"
+                            onClick={() => toggleNicho(n)}
+                            disabled={disabled}
+                            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
+                              selected
+                                ? 'bg-rose-100 text-rose-700 border border-rose-300'
+                                : disabled
+                                ? 'bg-surface-50 text-surface-300 border border-surface-100 cursor-not-allowed'
+                                : 'bg-surface-50 text-surface-600 border border-surface-200 hover:border-rose-300 hover:bg-rose-50'
+                            }`}
+                          >
+                            {selected && <Check className="w-3 h-3" />}
+                            {n}
+                            {selected && <X className="w-3 h-3 ml-0.5" />}
+                          </button>
+                        )
+                      })}
+                    </div>
+                    {limits.allowCustom && (
+                      <div className="flex gap-2 mt-2">
+                        <input
+                          type="text"
+                          value={customNicho}
+                          onChange={e => setCustomNicho(e.target.value)}
+                          onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addCustomNicho())}
+                          placeholder="Agregar nicho personalizado..."
+                          className="flex-1 h-8 px-3 rounded-lg border border-dashed border-surface-300 text-xs focus:border-rose-500 outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={addCustomNicho}
+                          disabled={!customNicho.trim()}
+                          className="h-8 px-3 rounded-lg bg-rose-50 text-rose-600 text-xs font-medium hover:bg-rose-100 disabled:opacity-40 flex items-center gap-1"
+                        >
+                          <Plus className="w-3 h-3" /> Agregar
+                        </button>
+                      </div>
+                    )}
+                    {limits.maxNichos < Infinity && (
+                      <p className="text-[11px] text-surface-400 mt-1">
+                        Plan Basico: hasta {limits.maxNichos} nichos. Upgrade a Profesional para nichos ilimitados y personalizados.
+                      </p>
+                    )}
                   </div>
 
+                  {/* Ciudades selector */}
                   <div>
                     <label className="block text-sm font-medium text-surface-700 mb-1.5">
-                      <Mail className="w-3.5 h-3.5 inline mr-1.5 -mt-0.5" />
-                      Email de facturacion
+                      <MapPin className="w-3.5 h-3.5 inline mr-1.5 -mt-0.5" />
+                      Ciudades
+                      <span className="text-surface-400 font-normal ml-1.5">
+                        ({selectedCiudades.length}{limits.maxCiudades < Infinity ? `/${limits.maxCiudades}` : ''})
+                      </span>
                     </label>
                     <input
-                      type="email"
-                      value={payerEmail}
-                      onChange={e => setPayerEmail(e.target.value)}
-                      placeholder="facturacion@email.com"
-                      className="w-full h-10 px-3 rounded-xl border border-surface-200 text-sm focus:border-rose-500 focus:ring-1 focus:ring-rose-500 outline-none"
+                      type="text"
+                      value={ciudadSearch}
+                      onChange={e => setCiudadSearch(e.target.value)}
+                      placeholder="Buscar ciudades..."
+                      className="w-full h-9 px-3 rounded-xl border border-surface-200 text-sm focus:border-rose-500 focus:ring-1 focus:ring-rose-500 outline-none mb-2"
                     />
+                    <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto p-1">
+                      {CIUDADES.filter(c => !ciudadSearch || c.toLowerCase().includes(ciudadSearch.toLowerCase())).map(c => {
+                        const selected = selectedCiudades.includes(c)
+                        const disabled = !selected && selectedCiudades.length >= limits.maxCiudades
+                        return (
+                          <button
+                            key={c}
+                            type="button"
+                            onClick={() => toggleCiudad(c)}
+                            disabled={disabled}
+                            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
+                              selected
+                                ? 'bg-blue-100 text-blue-700 border border-blue-300'
+                                : disabled
+                                ? 'bg-surface-50 text-surface-300 border border-surface-100 cursor-not-allowed'
+                                : 'bg-surface-50 text-surface-600 border border-surface-200 hover:border-blue-300 hover:bg-blue-50'
+                            }`}
+                          >
+                            {selected && <Check className="w-3 h-3" />}
+                            {c}
+                            {selected && <X className="w-3 h-3 ml-0.5" />}
+                          </button>
+                        )
+                      })}
+                    </div>
+                    {limits.allowCustom && (
+                      <div className="flex gap-2 mt-2">
+                        <input
+                          type="text"
+                          value={customCiudad}
+                          onChange={e => setCustomCiudad(e.target.value)}
+                          onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addCustomCiudad())}
+                          placeholder="Agregar ciudad personalizada..."
+                          className="flex-1 h-8 px-3 rounded-lg border border-dashed border-surface-300 text-xs focus:border-rose-500 outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={addCustomCiudad}
+                          disabled={!customCiudad.trim()}
+                          className="h-8 px-3 rounded-lg bg-blue-50 text-blue-600 text-xs font-medium hover:bg-blue-100 disabled:opacity-40 flex items-center gap-1"
+                        >
+                          <Plus className="w-3 h-3" /> Agregar
+                        </button>
+                      </div>
+                    )}
+                    {limits.maxCiudades < Infinity && (
+                      <p className="text-[11px] text-surface-400 mt-1">
+                        Plan Basico: hasta {limits.maxCiudades} ciudades. Upgrade a Profesional para ciudades ilimitadas.
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Email fields */}
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-surface-700 mb-1.5">
+                        <Mail className="w-3.5 h-3.5 inline mr-1.5 -mt-0.5" />
+                        Email de notificaciones
+                      </label>
+                      <input
+                        type="email"
+                        value={notificationEmail}
+                        onChange={e => setNotificationEmail(e.target.value)}
+                        placeholder="tu@email.com"
+                        className="w-full h-10 px-3 rounded-xl border border-surface-200 text-sm focus:border-rose-500 focus:ring-1 focus:ring-rose-500 outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-surface-700 mb-1.5">
+                        <Mail className="w-3.5 h-3.5 inline mr-1.5 -mt-0.5" />
+                        Email de facturacion
+                      </label>
+                      <input
+                        type="email"
+                        value={payerEmail}
+                        onChange={e => setPayerEmail(e.target.value)}
+                        placeholder="facturacion@email.com"
+                        className="w-full h-10 px-3 rounded-xl border border-surface-200 text-sm focus:border-rose-500 focus:ring-1 focus:ring-rose-500 outline-none"
+                      />
+                    </div>
                   </div>
 
                   <div>
@@ -416,7 +615,7 @@ function LeadsPage() {
                   </Button>
                   <Button
                     variant="gradient"
-                    disabled={!notificationEmail.includes('@') || !payerEmail.includes('@')}
+                    disabled={!notificationEmail.includes('@') || !payerEmail.includes('@') || selectedNichos.length === 0 || selectedCiudades.length === 0}
                     onClick={() => setStep('coupon')}
                     className="gap-2"
                   >
@@ -470,6 +669,22 @@ function LeadsPage() {
                   <div className="flex justify-between text-sm">
                     <span className="text-surface-500">Plan</span>
                     <span className="font-medium text-surface-900">{planConfig?.name}</span>
+                  </div>
+                  <div className="text-sm">
+                    <span className="text-surface-500">Nichos ({selectedNichos.length})</span>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {selectedNichos.map(n => (
+                        <span key={n} className="px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 text-[11px] font-medium">{n}</span>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="text-sm">
+                    <span className="text-surface-500">Ciudades ({selectedCiudades.length})</span>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {selectedCiudades.map(c => (
+                        <span key={c} className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-[11px] font-medium">{c}</span>
+                      ))}
+                    </div>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-surface-500">Notificaciones</span>
