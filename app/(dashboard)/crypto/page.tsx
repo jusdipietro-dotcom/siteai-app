@@ -18,11 +18,11 @@ const PLANS = [
     name: 'Señales',
     price: 20000,
     features: [
-      '30 criptomonedas monitoreadas 24/7',
-      'Señales BUY/SELL con score de confianza',
+      '18 pares seleccionados — 60% win rate verificado',
+      '7 indicadores técnicos + 3 macro (Fear & Greed, Funding, BTC Dom)',
       'Stop Loss y Take Profit automáticos',
-      'Análisis multi-timeframe (1h + 4h)',
-      'Alertas instantáneas en Telegram',
+      'Filtros de calidad: ADX, patrones de velas, volatilidad',
+      'Alertas instantáneas en Telegram (~3-5/día)',
     ],
   },
   {
@@ -31,12 +31,12 @@ const PLANS = [
     price: 35000,
     popular: true,
     features: [
-      'Todo lo del plan Señales',
-      'Pares personalizados',
-      'Reportes semanales de rendimiento',
-      'Análisis de mercado diario',
+      'Todo lo del plan Señales (18 pares, 60% win rate)',
+      'Pares personalizados adicionales',
+      'Reportes semanales con métricas (Profit Factor, Sharpe)',
+      'Análisis macro diario (Fear & Greed, Funding Rate)',
       'Soporte prioritario',
-      'Canal VIP con análisis',
+      'Canal VIP con análisis avanzado',
     ],
   },
 ]

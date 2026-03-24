@@ -498,10 +498,10 @@ export async function POST(req: NextRequest) {
         }
 
         if (status === 'authorized' && emSubId) {
-          // Atomic update: only transitions from pending_payment to provisioning
+          // Atomic update: payment confirmed → awaiting_contacts (user must upload CSV)
           const { count } = await prisma.emailMarketingSubscription.updateMany({
             where: { id: emSubId, status: 'pending_payment' },
-            data: { status: 'provisioning', preapprovalId },
+            data: { status: 'awaiting_contacts', preapprovalId },
           })
 
           if (count === 0) {
@@ -522,10 +522,9 @@ export async function POST(req: NextRequest) {
 
           // Use the plan from the DB (source of truth), not from external_reference
           const activatedPlan = currentSub?.plan ?? emPlan
-          console.log(`[MP Webhook] Email Marketing ${emSubId} → provisioning (plan: ${activatedPlan})`)
+          console.log(`[MP Webhook] Email Marketing ${emSubId} → awaiting_contacts (plan: ${activatedPlan})`)
 
-          // Trigger provisioning via n8n
-          await triggerEmailMarketingProvisioning(emSubId)
+          // NOTE: provisioning is NOT triggered here — it happens after user uploads contacts
 
           try {
             const subForEmail = await prisma.emailMarketingSubscription.findUnique({

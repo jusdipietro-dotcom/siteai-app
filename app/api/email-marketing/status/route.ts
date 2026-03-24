@@ -17,7 +17,7 @@ export async function GET() {
   })
 
   // Calcular uso actual sobre suscripciones activas
-  const activeSubs = subscriptions.filter(s => s.status === 'active' || s.status === 'provisioning')
+  const activeSubs = subscriptions.filter(s => ['active', 'provisioning', 'awaiting_contacts'].includes(s.status))
   const activeCampaigns = activeSubs.length
   const totalContacts = activeSubs.reduce((sum, s) => sum + s.contactCount, 0)
   const distinctSenders = [...new Set(activeSubs.map(s => s.senderEmail))]

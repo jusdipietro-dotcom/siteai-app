@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Send, Check, ArrowRight, ArrowLeft,
   Loader2, Tag, AlertCircle, Clock, Mail, CheckCircle2,
-  BarChart3, Users, Zap, Shield, Crown, ArrowUpRight,
+  BarChart3, Users, Zap, Shield, Crown, ArrowUpRight, Upload, FileSpreadsheet, X,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
@@ -211,8 +211,67 @@ function EmailMarketingDashboard() {
   const canCreateCampaign = !limits || (usage && usage.activeCampaigns < limits.maxCampaigns)
   const campaignsAtLimit = limits && usage && usage.activeCampaigns >= limits.maxCampaigns
 
+  const [uploadingSub, setUploadingSub] = useState<string | null>(null)
+  const [uploadFile, setUploadFile] = useState<File | null>(null)
+  const [uploadPreview, setUploadPreview] = useState<{ headers: string[]; rows: string[][]; total: number } | null>(null)
+  const [uploadError, setUploadError] = useState<string | null>(null)
+  const [uploadResult, setUploadResult] = useState<{ contactCount: number; duplicatesRemoved: number; invalidSkipped: number } | null>(null)
+
+  const handleFileSelect = async (file: File) => {
+    setUploadFile(file)
+    setUploadError(null)
+    setUploadResult(null)
+    try {
+      const XLSX = await import('xlsx')
+      const buffer = await file.arrayBuffer()
+      const wb = XLSX.read(buffer, { type: 'array' })
+      const sheet = wb.Sheets[wb.SheetNames[0]]
+      const data: string[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' })
+      if (data.length < 2) {
+        setUploadError('El archivo necesita al menos una fila de encabezado y una de datos')
+        setUploadPreview(null)
+        return
+      }
+      setUploadPreview({
+        headers: data[0].map(h => String(h)),
+        rows: data.slice(1, 6).map(r => r.map(c => String(c))),
+        total: data.length - 1,
+      })
+    } catch {
+      setUploadError('No se pudo leer el archivo')
+      setUploadPreview(null)
+    }
+  }
+
+  const handleUpload = async (subscriptionId: string) => {
+    if (!uploadFile) return
+    setUploadingSub(subscriptionId)
+    setUploadError(null)
+    try {
+      const fd = new FormData()
+      fd.append('file', uploadFile)
+      fd.append('subscriptionId', subscriptionId)
+      const res = await fetch('/api/email-marketing/upload-contacts', { method: 'POST', body: fd })
+      const data = await res.json()
+      if (!res.ok) {
+        setUploadError(data.error ?? 'Error al subir contactos')
+        return
+      }
+      setUploadResult(data)
+      setUploadFile(null)
+      setUploadPreview(null)
+      toast.success(`${data.contactCount.toLocaleString('es-AR')} contactos cargados correctamente`)
+      fetchSubscriptions()
+    } catch {
+      setUploadError('Error al subir el archivo')
+    } finally {
+      setUploadingSub(null)
+    }
+  }
+
   const statusLabel: Record<string, { text: string; color: string; icon: typeof CheckCircle2 }> = {
     pending_payment: { text: 'Pendiente de pago', color: 'bg-yellow-100 text-yellow-800', icon: Clock },
+    awaiting_contacts: { text: 'Subir contactos', color: 'bg-purple-100 text-purple-800', icon: Upload },
     active: { text: 'Activo', color: 'bg-emerald-100 text-emerald-800', icon: CheckCircle2 },
     provisioning: { text: 'Configurando', color: 'bg-blue-100 text-blue-800', icon: Loader2 },
     suspended: { text: 'Suspendido', color: 'bg-red-100 text-red-800', icon: AlertCircle },
@@ -339,6 +398,117 @@ function EmailMarketingDashboard() {
                       </div>
                     )}
                   </div>
+
+                  {/* ── Upload contacts card for awaiting_contacts ── */}
+                  {sub.status === 'awaiting_contacts' && (
+                    <div className="border-t border-purple-100 bg-purple-50/50 p-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <FileSpreadsheet className="w-4 h-4 text-purple-600" />
+                        <p className="text-sm font-medium text-purple-900">Subi tu base de contactos</p>
+                      </div>
+                      <p className="text-xs text-purple-700 mb-3">
+                        Subi un archivo .csv o .xlsx con las columnas <strong>Email</strong> y <strong>Nombre</strong> (opcional).
+                        {subPlan && <span> Tu plan permite hasta <strong>{fmtContacts(subPlan.maxContacts)}</strong> contactos.</span>}
+                      </p>
+
+                      {/* File input */}
+                      {!uploadFile && !uploadResult && (
+                        <label className="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-purple-200 rounded-xl cursor-pointer hover:border-purple-400 hover:bg-purple-50 transition-colors">
+                          <Upload className="w-6 h-6 text-purple-400 mb-1" />
+                          <span className="text-xs text-purple-600 font-medium">Seleccionar archivo</span>
+                          <span className="text-[10px] text-purple-400">.csv, .xlsx o .xls — max 10 MB</span>
+                          <input
+                            type="file"
+                            className="hidden"
+                            accept=".csv,.xlsx,.xls"
+                            onChange={e => {
+                              const f = e.target.files?.[0]
+                              if (f) handleFileSelect(f)
+                            }}
+                          />
+                        </label>
+                      )}
+
+                      {/* Preview */}
+                      {uploadFile && uploadPreview && !uploadResult && (
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <FileSpreadsheet className="w-4 h-4 text-purple-500" />
+                              <span className="text-xs font-medium text-surface-700">{uploadFile.name}</span>
+                              <span className="text-[10px] text-surface-400">({uploadPreview.total.toLocaleString('es-AR')} filas)</span>
+                            </div>
+                            <button
+                              type="button"
+                              title="Quitar archivo"
+                              onClick={() => { setUploadFile(null); setUploadPreview(null); setUploadError(null) }}
+                              className="p-1 rounded hover:bg-purple-100 transition-colors"
+                            >
+                              <X className="w-3.5 h-3.5 text-surface-400" />
+                            </button>
+                          </div>
+                          <div className="overflow-x-auto rounded-lg border border-purple-100">
+                            <table className="w-full text-xs">
+                              <thead>
+                                <tr className="bg-purple-100/50">
+                                  {uploadPreview.headers.map((h, i) => (
+                                    <th key={i} className="px-2 py-1.5 text-left font-medium text-purple-800">{h}</th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {uploadPreview.rows.map((row, ri) => (
+                                  <tr key={ri} className="border-t border-purple-50">
+                                    {row.map((cell, ci) => (
+                                      <td key={ci} className="px-2 py-1 text-surface-600 truncate max-w-[160px]">{cell}</td>
+                                    ))}
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                          {uploadPreview.total > 5 && (
+                            <p className="text-[10px] text-surface-400 text-center">
+                              Mostrando 5 de {uploadPreview.total.toLocaleString('es-AR')} filas
+                            </p>
+                          )}
+                          <Button
+                            variant="gradient"
+                            onClick={() => handleUpload(sub.id)}
+                            disabled={uploadingSub === sub.id}
+                            className="w-full gap-2"
+                          >
+                            {uploadingSub === sub.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                            {uploadingSub === sub.id ? 'Subiendo contactos...' : `Subir ${uploadPreview.total.toLocaleString('es-AR')} contactos`}
+                          </Button>
+                        </div>
+                      )}
+
+                      {/* Upload result */}
+                      {uploadResult && (
+                        <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-3">
+                          <div className="flex items-center gap-2 mb-1">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                            <span className="text-sm font-medium text-emerald-800">Contactos cargados</span>
+                          </div>
+                          <div className="text-xs text-emerald-700 space-y-0.5">
+                            <p>{uploadResult.contactCount.toLocaleString('es-AR')} contactos validos</p>
+                            {uploadResult.duplicatesRemoved > 0 && <p>{uploadResult.duplicatesRemoved} duplicados eliminados</p>}
+                            {uploadResult.invalidSkipped > 0 && <p>{uploadResult.invalidSkipped} filas invalidas omitidas</p>}
+                          </div>
+                          <p className="text-[10px] text-emerald-600 mt-2">Tu campana esta siendo configurada. Te notificaremos cuando este lista.</p>
+                        </div>
+                      )}
+
+                      {/* Error */}
+                      {uploadError && (
+                        <div className="mt-2 flex items-start gap-2 text-xs text-red-600 bg-red-50 rounded-lg p-2">
+                          <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                          <span>{uploadError}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )
             })}
