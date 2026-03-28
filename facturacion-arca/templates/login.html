@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Facturacion ARCA - Iniciar Sesion</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #e0e0e0;
+        }
+        .container {
+            width: 100%;
+            max-width: 440px;
+            padding: 20px;
+        }
+        .card {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 40px 32px;
+        }
+        .logo {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        .logo h1 {
+            font-size: 24px;
+            font-weight: 700;
+            color: #fff;
+        }
+        .logo p {
+            font-size: 14px;
+            color: #8892b0;
+            margin-top: 4px;
+        }
+        .tabs {
+            display: flex;
+            margin-bottom: 24px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            padding: 4px;
+        }
+        .tab {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: #8892b0;
+            transition: all 0.2s;
+        }
+        .tab.active {
+            background: #e94560;
+            color: #fff;
+        }
+        .form-group {
+            margin-bottom: 16px;
+        }
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: #a8b2d1;
+            margin-bottom: 6px;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 12px 14px;
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.2s;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: #e94560;
+        }
+        .form-group input::placeholder { color: #5a6486; }
+        .form-row {
+            display: flex;
+            gap: 12px;
+        }
+        .form-row .form-group { flex: 1; }
+        .btn {
+            width: 100%;
+            padding: 13px;
+            background: #e94560;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-family: inherit;
+            margin-top: 8px;
+        }
+        .btn:hover { background: #d63851; }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .error-msg {
+            background: rgba(233,69,96,0.15);
+            border: 1px solid rgba(233,69,96,0.3);
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 13px;
+            color: #ff6b81;
+            margin-bottom: 16px;
+            display: none;
+        }
+        .success-msg {
+            background: rgba(46,213,115,0.15);
+            border: 1px solid rgba(46,213,115,0.3);
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 13px;
+            color: #2ed573;
+            margin-bottom: 16px;
+            display: none;
+        }
+        .hidden { display: none; }
+        @media (max-width: 480px) {
+            .card { padding: 28px 20px; }
+            .form-row { flex-direction: column; gap: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="logo">
+                <h1>Facturacion ARCA</h1>
+                <p>Sistema de facturacion electronica</p>
+            </div>
+
+            <div class="tabs">
+                <div class="tab active" onclick="showTab('login')">Iniciar Sesion</div>
+                <div class="tab" onclick="showTab('register')">Registrarse</div>
+            </div>
+
+            <div id="error-msg" class="error-msg"></div>
+            <div id="success-msg" class="success-msg"></div>
+
+            <!-- LOGIN -->
+            <form id="login-form" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="login-email" placeholder="tu@email.com" required autocomplete="email">
+                </div>
+                <div class="form-group">
+                    <label>Contrasena</label>
+                    <input type="password" id="login-password" placeholder="Tu contrasena" required autocomplete="current-password">
+                </div>
+                <button type="submit" class="btn" id="login-btn">Iniciar Sesion</button>
+            </form>
+
+            <!-- REGISTRO -->
+            <form id="register-form" class="hidden" onsubmit="handleRegister(event)">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="reg-email" placeholder="tu@email.com" required autocomplete="email">
+                </div>
+                <div class="form-group">
+                    <label>Contrasena (minimo 8 caracteres)</label>
+                    <input type="password" id="reg-password" placeholder="Minimo 8 caracteres" required minlength="8" autocomplete="new-password">
+                </div>
+                <div class="form-group">
+                    <label>CUIT de la empresa</label>
+                    <input type="text" id="reg-cuit" placeholder="20345678901" required pattern="\d{11}" maxlength="11">
+                </div>
+                <div class="form-group">
+                    <label>Razon Social</label>
+                    <input type="text" id="reg-razon" placeholder="Nombre de la empresa" required>
+                </div>
+                <div class="form-group">
+                    <label>Punto de Venta</label>
+                    <input type="number" id="reg-pv" placeholder="1" required min="1" max="99999" value="1">
+                </div>
+                <button type="submit" class="btn" id="reg-btn">Crear Cuenta</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function showTab(tab) {
+            document.querySelectorAll('.tab').forEach((t, i) => {
+                t.classList.toggle('active', (tab === 'login' && i === 0) || (tab === 'register' && i === 1));
+            });
+            document.getElementById('login-form').classList.toggle('hidden', tab !== 'login');
+            document.getElementById('register-form').classList.toggle('hidden', tab !== 'register');
+            document.getElementById('error-msg').style.display = 'none';
+            document.getElementById('success-msg').style.display = 'none';
+        }
+
+        function showError(msg) {
+            const el = document.getElementById('error-msg');
+            el.textContent = msg;
+            el.style.display = 'block';
+            document.getElementById('success-msg').style.display = 'none';
+        }
+
+        function showSuccess(msg) {
+            const el = document.getElementById('success-msg');
+            el.textContent = msg;
+            el.style.display = 'block';
+            document.getElementById('error-msg').style.display = 'none';
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const btn = document.getElementById('login-btn');
+            btn.disabled = true;
+            btn.textContent = 'Ingresando...';
+
+            try {
+                const res = await fetch('/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: document.getElementById('login-email').value.trim(),
+                        password: document.getElementById('login-password').value,
+                    }),
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    showError(data.error || 'Error al iniciar sesion');
+                    return;
+                }
+                window.location.href = '/';
+            } catch (err) {
+                showError('Error de conexion');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Iniciar Sesion';
+            }
+        }
+
+        async function handleRegister(e) {
+            e.preventDefault();
+            const btn = document.getElementById('reg-btn');
+            btn.disabled = true;
+            btn.textContent = 'Registrando...';
+
+            try {
+                const res = await fetch('/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: document.getElementById('reg-email').value.trim(),
+                        password: document.getElementById('reg-password').value,
+                        cuit: document.getElementById('reg-cuit').value.trim(),
+                        razon_social: document.getElementById('reg-razon').value.trim(),
+                        punto_venta: parseInt(document.getElementById('reg-pv').value),
+                    }),
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    showError(data.error || 'Error al registrarse');
+                    return;
+                }
+                window.location.href = '/';
+            } catch (err) {
+                showError('Error de conexion');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Crear Cuenta';
+            }
+        }
+    </script>
+</body>
+</html>

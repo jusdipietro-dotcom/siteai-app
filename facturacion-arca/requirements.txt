@@ -1,0 +1,10 @@
+flask>=3.1
+flask-sqlalchemy>=3.1
+zeep>=4.3
+requests>=2.31
+reportlab>=4.1
+qrcode[pil]>=8.0
+cryptography>=42.0
+PyJWT>=2.8
+gunicorn>=22.0
+flask-limiter>=3.5

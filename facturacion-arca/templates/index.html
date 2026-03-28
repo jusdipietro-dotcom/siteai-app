@@ -1,0 +1,1296 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Facturación ARCA</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1a73e8;
+            --primary-dark: #1557b0;
+            --bg: #f0f2f5;
+            --card-bg: #ffffff;
+            --sidebar-bg: #1e293b;
+            --sidebar-text: #e2e8f0;
+            --sidebar-active: #3b82f6;
+        }
+        body { background: var(--bg); font-family: 'Segoe UI', system-ui, sans-serif; overflow-x: hidden; }
+
+        /* Sidebar */
+        .sidebar {
+            position: fixed; left: 0; top: 0; bottom: 0; width: 240px;
+            background: var(--sidebar-bg); color: var(--sidebar-text);
+            padding: 0; z-index: 100; transition: all 0.3s;
+        }
+        .sidebar-brand {
+            padding: 20px 20px; font-size: 1.3em; font-weight: 700;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            display: flex; align-items: center; gap: 10px;
+        }
+        .sidebar-brand i { color: var(--sidebar-active); font-size: 1.4em; }
+        .sidebar-nav { list-style: none; padding: 10px 0; margin: 0; }
+        .sidebar-nav li a {
+            display: flex; align-items: center; gap: 12px;
+            padding: 12px 20px; color: var(--sidebar-text); text-decoration: none;
+            transition: all 0.2s; font-size: 0.95em;
+        }
+        .sidebar-nav li a:hover { background: rgba(255,255,255,0.08); }
+        .sidebar-nav li a.active {
+            background: var(--sidebar-active); color: white;
+            border-radius: 0 8px 8px 0; margin-right: 10px;
+        }
+        .sidebar-nav li a i { font-size: 1.2em; width: 24px; text-align: center; }
+        .sidebar-footer {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            padding: 15px 20px; border-top: 1px solid rgba(255,255,255,0.1);
+            font-size: 0.8em; color: rgba(255,255,255,0.7);
+        }
+        .sidebar-toggle {
+            display: none; position: fixed; top: 10px; left: 10px; z-index: 200;
+            background: var(--sidebar-bg); color: white; border: none; border-radius: 8px;
+            padding: 8px 12px; font-size: 1.2em; cursor: pointer;
+        }
+        @media (max-width: 768px) {
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.open { transform: translateX(0); }
+            .main-content { margin-left: 0 !important; }
+            .sidebar-toggle { display: block; }
+        }
+
+        /* Main content */
+        .main-content { margin-left: 240px; padding: 30px; min-height: 100vh; }
+
+        /* Cards */
+        .card {
+            border: none; border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 20px;
+        }
+        .card-header {
+            background: white; border-bottom: 1px solid #eee;
+            border-radius: 12px 12px 0 0 !important; padding: 16px 20px;
+            font-weight: 600;
+        }
+
+        /* Stats */
+        .stat-card {
+            background: white; border-radius: 12px; padding: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+        .stat-card .stat-icon {
+            width: 48px; height: 48px; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.4em;
+        }
+        .stat-card .stat-value { font-size: 1.8em; font-weight: 700; }
+        .stat-card .stat-label { color: #64748b; font-size: 0.85em; }
+
+        /* Form */
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary); box-shadow: 0 0 0 3px rgba(26,115,232,0.15);
+        }
+        .btn-primary {
+            background: var(--primary); border-color: var(--primary);
+        }
+        .btn-primary:hover { background: var(--primary-dark); }
+
+        /* Items table */
+        .items-table th { font-size: 0.85em; color: #64748b; font-weight: 600; }
+        .items-table input { font-size: 0.9em; }
+
+        /* Totals */
+        .totals-box {
+            background: #f8fafc; border-radius: 8px; padding: 15px;
+            border: 1px solid #e2e8f0;
+        }
+        .total-row { display: flex; justify-content: space-between; padding: 4px 0; }
+        .total-row.total-final {
+            font-size: 1.3em; font-weight: 700; color: var(--primary);
+            border-top: 2px solid var(--primary); padding-top: 8px; margin-top: 4px;
+        }
+
+        /* Page sections */
+        .page-section { display: none; }
+        .page-section.active { display: block; }
+
+        /* Invoice history table */
+        .table-hover tbody tr:hover { background: #f0f7ff; }
+        .badge-a { background: #dc3545; }
+        .badge-b { background: #0d6efd; }
+
+        /* Success modal */
+        .success-check {
+            width: 80px; height: 80px; border-radius: 50%;
+            background: #10b981; color: white;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 2.5em; margin: 0 auto 20px;
+        }
+
+        /* Toast */
+        .toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; }
+
+        /* Autocomplete */
+        .autocomplete-list {
+            position: absolute; z-index: 1000; background: white;
+            border: 1px solid #ddd; border-radius: 8px; max-height: 200px;
+            overflow-y: auto; width: 100%; box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .autocomplete-list .item {
+            padding: 10px 15px; cursor: pointer; border-bottom: 1px solid #f0f0f0;
+        }
+        .autocomplete-list .item:hover { background: #f0f7ff; }
+        .autocomplete-list .item .name { font-weight: 600; }
+        .autocomplete-list .item .detail { font-size: 0.8em; color: #64748b; }
+
+        /* Loading overlay */
+        .loading-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.4); z-index: 9999;
+            display: none; align-items: center; justify-content: center;
+        }
+        .loading-overlay.show { display: flex; }
+        .loading-box {
+            background: white; border-radius: 16px; padding: 40px;
+            text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+        }
+        .spinner-grow-lg { width: 3rem; height: 3rem; }
+    </style>
+</head>
+<body>
+
+<!-- Mobile toggle -->
+<button type="button" class="sidebar-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')" aria-label="Menu">
+    <i class="bi bi-list" aria-hidden="true"></i>
+</button>
+
+<!-- Sidebar -->
+<nav class="sidebar" aria-label="Menu principal">
+    <div class="sidebar-brand">
+        <i class="bi bi-receipt-cutoff"></i>
+        <span>Facturación</span>
+    </div>
+    <ul class="sidebar-nav">
+        <li><a href="#" class="active" data-page="nueva-factura">
+            <i class="bi bi-plus-circle"></i> Nueva Factura
+        </a></li>
+        <li><a href="#" data-page="historial">
+            <i class="bi bi-clock-history"></i> Historial
+        </a></li>
+        <li><a href="#" data-page="clientes">
+            <i class="bi bi-people"></i> Clientes
+        </a></li>
+        <li><a href="#" data-page="configuracion">
+            <i class="bi bi-gear"></i> Configuración
+        </a></li>
+    </ul>
+    <div class="sidebar-footer">
+        <div id="status-indicator" class="mb-2">
+            <i class="bi bi-circle-fill text-success" aria-hidden="true"></i> Conectado a ARCA
+        </div>
+        <div id="user-info" class="mb-1" style="font-size:0.85em;"></div>
+        <a href="#" onclick="cerrarSesion()" style="color:#ff6b81;text-decoration:none;font-size:0.85em;">
+            <i class="bi bi-box-arrow-left me-1"></i>Cerrar sesion
+        </a>
+    </div>
+</nav>
+
+<!-- Loading overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-box">
+        <div class="spinner-border text-primary spinner-grow-lg mb-3" role="status"></div>
+        <h5>Emitiendo factura...</h5>
+        <p class="text-muted mb-0">Conectando con ARCA</p>
+    </div>
+</div>
+
+<!-- Toast container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Main content -->
+<div class="main-content">
+
+    <!-- ====== NUEVA FACTURA ====== -->
+    <div class="page-section active" id="page-nueva-factura">
+        <h4 class="mb-4"><i class="bi bi-plus-circle me-2"></i>Nueva Factura</h4>
+
+        <form id="facturaForm">
+        <div class="row">
+            <!-- Columna izquierda: datos -->
+            <div class="col-lg-8">
+                <!-- Tipo de factura -->
+                <div class="card">
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Tipo de Comprobante</label>
+                                <select class="form-select" id="tipoFactura">
+                                    <option value="B">Factura B</option>
+                                    <option value="A">Factura A</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Concepto</label>
+                                <select class="form-select" id="concepto">
+                                    <option value="servicios">Servicios</option>
+                                    <option value="productos">Productos</option>
+                                    <option value="ambos">Productos y Servicios</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Punto de Venta</label>
+                                <input type="text" class="form-control" id="puntoVentaDisplay" readonly>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Receptor -->
+                <div class="card">
+                    <div class="card-header">
+                        <i class="bi bi-person me-2"></i>Datos del Receptor
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-8 position-relative">
+                                <label class="form-label">Razón Social / Nombre</label>
+                                <input type="text" class="form-control" id="receptorNombre"
+                                       placeholder="Buscar cliente o escribir nombre..." autocomplete="off">
+                                <div class="autocomplete-list d-none" id="clienteAutocomplete"></div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Condición IVA</label>
+                                <select class="form-select" id="receptorCondIva">
+                                    <option value="Consumidor Final">Consumidor Final</option>
+                                    <option value="Responsable Inscripto">Responsable Inscripto</option>
+                                    <option value="Monotributista">Monotributista</option>
+                                    <option value="Exento">Exento</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label" id="labelDocTipo">DNI</label>
+                                <input type="number" class="form-control" id="receptorDocNro"
+                                       placeholder="Número de documento">
+                            </div>
+                            <div class="col-md-8">
+                                <label class="form-label">Domicilio</label>
+                                <input type="text" class="form-control" id="receptorDomicilio"
+                                       placeholder="Domicilio del receptor">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Items -->
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-list-check me-2"></i>Detalle</span>
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="agregarItem()">
+                            <i class="bi bi-plus-lg"></i> Agregar ítem
+                        </button>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table items-table mb-0">
+                                <thead>
+                                    <tr>
+                                        <th style="width:40%">Descripción</th>
+                                        <th style="width:12%">Cantidad</th>
+                                        <th style="width:18%">Precio Unit.</th>
+                                        <th style="width:12%">IVA %</th>
+                                        <th style="width:15%">Subtotal</th>
+                                        <th style="width:3%"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="itemsBody">
+                                    <tr class="item-row">
+                                        <td><input type="text" class="form-control form-control-sm" name="descripcion" placeholder="Descripción del servicio/producto"></td>
+                                        <td><input type="number" class="form-control form-control-sm" name="cantidad" value="1" min="1" step="1" onchange="calcularTotales()"></td>
+                                        <td><input type="number" class="form-control form-control-sm" name="precio" placeholder="0.00" step="0.01" min="0" onchange="calcularTotales()"></td>
+                                        <td>
+                                            <select class="form-select form-select-sm" name="iva" onchange="calcularTotales()">
+                                                <option value="21">21%</option>
+                                                <option value="10.5">10.5%</option>
+                                                <option value="27">27%</option>
+                                                <option value="5">5%</option>
+                                                <option value="2.5">2.5%</option>
+                                                <option value="0">0%</option>
+                                            </select>
+                                        </td>
+                                        <td><input type="text" class="form-control form-control-sm" name="subtotal" readonly value="$ 0.00"></td>
+                                        <td></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Fechas servicio (condicional) -->
+                <div class="card" id="fechasServicio">
+                    <div class="card-header">
+                        <i class="bi bi-calendar3 me-2"></i>Período del Servicio
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Desde</label>
+                                <input type="date" class="form-control" id="fechaDesde">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Hasta</label>
+                                <input type="date" class="form-control" id="fechaHasta">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Vto. Pago</label>
+                                <input type="date" class="form-control" id="fechaVtoPago">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Columna derecha: totales y acción -->
+            <div class="col-lg-4">
+                <div class="card" style="position: sticky; top: 20px;">
+                    <div class="card-header">
+                        <i class="bi bi-calculator me-2"></i>Resumen
+                    </div>
+                    <div class="card-body">
+                        <div class="totals-box mb-3">
+                            <div class="total-row">
+                                <span>Neto Gravado</span>
+                                <span id="totalNeto">$ 0.00</span>
+                            </div>
+                            <div class="total-row">
+                                <span>IVA</span>
+                                <span id="totalIva">$ 0.00</span>
+                            </div>
+                            <div class="total-row total-final">
+                                <span>TOTAL</span>
+                                <span id="totalFinal">$ 0.00</span>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-lg w-100 mb-2">
+                            <i class="bi bi-send me-2"></i>Emitir Factura
+                        </button>
+                        <div class="text-center">
+                            <small class="text-muted">
+                                <i class="bi bi-shield-check me-1"></i>
+                                Se enviará a ARCA para obtener CAE
+                            </small>
+                        </div>
+
+                        <hr>
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <input type="checkbox" class="form-check-input" id="guardarCliente" checked>
+                            <label class="form-check-label small" for="guardarCliente">Guardar cliente</label>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <input type="checkbox" class="form-check-input" id="enviarEmail">
+                            <label class="form-check-label small" for="enviarEmail">Enviar por email</label>
+                        </div>
+                        <div class="mt-2 d-none" id="emailField">
+                            <input type="email" class="form-control form-control-sm" id="receptorEmail" placeholder="email@ejemplo.com">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </form>
+    </div>
+
+    <!-- ====== HISTORIAL ====== -->
+    <div class="page-section" id="page-historial">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h4 class="mb-0"><i class="bi bi-clock-history me-2"></i>Historial de Facturas</h4>
+            <div class="d-flex gap-2">
+                <input type="text" class="form-control form-control-sm" placeholder="Buscar..."
+                       id="buscarHistorial" style="width: 200px;">
+                <select class="form-select form-select-sm" id="filtroTipo" style="width: 120px;">
+                    <option value="">Todas</option>
+                    <option value="A">Factura A</option>
+                    <option value="B">Factura B</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="stat-icon bg-primary bg-opacity-10 text-primary">
+                            <i class="bi bi-receipt"></i>
+                        </div>
+                        <div>
+                            <div class="stat-value" id="statTotal">0</div>
+                            <div class="stat-label">Total emitidas</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="stat-icon bg-success bg-opacity-10 text-success">
+                            <i class="bi bi-cash-stack"></i>
+                        </div>
+                        <div>
+                            <div class="stat-value" id="statMonto">$0</div>
+                            <div class="stat-label">Facturado total</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="stat-icon bg-danger bg-opacity-10 text-danger">
+                            <i class="bi bi-file-earmark-text"></i>
+                        </div>
+                        <div>
+                            <div class="stat-value" id="statFactA">0</div>
+                            <div class="stat-label">Facturas A</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="stat-icon bg-info bg-opacity-10 text-info">
+                            <i class="bi bi-file-earmark-text"></i>
+                        </div>
+                        <div>
+                            <div class="stat-value" id="statFactB">0</div>
+                            <div class="stat-label">Facturas B</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Tipo</th>
+                                <th>Número</th>
+                                <th>Fecha</th>
+                                <th>Receptor</th>
+                                <th>Total</th>
+                                <th>CAE</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historialBody">
+                            <tr><td colspan="7" class="text-center text-muted py-4">No hay facturas emitidas</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== CLIENTES ====== -->
+    <div class="page-section" id="page-clientes">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h4 class="mb-0"><i class="bi bi-people me-2"></i>Clientes</h4>
+            <button class="btn btn-primary btn-sm" onclick="mostrarFormCliente()">
+                <i class="bi bi-plus-lg me-1"></i> Nuevo Cliente
+            </button>
+        </div>
+
+        <!-- Form nuevo cliente (oculto) -->
+        <div class="card d-none" id="formCliente">
+            <div class="card-header d-flex justify-content-between">
+                <span>Nuevo Cliente</span>
+                <button type="button" class="btn-close btn-sm" onclick="ocultarFormCliente()"></button>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-5">
+                        <label class="form-label">Razón Social / Nombre</label>
+                        <input type="text" class="form-control" id="clienteNombre">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">CUIT / DNI</label>
+                        <input type="number" class="form-control" id="clienteDoc">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Condición IVA</label>
+                        <select class="form-select" id="clienteCondIva">
+                            <option value="Consumidor Final">Consumidor Final</option>
+                            <option value="Responsable Inscripto">Responsable Inscripto</option>
+                            <option value="Monotributista">Monotributista</option>
+                            <option value="Exento">Exento</option>
+                        </select>
+                    </div>
+                    <div class="col-md-5">
+                        <label class="form-label">Domicilio</label>
+                        <input type="text" class="form-control" id="clienteDomicilio">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-control" id="clienteEmail">
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <button class="btn btn-primary w-100" onclick="guardarCliente()">
+                            <i class="bi bi-check-lg me-1"></i> Guardar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Nombre / Razón Social</th>
+                                <th>CUIT / DNI</th>
+                                <th>Condición IVA</th>
+                                <th>Domicilio</th>
+                                <th>Email</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="clientesBody">
+                            <tr><td colspan="6" class="text-center text-muted py-4">No hay clientes guardados</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== CONFIGURACIÓN ====== -->
+    <div class="page-section" id="page-configuracion">
+        <h4 class="mb-4"><i class="bi bi-gear me-2"></i>Configuración</h4>
+
+        <div class="card">
+            <div class="card-header">Datos del Emisor</div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Razón Social</label>
+                        <input type="text" class="form-control" id="cfgRazonSocial">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">CUIT</label>
+                        <input type="text" class="form-control" id="cfgCuit" readonly>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Domicilio Comercial</label>
+                        <input type="text" class="form-control" id="cfgDomicilio" placeholder="Calle y número, ciudad">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Condición IVA</label>
+                        <input type="text" class="form-control" id="cfgCondIva" value="Responsable Inscripto">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">IIBB</label>
+                        <input type="text" class="form-control" id="cfgIIBB" placeholder="Nro IIBB">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Inicio de Actividades</label>
+                        <input type="date" class="form-control" id="cfgInicioAct">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Punto de Venta</label>
+                        <input type="number" class="form-control" id="cfgPuntoVenta">
+                    </div>
+                    <div class="col-12">
+                        <button class="btn btn-primary" onclick="guardarConfig()">
+                            <i class="bi bi-check-lg me-1"></i> Guardar Configuración
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">Certificados ARCA</div>
+            <div class="card-body">
+                <div id="certStatus" class="mb-3"></div>
+                <p class="text-muted small">Subi tu certificado (.crt) y clave privada (.key) de ARCA. Se guardan encriptados.</p>
+                <div class="row g-3">
+                    <div class="col-md-5">
+                        <label class="form-label">Certificado (.crt)</label>
+                        <input type="file" class="form-control" id="certFile" accept=".crt,.pem">
+                    </div>
+                    <div class="col-md-5">
+                        <label class="form-label">Clave Privada (.key)</label>
+                        <input type="file" class="form-control" id="keyFile" accept=".key,.pem">
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button class="btn btn-primary w-100" onclick="subirCertificados()">
+                            <i class="bi bi-upload me-1"></i> Subir
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">Estado del Sistema</div>
+            <div class="card-body">
+                <div id="statusInfo">Verificando conexion...</div>
+                <button class="btn btn-outline-secondary btn-sm mt-2" onclick="verificarConexion()">
+                    <i class="bi bi-arrow-clockwise me-1"></i> Verificar conexion
+                </button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Modal éxito -->
+<div class="modal fade" id="successModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 16px; border: none;">
+            <div class="modal-body text-center p-4">
+                <div class="success-check"><i class="bi bi-check-lg"></i></div>
+                <h4>Factura emitida</h4>
+                <p class="text-muted" id="successDetails"></p>
+                <div class="d-flex gap-2 justify-content-center mt-3">
+                    <a href="#" class="btn btn-primary" id="btnDescargarPdf" target="_blank">
+                        <i class="bi bi-download me-1"></i> Descargar PDF
+                    </a>
+                    <button class="btn btn-outline-secondary" data-bs-dismiss="modal" onclick="nuevaFactura()">
+                        <i class="bi bi-plus-lg me-1"></i> Nueva Factura
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// ========== UTILS ==========
+function escapeHtml(str) {
+    if (str == null) return '';
+    const div = document.createElement('div');
+    div.textContent = String(str);
+    return div.innerHTML;
+}
+
+function validarCUIT(cuit) {
+    const str = String(cuit).replace(/[-\s]/g, '');
+    if (str.length !== 11 || !/^\d{11}$/.test(str)) return false;
+    const mult = [5,4,3,2,7,6,5,4,3,2];
+    let sum = 0;
+    for (let i = 0; i < 10; i++) sum += parseInt(str[i]) * mult[i];
+    const mod = sum % 11;
+    const verif = mod === 0 ? 0 : mod === 1 ? 9 : 11 - mod;
+    return parseInt(str[10]) === verif;
+}
+
+// ========== STATE ==========
+let clientes = [];
+let historial = [];
+
+// ========== NAVIGATION ==========
+document.querySelectorAll('.sidebar-nav a').forEach(link => {
+    link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const page = link.dataset.page;
+
+        document.querySelectorAll('.sidebar-nav a').forEach(l => l.classList.remove('active'));
+        link.classList.add('active');
+
+        document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+        document.getElementById('page-' + page).classList.add('active');
+
+        if (page === 'historial') cargarHistorial();
+        if (page === 'clientes') renderClientes();
+        if (page === 'configuracion') cargarConfig();
+    });
+});
+
+// ========== FACTURA TYPE CHANGE ==========
+document.getElementById('tipoFactura').addEventListener('change', function() {
+    const labelDoc = document.getElementById('labelDocTipo');
+    const condIva = document.getElementById('receptorCondIva');
+    if (this.value === 'A') {
+        labelDoc.textContent = 'CUIT';
+        condIva.value = 'Responsable Inscripto';
+    } else {
+        labelDoc.textContent = 'DNI / CUIT';
+        condIva.value = 'Consumidor Final';
+    }
+});
+
+// ========== CONCEPTO CHANGE ==========
+document.getElementById('concepto').addEventListener('change', function() {
+    const fechas = document.getElementById('fechasServicio');
+    fechas.style.display = (this.value === 'productos') ? 'none' : 'block';
+});
+
+// ========== EMAIL TOGGLE ==========
+document.getElementById('enviarEmail').addEventListener('change', function() {
+    document.getElementById('emailField').classList.toggle('d-none', !this.checked);
+});
+
+// ========== ITEMS ==========
+function agregarItem() {
+    const tbody = document.getElementById('itemsBody');
+    const row = document.createElement('tr');
+    row.className = 'item-row';
+    row.innerHTML = `
+        <td><input type="text" class="form-control form-control-sm" name="descripcion" placeholder="Descripción"></td>
+        <td><input type="number" class="form-control form-control-sm" name="cantidad" value="1" min="1" step="1" onchange="calcularTotales()"></td>
+        <td><input type="number" class="form-control form-control-sm" name="precio" placeholder="0.00" step="0.01" min="0" onchange="calcularTotales()"></td>
+        <td>
+            <select class="form-select form-select-sm" name="iva" onchange="calcularTotales()">
+                <option value="21">21%</option>
+                <option value="10.5">10.5%</option>
+                <option value="27">27%</option>
+                <option value="5">5%</option>
+                <option value="2.5">2.5%</option>
+                <option value="0">0%</option>
+            </select>
+        </td>
+        <td><input type="text" class="form-control form-control-sm" name="subtotal" readonly value="$ 0.00"></td>
+        <td><button type="button" class="btn btn-sm text-danger p-0" onclick="eliminarItem(this)"><i class="bi bi-x-lg"></i></button></td>
+    `;
+    tbody.appendChild(row);
+}
+
+function eliminarItem(btn) {
+    btn.closest('tr').remove();
+    calcularTotales();
+}
+
+function calcularTotales() {
+    let neto = 0, iva = 0;
+    document.querySelectorAll('.item-row').forEach(row => {
+        const cant = parseFloat(row.querySelector('[name=cantidad]').value) || 0;
+        const precio = parseFloat(row.querySelector('[name=precio]').value) || 0;
+        const ivaPct = parseFloat(row.querySelector('[name=iva]').value) || 0;
+        const subtotal = cant * precio;
+        const ivaItem = subtotal * ivaPct / 100;
+        row.querySelector('[name=subtotal]').value = '$ ' + subtotal.toLocaleString('es-AR', {minimumFractionDigits: 2});
+        neto += subtotal;
+        iva += ivaItem;
+    });
+    document.getElementById('totalNeto').textContent = '$ ' + neto.toLocaleString('es-AR', {minimumFractionDigits: 2});
+    document.getElementById('totalIva').textContent = '$ ' + iva.toLocaleString('es-AR', {minimumFractionDigits: 2});
+    document.getElementById('totalFinal').textContent = '$ ' + (neto + iva).toLocaleString('es-AR', {minimumFractionDigits: 2});
+}
+
+// ========== AUTOCOMPLETE CLIENTES ==========
+document.getElementById('receptorNombre').addEventListener('input', function() {
+    const val = this.value.toLowerCase();
+    const list = document.getElementById('clienteAutocomplete');
+    if (val.length < 2) { list.classList.add('d-none'); return; }
+
+    const matches = clientes.filter(c =>
+        c.nombre.toLowerCase().includes(val) ||
+        String(c.doc_nro).includes(val)
+    );
+
+    if (matches.length === 0) { list.classList.add('d-none'); return; }
+
+    list.innerHTML = matches.map((c, i) => `
+        <div class="item" data-idx="${i}" data-nombre="${escapeHtml(c.nombre)}">
+            <div class="name">${escapeHtml(c.nombre)}</div>
+            <div class="detail">${escapeHtml(c.doc_tipo || 'DNI')}: ${escapeHtml(c.doc_nro || '-')} | ${escapeHtml(c.condicion_iva)}</div>
+        </div>
+    `).join('');
+    list.querySelectorAll('.item').forEach(el => {
+        el.addEventListener('click', () => seleccionarCliente(parseInt(el.dataset.idx), el.dataset.nombre));
+    });
+    list.classList.remove('d-none');
+});
+
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('#receptorNombre'))
+        document.getElementById('clienteAutocomplete').classList.add('d-none');
+});
+
+function seleccionarCliente(idx, nombre) {
+    const c = clientes.find(cl => cl.nombre === nombre);
+    if (!c) return;
+    document.getElementById('receptorNombre').value = c.nombre;
+    document.getElementById('receptorDocNro').value = c.doc_nro || '';
+    document.getElementById('receptorDomicilio').value = c.domicilio || '';
+    document.getElementById('receptorCondIva').value = c.condicion_iva || 'Consumidor Final';
+    if (c.email) document.getElementById('receptorEmail').value = c.email;
+    document.getElementById('clienteAutocomplete').classList.add('d-none');
+}
+
+// ========== EMITIR FACTURA ==========
+document.getElementById('facturaForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    // Recoger items
+    const items = [];
+    document.querySelectorAll('.item-row').forEach(row => {
+        const desc = row.querySelector('[name=descripcion]').value;
+        const cant = parseFloat(row.querySelector('[name=cantidad]').value) || 1;
+        const precio = parseFloat(row.querySelector('[name=precio]').value) || 0;
+        const iva = parseFloat(row.querySelector('[name=iva]').value) || 21;
+        if (desc && precio > 0) {
+            items.push({ descripcion: desc, cantidad: cant, precio_unitario: precio, iva: iva });
+        }
+    });
+
+    if (items.length === 0) {
+        showToast('Agregá al menos un ítem con descripción y precio', 'warning');
+        return;
+    }
+
+    const tipo = document.getElementById('tipoFactura').value;
+    const docNro = document.getElementById('receptorDocNro').value;
+
+    if (tipo === 'A' && !docNro) {
+        showToast('Factura A requiere CUIT del receptor', 'warning');
+        document.getElementById('receptorDocNro').classList.add('is-invalid');
+        return;
+    }
+    if (tipo === 'A' && docNro && !validarCUIT(docNro)) {
+        showToast('CUIT invalido (verificar digito verificador)', 'warning');
+        document.getElementById('receptorDocNro').classList.add('is-invalid');
+        return;
+    }
+
+    const body = {
+        tipo: tipo,
+        receptor: {
+            razon_social: document.getElementById('receptorNombre').value,
+            domicilio: document.getElementById('receptorDomicilio').value,
+            condicion_iva: document.getElementById('receptorCondIva').value,
+        },
+        items: items,
+        concepto: document.getElementById('concepto').value,
+    };
+
+    // Documento receptor
+    if (docNro) {
+        if (tipo === 'A' || String(docNro).length >= 11) {
+            body.receptor.cuit = parseInt(docNro);
+        } else {
+            body.receptor.dni = parseInt(docNro);
+        }
+    }
+
+    // Fechas de servicio
+    const concepto = document.getElementById('concepto').value;
+    if (concepto !== 'productos') {
+        const fd = document.getElementById('fechaDesde').value;
+        const fh = document.getElementById('fechaHasta').value;
+        const fv = document.getElementById('fechaVtoPago').value;
+        if (!fd || !fh) {
+            showToast('Para servicios, las fechas Desde y Hasta son obligatorias', 'warning');
+            return;
+        }
+        if (new Date(fh) < new Date(fd)) {
+            showToast('La fecha Hasta no puede ser anterior a Desde', 'warning');
+            return;
+        }
+        body.fecha_servicio_desde = fd;
+        body.fecha_servicio_hasta = fh;
+        if (fv) body.fecha_vencimiento_pago = fv;
+    }
+
+    // Clear validation state
+    document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+
+    // Loading
+    document.getElementById('loadingOverlay').classList.add('show');
+
+    try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 60000);
+        const res = await authFetch('/factura', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(body),
+            signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+        const data = await res.json();
+
+        if (!res.ok) throw new Error(data.error || 'Error al emitir factura');
+
+        // Guardar cliente si corresponde
+        if (document.getElementById('guardarCliente').checked && body.receptor.razon_social) {
+            guardarClienteDesdeFactura(body.receptor, docNro);
+        }
+
+        // Mostrar éxito
+        const compNro = `${String(data.punto_venta).padStart(4,'0')}-${String(data.cbte_nro).padStart(8,'0')}`;
+        document.getElementById('successDetails').innerHTML =
+            `<strong>Factura ${escapeHtml(tipo)} ${escapeHtml(compNro)}</strong><br>` +
+            `CAE: ${escapeHtml(data.cae)}<br>` +
+            `Total: $ ${Number(data.importe_total).toLocaleString('es-AR', {minimumFractionDigits: 2})}`;
+        document.getElementById('btnDescargarPdf').href = '/pdf/' + data.pdf;
+
+        new bootstrap.Modal(document.getElementById('successModal')).show();
+
+        // Agregar al historial local
+        historial.unshift({
+            ...data,
+            receptor_nombre: body.receptor.razon_social,
+            items: items,
+        });
+        guardarHistorialLocal();
+
+    } catch (err) {
+        showToast(err.message, 'danger');
+    } finally {
+        document.getElementById('loadingOverlay').classList.remove('show');
+    }
+});
+
+function nuevaFactura() {
+    document.getElementById('facturaForm').reset();
+    document.getElementById('itemsBody').innerHTML = `
+        <tr class="item-row">
+            <td><input type="text" class="form-control form-control-sm" name="descripcion" placeholder="Descripción del servicio/producto"></td>
+            <td><input type="number" class="form-control form-control-sm" name="cantidad" value="1" min="1" step="1" onchange="calcularTotales()"></td>
+            <td><input type="number" class="form-control form-control-sm" name="precio" placeholder="0.00" step="0.01" min="0" onchange="calcularTotales()"></td>
+            <td>
+                <select class="form-select form-select-sm" name="iva" onchange="calcularTotales()">
+                    <option value="21">21%</option>
+                    <option value="10.5">10.5%</option>
+                    <option value="27">27%</option>
+                    <option value="5">5%</option>
+                    <option value="2.5">2.5%</option>
+                    <option value="0">0%</option>
+                </select>
+            </td>
+            <td><input type="text" class="form-control form-control-sm" name="subtotal" readonly value="$ 0.00"></td>
+            <td></td>
+        </tr>`;
+    calcularTotales();
+}
+
+// ========== CLIENTES ==========
+function cargarClientes() {
+    authFetch('/api/clientes').then(r => {
+        if (!r.ok) throw new Error('fetch failed');
+        return r.json();
+    }).then(data => {
+        clientes = data;
+        renderClientes();
+    }).catch(() => {
+        clientes = JSON.parse(localStorage.getItem('clientes') || '[]');
+    });
+}
+
+function renderClientes() {
+    const tbody = document.getElementById('clientesBody');
+    if (clientes.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">No hay clientes guardados</td></tr>';
+        return;
+    }
+    tbody.innerHTML = clientes.map((c, i) => `
+        <tr>
+            <td><strong>${escapeHtml(c.nombre)}</strong></td>
+            <td>${escapeHtml(c.doc_nro || '-')}</td>
+            <td>${escapeHtml(c.condicion_iva)}</td>
+            <td>${escapeHtml(c.domicilio || '-')}</td>
+            <td>${escapeHtml(c.email || '-')}</td>
+            <td>
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="eliminarCliente(${i})">
+                    <i class="bi bi-trash" aria-hidden="true"></i>
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function mostrarFormCliente() { document.getElementById('formCliente').classList.remove('d-none'); }
+function ocultarFormCliente() { document.getElementById('formCliente').classList.add('d-none'); }
+
+function guardarCliente() {
+    const nombre = document.getElementById('clienteNombre').value.trim();
+    if (!nombre) { showToast('El nombre es obligatorio', 'warning'); return; }
+
+    const cliente = {
+        nombre: nombre,
+        doc_nro: document.getElementById('clienteDoc').value || '',
+        condicion_iva: document.getElementById('clienteCondIva').value,
+        domicilio: document.getElementById('clienteDomicilio').value,
+        email: document.getElementById('clienteEmail').value,
+    };
+
+    // No duplicar
+    const idx = clientes.findIndex(c => c.nombre === nombre);
+    if (idx >= 0) clientes[idx] = cliente;
+    else clientes.push(cliente);
+
+    guardarClientesLocal();
+    renderClientes();
+    ocultarFormCliente();
+    showToast('Cliente guardado', 'success');
+}
+
+function guardarClienteDesdeFactura(receptor, docNro) {
+    if (!receptor.razon_social) return;
+    const existe = clientes.find(c => c.nombre === receptor.razon_social);
+    if (existe) return;
+
+    clientes.push({
+        nombre: receptor.razon_social,
+        doc_nro: docNro || '',
+        condicion_iva: receptor.condicion_iva || '',
+        domicilio: receptor.domicilio || '',
+        email: document.getElementById('receptorEmail').value || '',
+    });
+    guardarClientesLocal();
+}
+
+function eliminarCliente(idx) {
+    if (!confirm('¿Eliminar este cliente?')) return;
+    clientes.splice(idx, 1);
+    guardarClientesLocal();
+    renderClientes();
+}
+
+function guardarClientesLocal() {
+    localStorage.setItem('clientes', JSON.stringify(clientes));
+    authFetch('/api/clientes', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(clientes),
+    }).catch(() => {});
+}
+
+// ========== HISTORIAL ==========
+function cargarHistorial() {
+    authFetch('/api/historial').then(r => {
+        if (!r.ok) throw new Error('fetch failed');
+        return r.json();
+    }).then(data => {
+        historial = data;
+        renderHistorial();
+    }).catch(() => {
+        historial = JSON.parse(localStorage.getItem('historial') || '[]');
+        renderHistorial();
+    });
+}
+
+function renderHistorial() {
+    const tbody = document.getElementById('historialBody');
+    const filtro = document.getElementById('filtroTipo').value;
+    const buscar = document.getElementById('buscarHistorial').value.toLowerCase();
+
+    let filtered = historial;
+    if (filtro) filtered = filtered.filter(f => {
+        const tipo = f.tipo_cbte === 1 ? 'A' : 'B';
+        return tipo === filtro;
+    });
+    if (buscar) filtered = filtered.filter(f =>
+        (f.receptor_nombre || '').toLowerCase().includes(buscar) ||
+        String(f.cbte_nro).includes(buscar) ||
+        (f.cae || '').includes(buscar)
+    );
+
+    if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">No hay facturas</td></tr>';
+    } else {
+        tbody.innerHTML = filtered.map(f => {
+            const tipo = f.tipo_cbte === 1 ? 'A' : 'B';
+            const badgeClass = tipo === 'A' ? 'badge-a' : 'badge-b';
+            const compNro = `${String(f.punto_venta).padStart(4,'0')}-${String(f.cbte_nro).padStart(8,'0')}`;
+            const fecha = f.fecha ? `${f.fecha.substring(6,8)}/${f.fecha.substring(4,6)}/${f.fecha.substring(0,4)}` : '-';
+            return `
+                <tr>
+                    <td><span class="badge ${badgeClass}">Factura ${escapeHtml(tipo)}</span></td>
+                    <td><strong>${escapeHtml(compNro)}</strong></td>
+                    <td>${escapeHtml(fecha)}</td>
+                    <td>${escapeHtml(f.receptor_nombre || '-')}</td>
+                    <td>$ ${(f.importe_total || 0).toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
+                    <td><code>${escapeHtml(f.cae || '-')}</code></td>
+                    <td>
+                        ${f.pdf ? `<a href="/pdf/${encodeURIComponent(f.pdf)}" target="_blank" class="btn btn-sm btn-outline-primary"><i class="bi bi-download" aria-hidden="true"></i></a>` : ''}
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    // Stats
+    document.getElementById('statTotal').textContent = historial.length;
+    const montoTotal = historial.reduce((s, f) => s + (f.importe_total || 0), 0);
+    document.getElementById('statMonto').textContent = '$ ' + montoTotal.toLocaleString('es-AR', {maximumFractionDigits: 0});
+    document.getElementById('statFactA').textContent = historial.filter(f => f.tipo_cbte === 1).length;
+    document.getElementById('statFactB').textContent = historial.filter(f => f.tipo_cbte === 6).length;
+}
+
+function guardarHistorialLocal() {
+    localStorage.setItem('historial', JSON.stringify(historial));
+}
+
+document.getElementById('filtroTipo').addEventListener('change', renderHistorial);
+document.getElementById('buscarHistorial').addEventListener('input', renderHistorial);
+
+// ========== AUTH HELPER ==========
+function authFetch(url, options = {}) {
+    return fetch(url, options).then(r => {
+        if (r.status === 401) { window.location.href = '/'; return Promise.reject('unauthorized'); }
+        return r;
+    });
+}
+
+function cerrarSesion() {
+    authFetch('/auth/logout', {method:'POST'}).finally(() => { window.location.href = '/'; });
+}
+
+function cargarUsuario() {
+    authFetch('/auth/me').then(r => r.json()).then(data => {
+        const info = document.getElementById('user-info');
+        if (info && data.user) info.textContent = data.user.email;
+    }).catch(() => {});
+}
+
+// ========== CONFIGURACION ==========
+function cargarConfig() {
+    authFetch('/api/config').then(r => {
+        if (!r.ok) throw new Error('fetch failed');
+        return r.json();
+    }).then(data => {
+        if (data.razon_social) document.getElementById('cfgRazonSocial').value = data.razon_social;
+        if (data.domicilio) document.getElementById('cfgDomicilio').value = data.domicilio;
+        if (data.condicion_iva) document.getElementById('cfgCondIva').value = data.condicion_iva;
+        if (data.iibb) document.getElementById('cfgIIBB').value = data.iibb;
+        if (data.inicio_actividades) document.getElementById('cfgInicioAct').value = data.inicio_actividades;
+        if (data.punto_venta) {
+            document.getElementById('cfgPuntoVenta').value = data.punto_venta;
+            const pvEl = document.getElementById('puntoVentaDisplay');
+            if (pvEl) pvEl.value = String(data.punto_venta).padStart(4, '0');
+        }
+        if (data.cuit) {
+            const c = String(data.cuit);
+            document.getElementById('cfgCuit').value = c.length === 11 ? `${c.slice(0,2)}-${c.slice(2,10)}-${c.slice(10)}` : c;
+        }
+        // Certificados
+        const certEl = document.getElementById('certStatus');
+        if (certEl) {
+            certEl.innerHTML = data.has_certificates
+                ? '<i class="bi bi-check-circle text-success"></i> Certificados cargados correctamente'
+                : '<i class="bi bi-exclamation-triangle text-warning"></i> <strong>Sin certificados.</strong> Subi tu .crt y .key para poder facturar.';
+        }
+    }).catch(() => {});
+}
+
+function guardarConfig() {
+    const config = {
+        razon_social: document.getElementById('cfgRazonSocial').value,
+        domicilio: document.getElementById('cfgDomicilio').value,
+        condicion_iva: document.getElementById('cfgCondIva').value,
+        iibb: document.getElementById('cfgIIBB').value,
+        inicio_actividades: document.getElementById('cfgInicioAct').value,
+        punto_venta: parseInt(document.getElementById('cfgPuntoVenta').value) || 1,
+    };
+    authFetch('/api/config', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(config),
+    }).then(r => {
+        if (!r.ok) throw new Error('Error al guardar');
+        return r.json();
+    }).then(() => {
+        showToast('Configuracion guardada', 'success');
+    }).catch(() => showToast('Error al guardar', 'danger'));
+}
+
+function subirCertificados() {
+    const certFile = document.getElementById('certFile').files[0];
+    const keyFile = document.getElementById('keyFile').files[0];
+    if (!certFile || !keyFile) {
+        showToast('Selecciona ambos archivos (.crt y .key)', 'warning');
+        return;
+    }
+    const fd = new FormData();
+    fd.append('cert', certFile);
+    fd.append('key', keyFile);
+    authFetch('/auth/upload-cert', { method: 'POST', body: fd })
+        .then(r => {
+            if (!r.ok && r.status !== 400) throw new Error('Error al subir');
+            return r.json();
+        })
+        .then(data => {
+            if (data.error) { showToast(data.error, 'danger'); return; }
+            showToast('Certificados guardados correctamente', 'success');
+            cargarConfig();
+        })
+        .catch(() => showToast('Error al subir certificados', 'danger'));
+}
+
+function verificarConexion() {
+    document.getElementById('statusInfo').innerHTML = '<i class="bi bi-arrow-clockwise spin"></i> Verificando...';
+    authFetch('/api/config').then(r => {
+        if (!r.ok) throw new Error('fetch failed');
+        return r.json();
+    }).then(data => {
+        const statusEl = document.getElementById('statusInfo');
+        statusEl.textContent = '';
+        const icon = document.createElement('i');
+        icon.className = 'bi bi-check-circle text-success';
+        statusEl.appendChild(icon);
+        statusEl.appendChild(document.createTextNode(' '));
+        const strong = document.createElement('strong');
+        strong.textContent = 'Sistema activo';
+        statusEl.appendChild(strong);
+        statusEl.appendChild(document.createElement('br'));
+        statusEl.appendChild(document.createTextNode(
+            `CUIT: ${data.cuit} | PV: ${data.punto_venta} | Certificados: ${data.has_certificates ? 'OK' : 'Pendientes'}`
+        ));
+
+        // Update punto de venta display
+        const pvEl = document.getElementById('puntoVentaDisplay');
+        if (pvEl && data.punto_venta) pvEl.value = String(data.punto_venta).padStart(4, '0');
+
+        document.getElementById('status-indicator').innerHTML = data.has_certificates
+            ? '<i class="bi bi-circle-fill text-success"></i> Conectado a ARCA'
+            : '<i class="bi bi-circle-fill text-warning"></i> Sin certificados';
+    }).catch(() => {
+        document.getElementById('statusInfo').innerHTML = '<i class="bi bi-x-circle text-danger"></i> Error de conexion';
+        document.getElementById('status-indicator').innerHTML = '<i class="bi bi-circle-fill text-danger"></i> Desconectado';
+    });
+}
+
+// ========== TOASTS ==========
+function showToast(message, type = 'info') {
+    const container = document.getElementById('toastContainer');
+    const icons = { success: 'check-circle', danger: 'x-circle', warning: 'exclamation-triangle', info: 'info-circle' };
+    const toast = document.createElement('div');
+    toast.className = `toast show align-items-center text-bg-${type} border-0`;
+    toast.setAttribute('role', 'alert');
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body"><i class="bi bi-${icons[type]} me-2" aria-hidden="true"></i>${escapeHtml(message)}</div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    `;
+    container.appendChild(toast);
+    setTimeout(() => toast.remove(), 5000);
+}
+
+// ========== INIT ==========
+// Set default dates
+const today = new Date().toISOString().split('T')[0];
+const firstDay = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
+document.getElementById('fechaDesde').value = firstDay;
+document.getElementById('fechaHasta').value = today;
+document.getElementById('fechaVtoPago').value = today;
+
+cargarUsuario();
+cargarClientes();
+cargarHistorial();
+cargarConfig();
+verificarConexion();
+</script>
+</body>
+</html>

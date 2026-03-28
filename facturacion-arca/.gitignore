@@ -1,0 +1,9 @@
+*.key
+*.csr
+*.crt
+__pycache__/
+data/
+pdfs/
+*.log
+venv/
+.env
