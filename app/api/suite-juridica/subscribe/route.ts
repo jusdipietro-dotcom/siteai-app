@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 import { SUITE_JURIDICA_PLANS } from '@/lib/suite-juridica-plans'
+import { isUserFreeAccount } from '@/lib/free-account'
 
 export async function POST(req: NextRequest) {
   try {
@@ -77,6 +78,23 @@ export async function POST(req: NextRequest) {
     }
 
     const { subscription, discountApplied } = result
+
+    // Free account bypass — skip payment
+    const isFree = await isUserFreeAccount(session.user.id)
+    if (isFree) {
+      await prisma.suiteJuridicaSubscription.update({
+        where: { id: subscription.id },
+        data: { status: 'active', discountApplied: 100, provisionedAt: new Date() },
+      })
+      return NextResponse.json({
+        subscriptionId: subscription.id,
+        plan,
+        status: 'active',
+        nextStep: 'done',
+        freeAccount: true,
+      })
+    }
+
     const finalPrice = Math.round(planConfig.monthly * (1 - discountApplied / 100))
 
     return NextResponse.json({

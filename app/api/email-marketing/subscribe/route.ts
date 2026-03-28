@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 import { getPlanConfig } from '@/lib/email-marketing-plans'
+import { isUserFreeAccount } from '@/lib/free-account'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 const MAX_NAME_LENGTH = 200
@@ -178,6 +179,22 @@ export async function POST(req: NextRequest) {
         discountApplied,
       },
     })
+
+    // Free account bypass — skip payment
+    const isFree = await isUserFreeAccount(userId)
+    if (isFree) {
+      await prisma.emailMarketingSubscription.update({
+        where: { id: subscription.id },
+        data: { status: 'active', discountApplied: 100, provisionedAt: new Date() },
+      })
+      return NextResponse.json({
+        subscriptionId: subscription.id,
+        plan,
+        status: 'active',
+        nextStep: 'done',
+        freeAccount: true,
+      })
+    }
 
     const finalPrice = Math.round(planConfig.monthly * (1 - discountApplied / 100))
 

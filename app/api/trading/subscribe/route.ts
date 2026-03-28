@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
+import { isUserFreeAccount } from '@/lib/free-account'
 
 const TRADING_PLANS: Record<string, { monthly: number; title: string; maxPairs: number; reportes: boolean }> = {
   basico:      { monthly: 20000, title: 'Señales Crypto IA Básico',      maxPairs: 30, reportes: false },
@@ -93,6 +94,22 @@ export async function POST(req: NextRequest) {
         discountApplied,
       },
     })
+
+    // Free account bypass — skip payment
+    const isFree = await isUserFreeAccount(session.user.id)
+    if (isFree) {
+      await prisma.tradingSubscription.update({
+        where: { id: subscription.id },
+        data: { status: 'active', discountApplied: 100, provisionedAt: new Date() },
+      })
+      return NextResponse.json({
+        subscriptionId: subscription.id,
+        plan,
+        status: 'active',
+        nextStep: 'done',
+        freeAccount: true,
+      })
+    }
 
     const finalPrice = Math.round(planConfig.monthly * (1 - discountApplied / 100))
 

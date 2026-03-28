@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
+import { isUserFreeAccount } from '@/lib/free-account'
 
 const REVIEWS_PLANS: Record<string, { monthly: number; title: string; maxProfiles: number }> = {
   basico:    { monthly: 15000, title: 'Reseñas Google IA Básico',    maxProfiles: 1 },
@@ -137,6 +138,22 @@ export async function POST(req: NextRequest) {
         discountApplied,
       },
     })
+
+    // Free account bypass — skip payment
+    const isFree = await isUserFreeAccount(session.user.id)
+    if (isFree) {
+      await prisma.reviewsSubscription.update({
+        where: { id: subscription.id },
+        data: { status: 'active', discountApplied: 100, provisionedAt: new Date() },
+      })
+      return NextResponse.json({
+        subscriptionId: subscription.id,
+        plan,
+        status: 'active',
+        nextStep: 'done',
+        freeAccount: true,
+      })
+    }
 
     const finalPrice = Math.round(planConfig.monthly * (1 - discountApplied / 100))
 
