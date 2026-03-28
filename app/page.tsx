@@ -8,6 +8,7 @@ import { StatsSection } from '@/components/landing/StatsSection'
 import { Testimonials } from '@/components/landing/Testimonials'
 import { FaqSection } from '@/components/landing/FaqSection'
 import { Pricing } from '@/components/landing/Pricing'
+import { SuiteJuridicaSection } from '@/components/landing/SuiteJuridicaSection'
 import { CtaSection } from '@/components/landing/CtaSection'
 import { Footer } from '@/components/landing/Footer'
 import { OrganizationSchema } from '@/components/seo/OrganizationSchema'
@@ -22,6 +23,7 @@ export default function LandingPage() {
         <Navbar />
         <Hero />
         <ProductsSection />
+        <SuiteJuridicaSection />
         <HowItWorks />
         <StatsSection />
         <Features />
