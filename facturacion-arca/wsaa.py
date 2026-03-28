@@ -165,6 +165,10 @@ def invalidate_cache(cuit=None):
     """Invalida el cache del ticket. Si se pasa cuit, solo ese tenant."""
     with _ticket_lock:
         if cuit:
-            _ticket_cache.pop(str(cuit), None)
+            # Cache keys are "{cuit}:prod" or "{cuit}:homo"
+            cuit_str = str(cuit)
+            keys_to_remove = [k for k in _ticket_cache if k.startswith(f"{cuit_str}:")]
+            for k in keys_to_remove:
+                _ticket_cache.pop(k, None)
         else:
             _ticket_cache.clear()

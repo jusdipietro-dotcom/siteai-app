@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { provisionFacturacion } from '@/lib/facturacion-provision'
 
 /**
  * POST /api/facturacion/configure
@@ -63,7 +64,16 @@ export async function POST(req: NextRequest) {
 
     console.log(`[Facturacion Configure] Subscription ${subscriptionId} configured -> provisioning`)
 
-    return NextResponse.json({ status: 'provisioning', message: 'Configuracion guardada. Activando servicio...' })
+    // Trigger Flask provisioning
+    const result = await provisionFacturacion(subscriptionId, 'active')
+    if (!result.success) {
+      return NextResponse.json({
+        status: 'provisioning',
+        message: 'Configuracion guardada. La activacion esta en proceso — puede demorar unos minutos.',
+      })
+    }
+
+    return NextResponse.json({ status: 'active', message: 'Servicio activado correctamente.' })
   } catch (err) {
     console.error('[Facturacion Configure] Error:', err)
     return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 })

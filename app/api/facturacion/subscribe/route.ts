@@ -6,6 +6,7 @@ import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 import { FACTURACION_PLANS } from '@/lib/facturacion-plans'
 import { isUserFreeAccount } from '@/lib/free-account'
 import { getTrialEndDate } from '@/lib/trial'
+import { provisionFacturacion } from '@/lib/facturacion-provision'
 
 export async function POST(req: NextRequest) {
   try {
@@ -121,13 +122,14 @@ export async function POST(req: NextRequest) {
 
     const { subscription, discountApplied } = result
 
-    // Free account bypass — skip payment
+    // Free account bypass — skip payment, provision Flask immediately
     const isFree = await isUserFreeAccount(session.user.id)
     if (isFree) {
       await prisma.facturacionSubscription.update({
         where: { id: subscription.id },
-        data: { status: 'active', discountApplied: 100, provisionedAt: new Date() },
+        data: { status: 'provisioning', discountApplied: 100 },
       })
+      await provisionFacturacion(subscription.id, 'active')
       return NextResponse.json({
         subscriptionId: subscription.id,
         plan,
@@ -144,12 +146,13 @@ export async function POST(req: NextRequest) {
         status: { in: ['cancelled', 'suspended', 'trial_expired'] },
       },
     })
-    // First time → 3-day trial (no payment needed)
+    // First time → 3-day trial with Flask provisioning
     if (!previousSub) {
       await prisma.facturacionSubscription.update({
         where: { id: subscription.id },
-        data: { status: 'trial', trialEndsAt: getTrialEndDate() },
+        data: { status: 'provisioning', trialEndsAt: getTrialEndDate() },
       })
+      await provisionFacturacion(subscription.id, 'trial')
       return NextResponse.json({
         subscriptionId: subscription.id,
         plan,

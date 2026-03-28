@@ -881,9 +881,9 @@ export async function POST(req: NextRequest) {
         const factPlan = parts[2]
 
         if (status === 'authorized' && factSubId) {
-          // Atomic idempotency: only update if still pending_payment
+          // Atomic idempotency: only update if still pending_payment or trial (trial-to-paid)
           const { count } = await prisma.facturacionSubscription.updateMany({
-            where: { id: factSubId, status: 'pending_payment' },
+            where: { id: factSubId, status: { in: ['pending_payment', 'trial'] } },
             data: { status: 'provisioning', preapprovalId },
           })
 

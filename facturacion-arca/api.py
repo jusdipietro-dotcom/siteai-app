@@ -15,7 +15,7 @@ from sqlalchemy import func, text
 from tenant import get_wsfe_client
 from utils import validar_cuit
 from wsfe import (
-    TIPO_FACTURA_A, TIPO_FACTURA_B,
+    TIPO_FACTURA_A, TIPO_FACTURA_B, TIPO_FACTURA_C,
     TIPO_NOTA_CREDITO_A, TIPO_NOTA_CREDITO_B,
     TIPO_NOTA_DEBITO_A, TIPO_NOTA_DEBITO_B,
     DOC_CUIT, DOC_DNI, DOC_SIN_IDENTIFICAR,
@@ -33,8 +33,8 @@ api_bp = Blueprint("api", __name__)
 # Plan limits for facturacion
 PLAN_LIMITS = {
     "basico": {"max_facturas_mes": 50, "tipos_permitidos": ["B"], "max_puntos_venta": 1},
-    "profesional": {"max_facturas_mes": 200, "tipos_permitidos": ["A", "B"], "max_puntos_venta": 1},
-    "estudio": {"max_facturas_mes": 999999, "tipos_permitidos": ["A", "B", "C"], "max_puntos_venta": 3},
+    "profesional": {"max_facturas_mes": 200, "tipos_permitidos": ["A", "B", "NC_A", "NC_B", "ND_A", "ND_B"], "max_puntos_venta": 1},
+    "estudio": {"max_facturas_mes": 999999, "tipos_permitidos": ["A", "B", "C", "NC_A", "NC_B", "ND_A", "ND_B"], "max_puntos_venta": 3},
 }
 
 
@@ -80,10 +80,14 @@ def emitir_factura():
     if month_count >= limits["max_facturas_mes"]:
         return jsonify({"error": f"Limite mensual alcanzado ({limits['max_facturas_mes']} facturas). Actualiza tu plan para emitir mas."}), 403
 
-    tipo_map = {"A": TIPO_FACTURA_A, "B": TIPO_FACTURA_B}
+    tipo_map = {
+        "A": TIPO_FACTURA_A, "B": TIPO_FACTURA_B, "C": TIPO_FACTURA_C,
+        "NC_A": TIPO_NOTA_CREDITO_A, "NC_B": TIPO_NOTA_CREDITO_B,
+        "ND_A": TIPO_NOTA_DEBITO_A, "ND_B": TIPO_NOTA_DEBITO_B,
+    }
     tipo_cbte = tipo_map.get(tipo_str)
     if not tipo_cbte:
-        return jsonify({"error": f"Tipo '{tipo_str}' no valido. Usar 'A' o 'B'"}), 400
+        return jsonify({"error": f"Tipo '{tipo_str}' no valido. Usar: A, B, C, NC_A, NC_B, ND_A, ND_B"}), 400
 
     # Receptor
     receptor = data.get("receptor", {})
