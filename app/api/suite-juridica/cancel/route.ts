@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
       try {
         // Use raw query to cancel any subscription model generically
         await prisma.$executeRawUnsafe(
-          `UPDATE "${model}" SET status = 'cancelled' WHERE id = $1 AND status IN ('active', 'provisioning', 'pending_payment')`,
+          `UPDATE "${model}" SET status = 'cancelled' WHERE id = $1 AND status IN ('active', 'provisioning', 'pending_payment', 'pending_config')`,
           id
         )
       } catch (e) {

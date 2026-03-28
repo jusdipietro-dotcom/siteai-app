@@ -192,7 +192,7 @@ const products = [
     ],
     cta: 'Consultar turnos online',
     ctaHref: 'https://wa.me/5491171311465?text=Hola,%20me%20interesa%20el%20sistema%20de%20turnos%20online',
-    price: 'Desde $10.000/mes',
+    price: 'Desde $12.000/mes',
     priceNote: 'Setup incluido, $0 en infraestructura',
   },
   {

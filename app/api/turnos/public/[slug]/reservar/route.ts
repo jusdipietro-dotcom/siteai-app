@@ -3,6 +3,10 @@ import { prisma } from '@/lib/prisma'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 import nodemailer from 'nodemailer'
 
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
+
 /**
  * Public endpoint: POST /api/turnos/public/{slug}/reservar
  * Creates a booking. No auth required.
@@ -87,16 +91,16 @@ export async function POST(
               <h2 style="margin:0;color:#111">Nuevo turno reservado</h2>
             </div>
             <div style="padding:24px;background:#f9fafb;border-radius:12px">
-              <p>Un cliente reservo un turno desde tu pagina <strong>${sub.businessName}</strong>.</p>
+              <p>Un cliente reservo un turno desde tu pagina <strong>${escapeHtml(sub.businessName)}</strong>.</p>
               <table style="width:100%;margin:16px 0;font-size:14px;border-collapse:collapse">
-                <tr><td style="padding:8px 0;color:#666;border-bottom:1px solid #eee">Nombre</td><td style="padding:8px 0;font-weight:600;text-align:right;border-bottom:1px solid #eee">${nombre} ${apellido}</td></tr>
-                ${dni ? `<tr><td style="padding:8px 0;color:#666;border-bottom:1px solid #eee">DNI</td><td style="padding:8px 0;font-weight:600;text-align:right;border-bottom:1px solid #eee">${dni}</td></tr>` : ''}
-                <tr><td style="padding:8px 0;color:#666;border-bottom:1px solid #eee">Telefono</td><td style="padding:8px 0;font-weight:600;text-align:right;border-bottom:1px solid #eee">${telefono}</td></tr>
-                <tr><td style="padding:8px 0;color:#666;border-bottom:1px solid #eee">Email</td><td style="padding:8px 0;font-weight:600;text-align:right;border-bottom:1px solid #eee">${email}</td></tr>
-                ${area ? `<tr><td style="padding:8px 0;color:#666;border-bottom:1px solid #eee">Area</td><td style="padding:8px 0;font-weight:600;text-align:right;border-bottom:1px solid #eee">${area}</td></tr>` : ''}
-                <tr><td style="padding:8px 0;color:#666;border-bottom:1px solid #eee">Fecha</td><td style="padding:8px 0;font-weight:600;text-align:right;border-bottom:1px solid #eee">${dayName} ${fecha}</td></tr>
-                <tr><td style="padding:8px 0;color:#666;border-bottom:1px solid #eee">Hora</td><td style="padding:8px 0;font-weight:600;text-align:right;border-bottom:1px solid #eee">${hora}hs</td></tr>
-                ${notas ? `<tr><td style="padding:8px 0;color:#666">Notas</td><td style="padding:8px 0;text-align:right">${notas}</td></tr>` : ''}
+                <tr><td style="padding:8px 0;color:#666;border-bottom:1px solid #eee">Nombre</td><td style="padding:8px 0;font-weight:600;text-align:right;border-bottom:1px solid #eee">${escapeHtml(nombre)} ${escapeHtml(apellido)}</td></tr>
+                ${dni ? `<tr><td style="padding:8px 0;color:#666;border-bottom:1px solid #eee">DNI</td><td style="padding:8px 0;font-weight:600;text-align:right;border-bottom:1px solid #eee">${escapeHtml(dni)}</td></tr>` : ''}
+                <tr><td style="padding:8px 0;color:#666;border-bottom:1px solid #eee">Telefono</td><td style="padding:8px 0;font-weight:600;text-align:right;border-bottom:1px solid #eee">${escapeHtml(telefono)}</td></tr>
+                <tr><td style="padding:8px 0;color:#666;border-bottom:1px solid #eee">Email</td><td style="padding:8px 0;font-weight:600;text-align:right;border-bottom:1px solid #eee">${escapeHtml(email)}</td></tr>
+                ${area ? `<tr><td style="padding:8px 0;color:#666;border-bottom:1px solid #eee">Area</td><td style="padding:8px 0;font-weight:600;text-align:right;border-bottom:1px solid #eee">${escapeHtml(area)}</td></tr>` : ''}
+                <tr><td style="padding:8px 0;color:#666;border-bottom:1px solid #eee">Fecha</td><td style="padding:8px 0;font-weight:600;text-align:right;border-bottom:1px solid #eee">${escapeHtml(dayName)} ${escapeHtml(fecha)}</td></tr>
+                <tr><td style="padding:8px 0;color:#666;border-bottom:1px solid #eee">Hora</td><td style="padding:8px 0;font-weight:600;text-align:right;border-bottom:1px solid #eee">${escapeHtml(hora)}hs</td></tr>
+                ${notas ? `<tr><td style="padding:8px 0;color:#666">Notas</td><td style="padding:8px 0;text-align:right">${escapeHtml(notas)}</td></tr>` : ''}
               </table>
               <p style="font-size:13px;color:#666;margin-top:16px">
                 Contacta al cliente para confirmar el turno.
@@ -122,9 +126,9 @@ export async function POST(
             <div style="padding:24px;background:#f9fafb;border-radius:12px">
               <p>Tu turno fue registrado correctamente.</p>
               <table style="width:100%;margin:16px 0;font-size:14px;border-collapse:collapse">
-                <tr><td style="padding:8px 0;color:#666;border-bottom:1px solid #eee">Profesional</td><td style="padding:8px 0;font-weight:600;text-align:right;border-bottom:1px solid #eee">${sub.businessName}</td></tr>
-                <tr><td style="padding:8px 0;color:#666;border-bottom:1px solid #eee">Fecha</td><td style="padding:8px 0;font-weight:600;text-align:right;border-bottom:1px solid #eee">${dayName} ${fecha}</td></tr>
-                <tr><td style="padding:8px 0;color:#666">Hora</td><td style="padding:8px 0;font-weight:600;text-align:right">${hora}hs</td></tr>
+                <tr><td style="padding:8px 0;color:#666;border-bottom:1px solid #eee">Profesional</td><td style="padding:8px 0;font-weight:600;text-align:right;border-bottom:1px solid #eee">${escapeHtml(sub.businessName)}</td></tr>
+                <tr><td style="padding:8px 0;color:#666;border-bottom:1px solid #eee">Fecha</td><td style="padding:8px 0;font-weight:600;text-align:right;border-bottom:1px solid #eee">${escapeHtml(dayName)} ${escapeHtml(fecha)}</td></tr>
+                <tr><td style="padding:8px 0;color:#666">Hora</td><td style="padding:8px 0;font-weight:600;text-align:right">${escapeHtml(hora)}hs</td></tr>
               </table>
               <p style="font-size:13px;color:#666;margin-top:16px">
                 El profesional te contactara para confirmar el turno.

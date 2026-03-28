@@ -1,5 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { timingSafeEqual } from 'crypto'
 import { prisma } from '@/lib/prisma'
+
+function safeCompare(a: string, b: string): boolean {
+  try {
+    const aBuf = Buffer.from(a)
+    const bBuf = Buffer.from(b)
+    if (aBuf.length !== bBuf.length) return false
+    return timingSafeEqual(aBuf, bBuf)
+  } catch {
+    return false
+  }
+}
 
 /**
  * GET /api/linkedin/verify?chatId=123456
@@ -18,7 +30,7 @@ const PLAN_LIMITS: Record<string, number> = {
 
 export async function GET(req: NextRequest) {
   const apiKey = req.nextUrl.searchParams.get('apiKey') ?? req.headers.get('x-api-key')
-  if (!apiKey || apiKey !== process.env.SCRAPER_API_KEY) {
+  if (!apiKey || !process.env.SCRAPER_API_KEY || !safeCompare(apiKey, process.env.SCRAPER_API_KEY)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
@@ -103,7 +115,7 @@ export async function GET(req: NextRequest) {
  */
 export async function POST(req: NextRequest) {
   const apiKey = req.nextUrl.searchParams.get('apiKey') ?? req.headers.get('x-api-key')
-  if (!apiKey || apiKey !== process.env.SCRAPER_API_KEY) {
+  if (!apiKey || !process.env.SCRAPER_API_KEY || !safeCompare(apiKey, process.env.SCRAPER_API_KEY)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

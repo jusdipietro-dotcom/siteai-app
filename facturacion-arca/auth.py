@@ -379,7 +379,7 @@ def portal_login():
         return jsonify({"error": "Token sin tenant"}), 400
 
     # Find user by email and tenant
-    user = User.query.filter_by(tenant_id=tenant_id).first()
+    user = User.query.filter_by(tenant_id=tenant_id, email=email).first() if email else User.query.filter_by(tenant_id=tenant_id).first()
     if not user:
         return jsonify({"error": "Usuario no encontrado en facturacion"}), 404
 

@@ -567,7 +567,7 @@ export async function POST(req: NextRequest) {
 
         if ((status === 'cancelled' || status === 'paused') && emSubId) {
           const { count: emCount } = await prisma.emailMarketingSubscription.updateMany({
-            where: { id: emSubId, status: { in: ['active', 'provisioning', 'pending_payment'] } },
+            where: { id: emSubId, status: { in: ['active', 'provisioning', 'pending_payment', 'awaiting_contacts'] } },
             data: { status: 'suspended' },
           })
           if (emCount === 0) {
@@ -1014,7 +1014,7 @@ export async function POST(req: NextRequest) {
 
         if ((status === 'cancelled' || status === 'paused') && suiteSubId) {
           const { count: sCount } = await prisma.suiteJuridicaSubscription.updateMany({
-            where: { id: suiteSubId, status: { in: ['active', 'provisioning', 'pending_payment'] } },
+            where: { id: suiteSubId, status: { in: ['active', 'provisioning', 'pending_payment', 'pending_config'] } },
             data: { status: 'suspended' },
           })
           if (sCount === 0) {
@@ -1029,7 +1029,7 @@ export async function POST(req: NextRequest) {
                 if (!id) return
                 try {
                   await prisma.$executeRawUnsafe(
-                    `UPDATE "${table}" SET status = 'suspended' WHERE id = $1 AND status IN ('active', 'provisioning')`,
+                    `UPDATE "${table}" SET status = 'suspended' WHERE id = $1 AND status IN ('active', 'provisioning', 'pending_config', 'pending_payment')`,
                     id
                   )
                 } catch (e) {
@@ -1771,74 +1771,77 @@ async function provisionSuiteJuridica(suiteSubId: string, suitePlan: string) {
 
     // Create 4 individual subscriptions — "pending_config" means user must
     // fill credentials/config before they are provisioned. Billing is via suite.
-    const [monitoring, facturacion, causas, turnos] = await Promise.all([
-      prisma.monitoringSubscription.create({
-        data: {
-          userId,
-          plan: limits.monitoringPlan,
-          status: 'pending_config',
-          portal: 'AMBOS',
-          cuil: '',
-          credentialUser: '',
-          credentialPass: '',
-          credentialIv: '',
-          credentialTag: '',
-          notificationEmail: email,
-          payerEmail: email,
-        },
-      }),
-      prisma.facturacionSubscription.create({
-        data: {
-          userId,
-          plan: limits.facturacionPlan,
-          status: 'pending_config',
-          cuit: '',
-          razonSocial: '',
-          puntoVenta: 0,
-          notificationEmail: email,
-          payerEmail: email,
-        },
-      }),
-      prisma.causasSubscription.create({
-        data: {
-          userId,
-          plan: limits.causasPlan,
-          status: 'pending_config',
-          mevUser: '',
-          mevPass: '',
-          mevIv: '',
-          mevTag: '',
-          dptoTipo: '',
-          dptoId: '',
-          scrapeFrequency: limits.causasPlan === 'estudio' ? '2h' : limits.causasPlan === 'profesional' ? '6h' : '24h',
-          notificationEmail: email,
-          payerEmail: email,
-        },
-      }),
-      prisma.turnosSubscription.create({
-        data: {
-          userId,
-          plan: limits.turnosPlan,
-          status: 'pending_config',
-          slug: `suite-${suiteSubId.slice(0, 8)}`,
-          businessName: '',
-          notificationEmail: email,
-          payerEmail: email,
-        },
-      }),
-    ])
+    // Wrapped in a transaction so all creates and the suite update are atomic.
+    await prisma.$transaction(async (tx) => {
+      const [monitoring, facturacion, causas, turnos] = await Promise.all([
+        tx.monitoringSubscription.create({
+          data: {
+            userId,
+            plan: limits.monitoringPlan,
+            status: 'pending_config',
+            portal: 'AMBOS',
+            cuil: '',
+            credentialUser: '',
+            credentialPass: '',
+            credentialIv: '',
+            credentialTag: '',
+            notificationEmail: email,
+            payerEmail: email,
+          },
+        }),
+        tx.facturacionSubscription.create({
+          data: {
+            userId,
+            plan: limits.facturacionPlan,
+            status: 'pending_config',
+            cuit: '',
+            razonSocial: '',
+            puntoVenta: 0,
+            notificationEmail: email,
+            payerEmail: email,
+          },
+        }),
+        tx.causasSubscription.create({
+          data: {
+            userId,
+            plan: limits.causasPlan,
+            status: 'pending_config',
+            mevUser: '',
+            mevPass: '',
+            mevIv: '',
+            mevTag: '',
+            dptoTipo: '',
+            dptoId: '',
+            scrapeFrequency: limits.causasPlan === 'estudio' ? '2h' : limits.causasPlan === 'profesional' ? '6h' : '24h',
+            notificationEmail: email,
+            payerEmail: email,
+          },
+        }),
+        tx.turnosSubscription.create({
+          data: {
+            userId,
+            plan: limits.turnosPlan,
+            status: 'pending_config',
+            slug: `suite-${suiteSubId.slice(0, 8)}`,
+            businessName: '',
+            notificationEmail: email,
+            payerEmail: email,
+          },
+        }),
+      ])
 
-    // Update suite with references to individual subs
-    await prisma.suiteJuridicaSubscription.update({
-      where: { id: suiteSubId },
-      data: {
-        status: 'active',
-        monitoringSubId: monitoring.id,
-        facturacionSubId: facturacion.id,
-        causasSubId: causas.id,
-        turnosSubId: turnos.id,
-        provisionedAt: new Date(),
-      },
+      // Update suite with references to individual subs
+      await tx.suiteJuridicaSubscription.update({
+        where: { id: suiteSubId },
+        data: {
+          status: 'active',
+          monitoringSubId: monitoring.id,
+          facturacionSubId: facturacion.id,
+          causasSubId: causas.id,
+          turnosSubId: turnos.id,
+          provisionedAt: new Date(),
+        },
+      })
     })
 
     console.log(`[Suite Provision] Suite ${suiteSubId} provisioned with 4 subs (${limits.monitoringPlan}/${limits.facturacionPlan}/${limits.causasPlan}/${limits.turnosPlan})`)

@@ -48,7 +48,7 @@ const testimonials = [
     role: 'Inmobiliaria · Email Marketing',
     avatar: 'CI',
     color: 'bg-pink-500',
-    text: 'Mando campanas de email a 3000 contactos sin pagar Mailchimp ni un dolar. El sistema anti-spam funciona perfecto, los mails llegan a inbox. Increible relacion costo-beneficio.',
+    text: 'Mando campañas de email a 3000 contactos sin pagar Mailchimp ni un dolar. El sistema anti-spam funciona perfecto, los mails llegan a inbox. Increible relacion costo-beneficio.',
     stars: 5,
   },
 ]

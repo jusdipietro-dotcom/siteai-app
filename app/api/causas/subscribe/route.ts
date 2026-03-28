@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
       const existing = await tx.causasSubscription.findFirst({
         where: {
           userId: session.user.id,
-          status: { in: ['active', 'provisioning'] },
+          status: { in: ['active', 'provisioning', 'pending_config'] },
         },
       })
       if (existing) {

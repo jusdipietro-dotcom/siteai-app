@@ -123,5 +123,4 @@ export const DEPARTAMENTOS_MEV: { id: string; nombre: string }[] = [
   { id: '20', nombre: 'Avellaneda-Lanús' },
   { id: '21', nombre: 'Florencio Varela' },
   { id: '22', nombre: 'Ituzaingó' },
-  { id: '23', nombre: 'Quilmes' },
 ]

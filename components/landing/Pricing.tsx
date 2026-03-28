@@ -17,7 +17,7 @@ const productPricing = [
   {
     icon: Scale,
     name: 'Monitoreo Judicial',
-    price: 'Desde $15.000',
+    price: 'Desde $19.000',
     period: '/mes',
     note: 'Por CUIT monitoreado',
     gradient: 'from-violet-500 to-purple-600',
@@ -89,7 +89,7 @@ const productPricing = [
   {
     icon: CalendarCheck,
     name: 'Turnos Online',
-    price: 'Desde $10.000',
+    price: 'Desde $12.000',
     period: '/mes',
     note: 'Setup incluido',
     gradient: 'from-teal-500 to-cyan-600',

@@ -74,6 +74,7 @@ function FaqItem({ q, a }: { q: string; a: string }) {
       <button
         type="button"
         onClick={() => setOpen(!open)}
+        aria-expanded={open ? 'true' : 'false'}
         className="w-full flex items-center justify-between gap-4 px-6 py-5 text-left hover:bg-surface-50 transition-colors"
       >
         <span className="font-semibold text-surface-900 text-sm sm:text-base">{q}</span>

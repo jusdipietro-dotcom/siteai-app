@@ -2,17 +2,17 @@ import Link from 'next/link'
 
 const links: Record<string, { label: string; href: string }[]> = {
   Productos: [
-    { label: 'Sitios Web con IA', href: '/#sitios-web' },
-    { label: 'Monitoreo Judicial', href: '/#monitoreo-judicial' },
-    { label: 'Prospeccion B2B', href: '/#prospeccion' },
-    { label: 'Captacion de Leads', href: '/#captacion-leads' },
-    { label: 'Resenas Google IA', href: '/#resenas-google' },
-    { label: 'LinkedIn Optimizer', href: '/#linkedin-optimizer' },
-    { label: 'Email Marketing', href: '/#email-marketing' },
-    { label: 'Senales Crypto', href: '/#senales-crypto' },
-    { label: 'Redes Sociales', href: '/#redes-sociales' },
-    { label: 'Turnos Online', href: '/#turnos-online' },
-    { label: 'Automatizaciones', href: '/#automatizaciones' },
+    { label: 'Sitios Web con IA', href: '/#productos' },
+    { label: 'Monitoreo Judicial', href: '/#productos' },
+    { label: 'Prospeccion B2B', href: '/#productos' },
+    { label: 'Captacion de Leads', href: '/#productos' },
+    { label: 'Resenas Google IA', href: '/#productos' },
+    { label: 'LinkedIn Optimizer', href: '/#productos' },
+    { label: 'Email Marketing', href: '/#productos' },
+    { label: 'Senales Crypto', href: '/#productos' },
+    { label: 'Redes Sociales', href: '/#productos' },
+    { label: 'Turnos Online', href: '/#productos' },
+    { label: 'Automatizaciones', href: '/#productos' },
   ],
   Recursos: [
     { label: 'Blog', href: '/blog' },

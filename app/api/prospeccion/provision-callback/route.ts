@@ -1,5 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { timingSafeEqual } from 'crypto'
 import { prisma } from '@/lib/prisma'
+
+function safeCompare(a: string, b: string): boolean {
+  try {
+    const aBuf = Buffer.from(a)
+    const bBuf = Buffer.from(b)
+    if (aBuf.length !== bBuf.length) return false
+    return timingSafeEqual(aBuf, bBuf)
+  } catch {
+    return false
+  }
+}
 
 /**
  * POST /api/prospeccion/provision-callback
@@ -14,13 +26,16 @@ export async function POST(req: NextRequest) {
     // Verify provision secret
     const provisionKey = req.headers.get('x-provision-key')
     const secret = process.env.PROSPECCION_PROVISION_SECRET
-    if (!secret || provisionKey !== secret) {
+    if (!secret || !provisionKey || !safeCompare(provisionKey, secret)) {
       console.error('[Prospeccion Callback] Invalid or missing provision key')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const body = await req.json()
     const { subscriptionId, n8nLeadWorkflowId, n8nIcebreakerWorkflowId, googleSheetUrl, status } = body
+
+    const validStatuses = ['active', 'error']
+    const finalStatus = validStatuses.includes(status) ? status : 'active'
 
     if (!subscriptionId) {
       return NextResponse.json({ error: 'Missing subscriptionId' }, { status: 400 })
@@ -32,7 +47,7 @@ export async function POST(req: NextRequest) {
     const { count } = await prisma.prospeccionSubscription.updateMany({
       where: { id: subscriptionId, status: 'provisioning' },
       data: {
-        status: status || 'active',
+        status: finalStatus,
         n8nLeadWorkflowId: n8nLeadWorkflowId || null,
         n8nIcebreakerWorkflowId: n8nIcebreakerWorkflowId || null,
         googleSheetId: googleSheetUrl || null,
