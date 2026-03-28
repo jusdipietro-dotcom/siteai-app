@@ -13,7 +13,22 @@ export async function GET() {
   const subscriptions = await prisma.emailMarketingSubscription.findMany({
     where: { userId: session.user.id },
     orderBy: { createdAt: 'desc' },
-    include: { coupon: { select: { code: true, discount: true } } },
+    select: {
+      id: true,
+      status: true,
+      plan: true,
+      businessName: true,
+      contactCount: true,
+      senderName: true,
+      senderEmail: true,
+      notificationEmail: true,
+      payerEmail: true,
+      discountApplied: true,
+      trialEndsAt: true,
+      provisionedAt: true,
+      createdAt: true,
+      coupon: { select: { code: true, discount: true } },
+    },
   })
 
   // Calcular uso actual sobre suscripciones activas

@@ -71,6 +71,9 @@ def login_required(f):
         if not user:
             return jsonify({"error": "Usuario no encontrado"}), 401
 
+        if user.tenant_id != payload["tenant_id"]:
+            return jsonify({"error": "Token invalido para este usuario"}), 401
+
         tenant = db.session.get(Tenant, payload["tenant_id"])
         if not tenant or not tenant.active:
             return jsonify({"error": "Cuenta desactivada"}), 403
@@ -290,6 +293,15 @@ def portal_provision():
         if not existing_tenant.active:
             existing_tenant.active = True
         existing_tenant.plan = plan
+        # Reset extra PVs if new plan doesn't support them
+        import json
+        plan_max_pvs = {"basico": 1, "profesional": 1, "estudio": 3}.get(plan, 1)
+        try:
+            extras = json.loads(existing_tenant.puntos_venta_extra or "[]")
+            if 1 + len(extras) > plan_max_pvs:
+                existing_tenant.puntos_venta_extra = "[]"
+        except (json.JSONDecodeError, TypeError):
+            existing_tenant.puntos_venta_extra = "[]"
         db.session.commit()
         logger.info("Portal: reactivated tenant CUIT %s (plan: %s)", cuit, plan)
 
@@ -366,6 +378,7 @@ def portal_login():
             portal_secret,
             algorithms=["HS256"],
             issuer="automaticialab-portal",
+            options={"require": ["exp"]},
         )
     except jwt.ExpiredSignatureError:
         return jsonify({"error": "Token expirado. Volve al portal y reintenta."}), 401

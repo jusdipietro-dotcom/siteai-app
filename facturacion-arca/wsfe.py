@@ -98,8 +98,19 @@ COND_IVA_MAP = {
     "responsable monotributo": COND_IVA_MONOTRIBUTO,
 }
 
-# Lock para serializar emisión de facturas (evitar race condition en número de comprobante)
-_cae_lock = threading.Lock()
+# Per-key locks para serializar emisión de facturas por (cuit, punto_venta, tipo_cbte)
+# Evita que dos requests del mismo tenant+PV+tipo colisionen en el número de comprobante
+# pero permite que tenants distintos o PVs distintos operen en paralelo.
+_cae_locks: dict[str, threading.Lock] = {}
+_cae_locks_meta = threading.Lock()
+
+
+def _get_cae_lock(cuit: int, punto_venta: int, tipo_cbte: int) -> threading.Lock:
+    key = f"{cuit}:{punto_venta}:{tipo_cbte}"
+    with _cae_locks_meta:
+        if key not in _cae_locks:
+            _cae_locks[key] = threading.Lock()
+        return _cae_locks[key]
 
 
 class WSFEClient:
@@ -147,9 +158,12 @@ class WSFEClient:
 
     def solicitar_cae(self, factura_data):
         """
-        Solicita CAE para una factura. Thread-safe via lock.
+        Solicita CAE para una factura. Thread-safe via per-key lock.
+        El lock es por (cuit, punto_venta, tipo_cbte) para serializar solo
+        las solicitudes que comparten la misma secuencia de numeración.
         """
-        with _cae_lock:
+        lock = _get_cae_lock(self.cuit, factura_data["punto_venta"], factura_data["tipo_cbte"])
+        with lock:
             return self._solicitar_cae_internal(factura_data)
 
     def _solicitar_cae_internal(self, factura_data):

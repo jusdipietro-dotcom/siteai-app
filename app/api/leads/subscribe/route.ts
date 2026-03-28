@@ -120,6 +120,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Código de cupón inválido' }, { status: 400 })
     }
 
+    // Check existing active subscription
+    const existing = await prisma.leadsSubscription.findFirst({
+      where: { userId: session.user.id, status: { in: ['active', 'provisioning', 'trial'] } },
+    })
+    if (existing) {
+      return NextResponse.json({ error: 'Ya tenes una suscripcion activa de Leads' }, { status: 409 })
+    }
+
     // Cancel stale pending_payment + create subscription atomically
     const subscription = await prisma.$transaction(async (tx) => {
       await tx.leadsSubscription.updateMany({

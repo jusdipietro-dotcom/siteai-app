@@ -88,9 +88,9 @@ export async function POST(req: NextRequest) {
         const replacesSubId = parts[3] || null // Optional: old subscription being replaced
 
         if (status === 'authorized' && subscriptionId) {
-          // Atomic idempotency: only update if still pending_payment
+          // Atomic idempotency: only update if still pending_payment or trial (trial-to-paid)
           const { count } = await prisma.monitoringSubscription.updateMany({
-            where: { id: subscriptionId, status: 'pending_payment' },
+            where: { id: subscriptionId, status: { in: ['pending_payment', 'trial'] } },
             data: { status: 'provisioning', preapprovalId },
           })
 
@@ -142,7 +142,7 @@ export async function POST(req: NextRequest) {
 
         if ((status === 'cancelled' || status === 'paused') && subscriptionId) {
           const { count } = await prisma.monitoringSubscription.updateMany({
-            where: { id: subscriptionId, status: { in: ['active', 'provisioning', 'pending_payment'] } },
+            where: { id: subscriptionId, status: { in: ['active', 'provisioning', 'pending_payment', 'trial'] } },
             data: { status: 'suspended' },
           })
           if (count === 0) {
@@ -184,9 +184,9 @@ export async function POST(req: NextRequest) {
         const reviewsPlan = parts[2]
 
         if (status === 'authorized' && reviewsSubId) {
-          // Atomic idempotency: only update if still pending_payment
+          // Atomic idempotency: only update if still pending_payment or trial (trial-to-paid)
           const { count } = await prisma.reviewsSubscription.updateMany({
-            where: { id: reviewsSubId, status: 'pending_payment' },
+            where: { id: reviewsSubId, status: { in: ['pending_payment', 'trial'] } },
             data: { status: 'provisioning', preapprovalId },
           })
 
@@ -230,7 +230,7 @@ export async function POST(req: NextRequest) {
 
         if ((status === 'cancelled' || status === 'paused') && reviewsSubId) {
           const { count: rCount } = await prisma.reviewsSubscription.updateMany({
-            where: { id: reviewsSubId, status: { in: ['active', 'provisioning', 'pending_payment'] } },
+            where: { id: reviewsSubId, status: { in: ['active', 'provisioning', 'pending_payment', 'trial'] } },
             data: { status: 'suspended' },
           })
           if (rCount === 0) {
@@ -271,9 +271,9 @@ export async function POST(req: NextRequest) {
         const linkedinPlan = parts[2]
 
         if (status === 'authorized' && linkedinSubId) {
-          // Atomic idempotency: only update if still pending_payment
+          // Atomic idempotency: only update if still pending_payment or trial (trial-to-paid)
           const { count } = await prisma.linkedInSubscription.updateMany({
-            where: { id: linkedinSubId, status: 'pending_payment' },
+            where: { id: linkedinSubId, status: { in: ['pending_payment', 'trial'] } },
             data: { status: 'active', preapprovalId, provisionedAt: new Date() },
           })
 
@@ -314,7 +314,7 @@ export async function POST(req: NextRequest) {
 
         if ((status === 'cancelled' || status === 'paused') && linkedinSubId) {
           const { count: lCount } = await prisma.linkedInSubscription.updateMany({
-            where: { id: linkedinSubId, status: { in: ['active', 'provisioning', 'pending_payment'] } },
+            where: { id: linkedinSubId, status: { in: ['active', 'provisioning', 'pending_payment', 'trial'] } },
             data: { status: 'suspended' },
           })
           if (lCount === 0) {
@@ -352,9 +352,9 @@ export async function POST(req: NextRequest) {
         const tradingPlan = parts[2]
 
         if (status === 'authorized' && tradingSubId) {
-          // Atomic idempotency: only update if still pending_payment
+          // Atomic idempotency: only update if still pending_payment or trial (trial-to-paid)
           const { count } = await prisma.tradingSubscription.updateMany({
-            where: { id: tradingSubId, status: 'pending_payment' },
+            where: { id: tradingSubId, status: { in: ['pending_payment', 'trial'] } },
             data: { status: 'provisioning', preapprovalId },
           })
 
@@ -395,7 +395,7 @@ export async function POST(req: NextRequest) {
 
         if ((status === 'cancelled' || status === 'paused') && tradingSubId) {
           const { count: tCount } = await prisma.tradingSubscription.updateMany({
-            where: { id: tradingSubId, status: { in: ['active', 'provisioning', 'pending_payment'] } },
+            where: { id: tradingSubId, status: { in: ['active', 'provisioning', 'pending_payment', 'trial'] } },
             data: { status: 'suspended' },
           })
           if (tCount === 0) {
@@ -434,7 +434,7 @@ export async function POST(req: NextRequest) {
 
         if (status === 'authorized' && leadsSubId) {
           const { count } = await prisma.leadsSubscription.updateMany({
-            where: { id: leadsSubId, status: 'pending_payment' },
+            where: { id: leadsSubId, status: { in: ['pending_payment', 'trial'] } },
             data: { status: 'provisioning', preapprovalId },
           })
 
@@ -476,7 +476,7 @@ export async function POST(req: NextRequest) {
 
         if ((status === 'cancelled' || status === 'paused') && leadsSubId) {
           const { count: ldCount } = await prisma.leadsSubscription.updateMany({
-            where: { id: leadsSubId, status: { in: ['active', 'provisioning', 'pending_payment'] } },
+            where: { id: leadsSubId, status: { in: ['active', 'provisioning', 'pending_payment', 'trial'] } },
             data: { status: 'suspended' },
           })
           if (ldCount === 0) {
@@ -523,7 +523,7 @@ export async function POST(req: NextRequest) {
         if (status === 'authorized' && emSubId) {
           // Atomic update: payment confirmed → awaiting_contacts (user must upload CSV)
           const { count } = await prisma.emailMarketingSubscription.updateMany({
-            where: { id: emSubId, status: 'pending_payment' },
+            where: { id: emSubId, status: { in: ['pending_payment', 'trial'] } },
             data: { status: 'awaiting_contacts', preapprovalId },
           })
 
@@ -567,7 +567,7 @@ export async function POST(req: NextRequest) {
 
         if ((status === 'cancelled' || status === 'paused') && emSubId) {
           const { count: emCount } = await prisma.emailMarketingSubscription.updateMany({
-            where: { id: emSubId, status: { in: ['active', 'provisioning', 'pending_payment', 'awaiting_contacts'] } },
+            where: { id: emSubId, status: { in: ['active', 'provisioning', 'pending_payment', 'awaiting_contacts', 'trial'] } },
             data: { status: 'suspended' },
           })
           if (emCount === 0) {
@@ -615,9 +615,9 @@ export async function POST(req: NextRequest) {
         }
 
         if (status === 'authorized' && prospSubId) {
-          // Atomic idempotency: only update if still pending_payment
+          // Atomic idempotency: only update if still pending_payment or trial (trial-to-paid)
           const { count } = await prisma.prospeccionSubscription.updateMany({
-            where: { id: prospSubId, status: 'pending_payment' },
+            where: { id: prospSubId, status: { in: ['pending_payment', 'trial'] } },
             data: { status: 'provisioning', preapprovalId },
           })
 
@@ -662,7 +662,7 @@ export async function POST(req: NextRequest) {
 
         if ((status === 'cancelled' || status === 'paused') && prospSubId) {
           const { count: pCount } = await prisma.prospeccionSubscription.updateMany({
-            where: { id: prospSubId, status: { in: ['active', 'provisioning', 'pending_payment'] } },
+            where: { id: prospSubId, status: { in: ['active', 'provisioning', 'pending_payment', 'trial'] } },
             data: { status: 'suspended' },
           })
           if (pCount === 0) {
@@ -704,7 +704,7 @@ export async function POST(req: NextRequest) {
 
         if (status === 'authorized' && turnosSubId) {
           const { count } = await prisma.turnosSubscription.updateMany({
-            where: { id: turnosSubId, status: 'pending_payment' },
+            where: { id: turnosSubId, status: { in: ['pending_payment', 'trial'] } },
             data: { status: 'provisioning', preapprovalId },
           })
 
@@ -747,7 +747,7 @@ export async function POST(req: NextRequest) {
 
         if ((status === 'cancelled' || status === 'paused') && turnosSubId) {
           const { count: tCount } = await prisma.turnosSubscription.updateMany({
-            where: { id: turnosSubId, status: { in: ['active', 'provisioning', 'pending_payment'] } },
+            where: { id: turnosSubId, status: { in: ['active', 'provisioning', 'pending_payment', 'trial'] } },
             data: { status: 'suspended' },
           })
           if (tCount > 0) {
@@ -796,7 +796,7 @@ export async function POST(req: NextRequest) {
 
         if (status === 'authorized' && causasSubId) {
           const { count } = await prisma.causasSubscription.updateMany({
-            where: { id: causasSubId, status: 'pending_payment' },
+            where: { id: causasSubId, status: { in: ['pending_payment', 'trial'] } },
             data: { status: 'provisioning', preapprovalId },
           })
 
@@ -840,7 +840,7 @@ export async function POST(req: NextRequest) {
 
         if ((status === 'cancelled' || status === 'paused') && causasSubId) {
           const { count: cCount } = await prisma.causasSubscription.updateMany({
-            where: { id: causasSubId, status: { in: ['active', 'provisioning', 'pending_payment'] } },
+            where: { id: causasSubId, status: { in: ['active', 'provisioning', 'pending_payment', 'trial'] } },
             data: { status: 'suspended' },
           })
           if (cCount === 0) {
@@ -927,7 +927,7 @@ export async function POST(req: NextRequest) {
 
         if ((status === 'cancelled' || status === 'paused') && factSubId) {
           const { count: fCount } = await prisma.facturacionSubscription.updateMany({
-            where: { id: factSubId, status: { in: ['active', 'provisioning', 'pending_payment'] } },
+            where: { id: factSubId, status: { in: ['active', 'provisioning', 'pending_payment', 'trial'] } },
             data: { status: 'suspended' },
           })
           if (fCount === 0) {
@@ -968,9 +968,9 @@ export async function POST(req: NextRequest) {
         const suitePlan = parts[2]
 
         if (status === 'authorized' && suiteSubId) {
-          // Atomic idempotency
+          // Atomic idempotency: only update if still pending_payment or trial (trial-to-paid)
           const { count } = await prisma.suiteJuridicaSubscription.updateMany({
-            where: { id: suiteSubId, status: 'pending_payment' },
+            where: { id: suiteSubId, status: { in: ['pending_payment', 'trial'] } },
             data: { status: 'provisioning', preapprovalId },
           })
 
@@ -1014,7 +1014,7 @@ export async function POST(req: NextRequest) {
 
         if ((status === 'cancelled' || status === 'paused') && suiteSubId) {
           const { count: sCount } = await prisma.suiteJuridicaSubscription.updateMany({
-            where: { id: suiteSubId, status: { in: ['active', 'provisioning', 'pending_payment', 'pending_config'] } },
+            where: { id: suiteSubId, status: { in: ['active', 'provisioning', 'pending_payment', 'pending_config', 'trial'] } },
             data: { status: 'suspended' },
           })
           if (sCount === 0) {

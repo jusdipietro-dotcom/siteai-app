@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 
 const ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN!
 
 export async function GET(req: NextRequest) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+  }
+
   const preapprovalId = req.nextUrl.searchParams.get('preapproval_id')
   const paymentId = req.nextUrl.searchParams.get('payment_id')
   const status = req.nextUrl.searchParams.get('status')

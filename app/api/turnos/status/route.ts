@@ -12,8 +12,27 @@ export async function GET() {
 
     const subscriptions = await prisma.turnosSubscription.findMany({
       where: { userId: session.user.id },
-      include: { coupon: { select: { code: true, discount: true } } },
       orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        status: true,
+        plan: true,
+        slug: true,
+        businessName: true,
+        businessType: true,
+        colorPrimary: true,
+        colorAccent: true,
+        slotDuration: true,
+        phone: true,
+        address: true,
+        notificationEmail: true,
+        payerEmail: true,
+        discountApplied: true,
+        trialEndsAt: true,
+        provisionedAt: true,
+        createdAt: true,
+        coupon: { select: { code: true, discount: true } },
+      },
     })
 
     return NextResponse.json({ subscriptions })

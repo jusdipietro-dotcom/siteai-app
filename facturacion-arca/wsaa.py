@@ -90,7 +90,7 @@ def _sign_tra(tra_xml, cert_path, key_path):
             text=True,
         )
         if result.returncode != 0:
-            raise RuntimeError("Error al firmar el TRA con OpenSSL")
+            raise RuntimeError(f"Error al firmar el TRA con OpenSSL: {result.stderr.strip()}")
 
         with open(cms_file.name, "r") as f:
             cms_content = f.read()

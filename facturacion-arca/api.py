@@ -300,14 +300,41 @@ def ultimo_comprobante():
 @api_bp.route("/consultar/<int:nro>", methods=["GET"])
 @login_required
 def consultar_factura(nro):
-    """Consulta una factura emitida."""
+    """Consulta una factura emitida.
+
+    Query params:
+      tipo        - A, B, C, NC_A, NC_B, ND_A, ND_B  (default: B)
+      punto_venta - número de PV habilitado del tenant  (default: PV principal)
+    """
     tipo_str = request.args.get("tipo", "B").upper()
-    tipo_map = {"A": TIPO_FACTURA_A, "B": TIPO_FACTURA_B}
-    tipo_cbte = tipo_map.get(tipo_str, TIPO_FACTURA_B)
+    tipo_map = {
+        "A": TIPO_FACTURA_A,
+        "B": TIPO_FACTURA_B,
+        "C": TIPO_FACTURA_C,
+        "NC_A": TIPO_NOTA_CREDITO_A,
+        "NC_B": TIPO_NOTA_CREDITO_B,
+        "ND_A": TIPO_NOTA_DEBITO_A,
+        "ND_B": TIPO_NOTA_DEBITO_B,
+    }
+    tipo_cbte = tipo_map.get(tipo_str)
+    if tipo_cbte is None:
+        return jsonify({"error": f"Tipo '{tipo_str}' no valido. Usar: A, B, C, NC_A, NC_B, ND_A, ND_B"}), 400
+
+    # Allow querying a specific PV (same pattern as ultimo-comprobante)
+    pv_param = request.args.get("punto_venta")
+    if pv_param:
+        try:
+            pv = int(pv_param)
+        except (ValueError, TypeError):
+            return jsonify({"error": "punto_venta invalido"}), 400
+        if pv not in g.tenant.all_puntos_venta:
+            return jsonify({"error": f"Punto de venta {pv} no habilitado"}), 403
+    else:
+        pv = g.tenant.punto_venta
 
     try:
         client = get_wsfe_client()
-        resultado = client.consultar_comprobante(g.tenant.punto_venta, tipo_cbte, nro)
+        resultado = client.consultar_comprobante(pv, tipo_cbte, nro)
         return jsonify(resultado)
     except RuntimeError as e:
         return jsonify({"error": str(e)}), 400

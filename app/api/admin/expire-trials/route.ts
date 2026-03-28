@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { requireAdmin } from '@/lib/admin'
 
 /**
  * POST: Expire all trials that have passed their trialEndsAt date.
@@ -7,6 +8,9 @@ import { prisma } from '@/lib/prisma'
  * Also accessible via the Dockerfile CMD as a periodic task.
  */
 export async function POST() {
+  const session = await requireAdmin()
+  if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 403 })
+
   const now = new Date()
   const models = [
     'MonitoringSubscription',
@@ -47,5 +51,8 @@ export async function POST() {
 
 // Also allow GET for easy cron/health check
 export async function GET() {
+  const session = await requireAdmin()
+  if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 403 })
+
   return POST()
 }

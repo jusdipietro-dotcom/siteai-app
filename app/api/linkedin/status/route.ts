@@ -13,7 +13,23 @@ export async function GET() {
     const subscriptions = await prisma.linkedInSubscription.findMany({
       where: { userId: session.user.id },
       orderBy: { createdAt: 'desc' },
-      include: { coupon: { select: { code: true, discount: true } } },
+      select: {
+        id: true,
+        status: true,
+        plan: true,
+        linkedinName: true,
+        industry: true,
+        audience: true,
+        telegramChatId: true,
+        postsGenerated: true,
+        postsPublished: true,
+        payerEmail: true,
+        discountApplied: true,
+        trialEndsAt: true,
+        provisionedAt: true,
+        createdAt: true,
+        coupon: { select: { code: true, discount: true } },
+      },
     })
 
     return NextResponse.json({ subscriptions })
