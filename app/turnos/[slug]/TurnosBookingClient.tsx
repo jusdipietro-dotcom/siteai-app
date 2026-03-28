@@ -45,6 +45,7 @@ export default function TurnosBookingClient({ config }: { config: Config }) {
   const [notas, setNotas] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const [pendingConfirmation, setPendingConfirmation] = useState(false)
 
   // Fetch slots when date selected
   useEffect(() => {
@@ -75,6 +76,7 @@ export default function TurnosBookingClient({ config }: { config: Config }) {
       })
       const data = await res.json()
       if (res.ok) {
+        setPendingConfirmation(!!data.pendingConfirmation)
         setView('success')
       } else {
         setError(data.error || 'Error al reservar. Intenta de nuevo.')
@@ -142,18 +144,24 @@ export default function TurnosBookingClient({ config }: { config: Config }) {
             <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center" style={{ backgroundColor: config.colorAccent + '20' }}>
               <Check className="w-8 h-8" style={{ color: config.colorAccent }} />
             </div>
-            <h2 className="text-xl font-bold text-gray-900 mb-2">Turno reservado</h2>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">
+              {pendingConfirmation ? 'Turno registrado' : 'Turno reservado'}
+            </h2>
             <p className="text-gray-500 text-sm mb-1">
               {selectedDateDisplay} a las {selectedSlot}hs
             </p>
             <p className="text-gray-500 text-sm mb-6">
-              Vas a recibir un email de confirmacion a {email}.
+              {pendingConfirmation
+                ? 'El profesional te contactara para confirmar el turno.'
+                : `Vas a recibir un email de confirmacion a ${email}.`
+              }
             </p>
             <button
               onClick={() => {
                 setView('calendar')
                 setSelectedDate(null)
                 setSelectedSlot(null)
+                setPendingConfirmation(false)
                 setNombre(''); setApellido(''); setDni(''); setTelefono(''); setEmail(''); setNotas('')
               }}
               className="text-sm font-medium px-6 py-2.5 rounded-xl text-white"
