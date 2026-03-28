@@ -56,7 +56,7 @@ export async function sendPasswordResetEmail(to: string, resetUrl: string) {
 export async function sendPaymentConfirmationEmail(
   to: string,
   details: {
-    type: 'monitoring' | 'project' | 'reviews' | 'linkedin' | 'trading' | 'leads' | 'email-marketing'
+    type: 'monitoring' | 'project' | 'reviews' | 'linkedin' | 'trading' | 'leads' | 'email-marketing' | 'prospeccion' | 'facturacion' | 'causas' | 'turnos'
     plan: string
     amount?: string
   }
@@ -69,6 +69,10 @@ export async function sendPaymentConfirmationEmail(
     trading: 'Señales Crypto IA',
     leads: 'Captación de Leads IA',
     'email-marketing': 'Email Marketing Automatizado',
+    prospeccion: 'Prospección IA',
+    facturacion: 'Facturación Electrónica ARCA',
+    causas: 'Dashboard Causas MEV',
+    turnos: 'Turnos Online',
   }
   const dashboardUrls: Record<string, string> = {
     monitoring: `${APP_URL}/monitoreo`,
@@ -77,6 +81,10 @@ export async function sendPaymentConfirmationEmail(
     linkedin: `${APP_URL}/linkedin`,
     trading: `${APP_URL}/crypto`,
     leads: `${APP_URL}/leads`,
+    prospeccion: `${APP_URL}/prospeccion`,
+    facturacion: `${APP_URL}/facturacion`,
+    causas: `${APP_URL}/causas`,
+    turnos: `${APP_URL}/turnos`,
     'email-marketing': `${APP_URL}/email-marketing`,
   }
   const productName = productNames[details.type] ?? 'Servicio'
@@ -118,7 +126,7 @@ export async function sendPaymentConfirmationEmail(
 
 export async function sendSubscriptionCancelledEmail(
   to: string,
-  details: { type: 'monitoring' | 'project' | 'reviews' | 'linkedin' | 'trading' | 'leads' | 'email-marketing'; plan: string }
+  details: { type: 'monitoring' | 'project' | 'reviews' | 'linkedin' | 'trading' | 'leads' | 'email-marketing' | 'prospeccion' | 'facturacion' | 'causas' | 'turnos'; plan: string }
 ) {
   const productNames: Record<string, string> = {
     monitoring: 'Monitoreo Judicial',
@@ -128,6 +136,10 @@ export async function sendSubscriptionCancelledEmail(
     trading: 'Señales Crypto IA',
     leads: 'Captación de Leads IA',
     'email-marketing': 'Email Marketing Automatizado',
+    prospeccion: 'Prospección IA',
+    facturacion: 'Facturación Electrónica ARCA',
+    causas: 'Dashboard Causas MEV',
+    turnos: 'Turnos Online',
   }
   const productName = productNames[details.type] ?? 'Servicio'
 

@@ -19,16 +19,20 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  projects              Project[]
-  media                 Media[]
-  monitoringSubscriptions MonitoringSubscription[]
-  reviewsSubscriptions  ReviewsSubscription[]
-  linkedinSubscriptions LinkedInSubscription[]
-  tradingSubscriptions  TradingSubscription[]
-  leadsSubscriptions    LeadsSubscription[]
+  projects                    Project[]
+  media                       Media[]
+  monitoringSubscriptions     MonitoringSubscription[]
+  reviewsSubscriptions        ReviewsSubscription[]
+  linkedinSubscriptions       LinkedInSubscription[]
+  tradingSubscriptions        TradingSubscription[]
+  leadsSubscriptions          LeadsSubscription[]
   emailMarketingSubscriptions EmailMarketingSubscription[]
-  prospeccionSubscriptions ProspeccionSubscription[]
-  passwordResetTokens   PasswordResetToken[]
+  prospeccionSubscriptions    ProspeccionSubscription[]
+  facturacionSubscriptions    FacturacionSubscription[]
+  causasSubscriptions         CausasSubscription[]
+  turnosSubscriptions         TurnosSubscription[]
+  suiteJuridicaSubscriptions  SuiteJuridicaSubscription[]
+  passwordResetTokens         PasswordResetToken[]
 }
 
 model PasswordResetToken {
@@ -62,166 +66,182 @@ model Media {
 }
 
 model MonitoringSubscription {
-  id              String   @id @default(cuid())
-  userId          String
-  status          String   @default("pending_payment") // pending_payment, active, provisioning, suspended, cancelled
-  plan            String   // basico, profesional, estudio
-  portal          String   // PJN, SCBA, AMBOS
-  cuil            String
-  credentialUser  String   // encrypted portal username
-  credentialPass  String   // encrypted portal password
-  credentialIv    String   // AES-GCM IV (hex)
-  credentialTag   String   // AES-GCM auth tag (hex)
+  id                String    @id @default(cuid())
+  userId            String
+  status            String    @default("pending_payment") // pending_payment, active, provisioning, suspended, cancelled
+  plan              String // basico, profesional, estudio
+  portal            String // PJN, SCBA, AMBOS
+  cuil              String
+  credentialUser    String // encrypted portal username
+  credentialPass    String // encrypted portal password
+  credentialIv      String // AES-GCM IV (hex)
+  credentialTag     String // AES-GCM auth tag (hex)
   notificationEmail String // email donde se envían las alertas judiciales
-  payerEmail      String   // email de facturación (puede ser distinto)
-  preapprovalId   String?
-  couponId        String?
-  discountApplied Int      @default(0) // percentage discount applied
-  provisionedAt   DateTime?
-  n8nTenantId     String?  // tenant ID in n8n workflows once provisioned
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  payerEmail        String // email de facturación (puede ser distinto)
+  preapprovalId     String?
+  couponId          String?
+  discountApplied   Int       @default(0) // percentage discount applied
+  provisionedAt     DateTime?
+  n8nTenantId       String? // tenant ID in n8n workflows once provisioned
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   coupon Coupon? @relation(fields: [couponId], references: [id])
+
+  @@index([userId, status])
+  @@index([userId, cuil])
+  @@index([preapprovalId])
 }
 
 model Coupon {
-  id            String   @id @default(cuid())
-  code          String   @unique
-  discount      Int      // percentage 1-100
-  maxUses       Int      @default(1)
-  usedCount     Int      @default(0)
-  validFrom     DateTime @default(now())
-  validUntil    DateTime
-  createdBy     String   // admin user ID
-  active        Boolean  @default(true)
-  createdAt     DateTime @default(now())
+  id         String   @id @default(cuid())
+  code       String   @unique
+  discount   Int // percentage 1-100
+  maxUses    Int      @default(1)
+  usedCount  Int      @default(0)
+  validFrom  DateTime @default(now())
+  validUntil DateTime
+  createdBy  String // admin user ID
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
 
-  subscriptions         MonitoringSubscription[]
-  reviewsSubscriptions  ReviewsSubscription[]
-  linkedinSubscriptions LinkedInSubscription[]
-  tradingSubscriptions  TradingSubscription[]
-  leadsSubscriptions    LeadsSubscription[]
+  subscriptions               MonitoringSubscription[]
+  reviewsSubscriptions        ReviewsSubscription[]
+  linkedinSubscriptions       LinkedInSubscription[]
+  tradingSubscriptions        TradingSubscription[]
+  leadsSubscriptions          LeadsSubscription[]
   emailMarketingSubscriptions EmailMarketingSubscription[]
-  prospeccionSubscriptions ProspeccionSubscription[]
+  prospeccionSubscriptions    ProspeccionSubscription[]
+  facturacionSubscriptions    FacturacionSubscription[]
+  causasSubscriptions         CausasSubscription[]
+  turnosSubscriptions         TurnosSubscription[]
+  suiteJuridicaSubscriptions  SuiteJuridicaSubscription[]
 }
 
 model TradingSubscription {
-  id              String   @id @default(cuid())
-  userId          String
-  status          String   @default("pending_payment") // pending_payment, active, provisioning, suspended, cancelled
-  plan            String   // basico, profesional, premium
-  symbols         String   @default("BTC/USDT,ETH/USDT,SOL/USDT,BNB/USDT,XRP/USDT") // pares monitoreados
-  timeframe       String   @default("1h") // 1h, 4h, 15m
-  telegramChatId  String?  // chatId de Telegram del usuario
+  id                String    @id @default(cuid())
+  userId            String
+  status            String    @default("pending_payment") // pending_payment, active, provisioning, suspended, cancelled
+  plan              String // basico, profesional, premium
+  symbols           String    @default("BTC/USDT,ETH/USDT,SOL/USDT,BNB/USDT,XRP/USDT") // pares monitoreados
+  timeframe         String    @default("1h") // 1h, 4h, 15m
+  telegramChatId    String? // chatId de Telegram del usuario
   notificationEmail String
-  payerEmail      String
-  signalsSent     Int      @default(0)
-  preapprovalId   String?
-  couponId        String?
-  discountApplied Int      @default(0)
-  provisionedAt   DateTime?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  payerEmail        String
+  signalsSent       Int       @default(0)
+  preapprovalId     String?
+  couponId          String?
+  discountApplied   Int       @default(0)
+  provisionedAt     DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   coupon Coupon? @relation(fields: [couponId], references: [id])
+
+  @@index([userId, status])
 }
 
 model ReviewsSubscription {
-  id              String   @id @default(cuid())
-  userId          String
-  status          String   @default("pending_payment") // pending_payment, active, provisioning, suspended, cancelled
-  plan            String   // basico, profesional, premium
-  businessName    String
-  businessType    String
-  searchUrl       String   // URL de busqueda Google para el negocio
-  googleEmail     String   // cuenta Google del negocio
-  responseTone    String   @default("profesional") // profesional, cercano, formal
+  id                String    @id @default(cuid())
+  userId            String
+  status            String    @default("pending_payment") // pending_payment, active, provisioning, suspended, cancelled
+  plan              String // basico, profesional, premium
+  businessName      String
+  businessType      String
+  searchUrl         String // URL de busqueda Google para el negocio
+  googleEmail       String // cuenta Google del negocio
+  responseTone      String    @default("profesional") // profesional, cercano, formal
   notificationEmail String
-  payerEmail      String
-  preapprovalId   String?
-  couponId        String?
-  discountApplied Int      @default(0)
-  provisionedAt   DateTime?
-  n8nTenantId     String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  payerEmail        String
+  preapprovalId     String?
+  couponId          String?
+  discountApplied   Int       @default(0)
+  provisionedAt     DateTime?
+  n8nTenantId       String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   coupon Coupon? @relation(fields: [couponId], references: [id])
+
+  @@index([userId, status])
 }
 
 model LinkedInSubscription {
-  id              String   @id @default(cuid())
-  userId          String
-  status          String   @default("pending_payment") // pending_payment, active, suspended, cancelled
-  plan            String   // basico, profesional, agencia
-  linkedinName    String?  // nombre del perfil conectado
-  linkedinHeadline String? // headline actual
-  industry        String   // industria/nicho
-  audience        String   // publico objetivo
+  id                String    @id @default(cuid())
+  userId            String
+  status            String    @default("pending_payment") // pending_payment, active, suspended, cancelled
+  plan              String // basico, profesional, agencia
+  linkedinName      String? // nombre del perfil conectado
+  linkedinHeadline  String? // headline actual
+  industry          String // industria/nicho
+  audience          String // publico objetivo
   notificationEmail String
-  payerEmail      String
-  telegramChatId  String?  // chatId de Telegram vinculado
-  postsGenerated  Int      @default(0)
-  postsPublished  Int      @default(0)
-  preapprovalId   String?
-  couponId        String?
-  discountApplied Int      @default(0)
-  provisionedAt   DateTime?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  payerEmail        String
+  telegramChatId    String? // chatId de Telegram vinculado
+  postsGenerated    Int       @default(0)
+  postsPublished    Int       @default(0)
+  preapprovalId     String?
+  couponId          String?
+  discountApplied   Int       @default(0)
+  provisionedAt     DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   coupon Coupon? @relation(fields: [couponId], references: [id])
+
+  @@index([userId, status])
 }
 
 model LeadsSubscription {
-  id              String   @id @default(cuid())
-  userId          String
-  status          String   @default("pending_payment")
-  plan            String
-  googleSheetUrl  String?
-  nichesList      String   @default("[]")
-  citiesList      String   @default("[]")
-  captureFrequency String  @default("5min")
-  leadsGenerated  Int      @default(0)
+  id                String    @id @default(cuid())
+  userId            String
+  status            String    @default("pending_payment")
+  plan              String
+  googleSheetUrl    String?
+  nichesList        String    @default("[]")
+  citiesList        String    @default("[]")
+  captureFrequency  String    @default("5min")
+  leadsGenerated    Int       @default(0)
   notificationEmail String
-  payerEmail      String
-  preapprovalId   String?
-  couponId        String?
-  discountApplied Int      @default(0)
-  provisionedAt   DateTime?
-  n8nWorkflowId   String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  payerEmail        String
+  preapprovalId     String?
+  couponId          String?
+  discountApplied   Int       @default(0)
+  provisionedAt     DateTime?
+  n8nWorkflowId     String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   coupon Coupon? @relation(fields: [couponId], references: [id])
+
+  @@index([userId, status])
 }
 
 model EmailMarketingSubscription {
-  id              String   @id @default(cuid())
-  userId          String
-  status          String   @default("pending_payment") // pending_payment, active, provisioning, suspended, cancelled
-  plan            String   // basico, profesional, premium
-  businessName    String   // nombre del negocio/marca
-  contactCount    Int      @default(0) // cantidad de contactos en la base
-  senderName      String   // nombre del remitente en los emails
-  senderEmail     String   // email desde donde se envía (Gmail/Workspace)
-  notificationEmail String // email donde recibe reportes
-  payerEmail      String
-  preapprovalId   String?
-  couponId        String?
-  discountApplied Int      @default(0)
-  provisionedAt   DateTime?
-  n8nWorkflowId     String?  // ID del workflow en n8n una vez provisionado
-  googleSheetId     String?  // ID de la Google Sheet con contactos del cliente
+  id                 String    @id @default(cuid())
+  userId             String
+  status             String    @default("pending_payment") // pending_payment, active, provisioning, suspended, cancelled
+  plan               String // basico, profesional, premium
+  businessName       String // nombre del negocio/marca
+  contactCount       Int       @default(0) // cantidad de contactos en la base
+  senderName         String // nombre del remitente en los emails
+  senderEmail        String // email desde donde se envía (Gmail/Workspace)
+  notificationEmail  String // email donde recibe reportes
+  payerEmail         String
+  preapprovalId      String?
+  couponId           String?
+  discountApplied    Int       @default(0)
+  provisionedAt      DateTime?
+  n8nWorkflowId      String? // ID del workflow en n8n una vez provisionado
+  googleSheetId      String? // ID de la Google Sheet con contactos del cliente
   contactsUploadedAt DateTime? // Cuando se subieron los contactos
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
   user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   coupon Coupon? @relation(fields: [couponId], references: [id])
@@ -231,34 +251,186 @@ model EmailMarketingSubscription {
 }
 
 model ProspeccionSubscription {
-  id              String   @id @default(cuid())
-  userId          String
-  status          String   @default("pending_payment")
-  plan            String   // starter, profesional, enterprise
-  businessName    String
-  senderName      String
-  senderEmail     String
-  website         String
-  nichesList      String   @default("[]")
-  citiesList      String   @default("[]")
-  serviciosDesc   String   @default("")
-  colorPrimario   String   @default("#2563eb")
-  notificationEmail String
-  payerEmail      String
-  preapprovalId   String?
-  couponId        String?
-  discountApplied Int      @default(0)
-  provisionedAt   DateTime?
-  n8nLeadWorkflowId    String?
+  id                      String    @id @default(cuid())
+  userId                  String
+  status                  String    @default("pending_payment")
+  plan                    String // starter, profesional, enterprise
+  businessName            String
+  senderName              String
+  senderEmail             String
+  website                 String
+  nichesList              String    @default("[]")
+  citiesList              String    @default("[]")
+  serviciosDesc           String    @default("")
+  colorPrimario           String    @default("#2563eb")
+  notificationEmail       String
+  payerEmail              String
+  preapprovalId           String?
+  couponId                String?
+  discountApplied         Int       @default(0)
+  provisionedAt           DateTime?
+  n8nLeadWorkflowId       String?
   n8nIcebreakerWorkflowId String?
-  googleSheetId   String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  googleSheetId           String?
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
 
   user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   coupon Coupon? @relation(fields: [couponId], references: [id])
 
   @@index([userId, status])
+}
+
+model FacturacionSubscription {
+  id                String    @id @default(cuid())
+  userId            String
+  status            String    @default("pending_payment") // pending_payment, active, provisioning, suspended, cancelled
+  plan              String // basico, profesional, estudio
+  cuit              String // CUIT of the law firm (11 digits)
+  razonSocial       String // Business/firm name
+  puntoVenta        Int // ARCA punto de venta number
+  condicionIva      String    @default("Responsable Inscripto") // IVA condition
+  notificationEmail String // email for invoicing alerts
+  payerEmail        String // billing email (may differ)
+  flaskTenantId     Int? // Tenant ID in Flask backend once provisioned
+  flaskUserEmail    String? // Email registered in Flask backend
+  preapprovalId     String?
+  couponId          String?
+  discountApplied   Int       @default(0) // percentage discount applied
+  provisionedAt     DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  coupon Coupon? @relation(fields: [couponId], references: [id])
+
+  @@index([userId, status])
+  @@index([userId, cuit])
+  @@index([preapprovalId])
+}
+
+model CausasSubscription {
+  id                String    @id @default(cuid())
+  userId            String
+  status            String    @default("pending_payment") // pending_payment, active, provisioning, suspended, cancelled
+  plan              String // basico, profesional, estudio
+  mevUser           String // encrypted MEV username
+  mevPass           String // encrypted MEV password
+  mevIv             String // AES-GCM IV (hex)
+  mevTag            String // AES-GCM auth tag (hex)
+  dptoTipo          String    @default("CC") // CC=Abogado, PA=Parte, OR=Organismo
+  dptoId            String // departamento judicial (e.g. "23" = Quilmes)
+  dptoNombre        String    @default("") // human-readable name
+  totalCausas       Int       @default(0)
+  lastScrapeAt      DateTime?
+  scrapeFrequency   String    @default("24h") // 24h, 6h, 2h
+  notificationEmail String
+  payerEmail        String
+  preapprovalId     String?
+  couponId          String?
+  discountApplied   Int       @default(0)
+  provisionedAt     DateTime?
+  scraperTenantId   String? // tenant ID in scraper service once provisioned
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  user   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  coupon Coupon?      @relation(fields: [couponId], references: [id])
+  cases  CausasCase[]
+
+  @@index([userId, status])
+  @@index([preapprovalId])
+}
+
+model CausasCase {
+  id               String   @id @default(cuid())
+  subscriptionId   String
+  caratula         String // case title
+  nroExpediente    String // case number (e.g. "QL-12345-2023")
+  estado           String   @default("") // En Letra, A Despacho, etc.
+  courtName        String   @default("")
+  setName          String   @default("")
+  pidJuzgado       String   @default("") // MEV court ID
+  nidCausa         String // MEV case ID (unique within subscription)
+  fechaInicio      String   @default("")
+  movimientos      String   @default("[]") // JSON array of movements
+  totalMovimientos Int      @default(0)
+  scrapedAt        DateTime @default(now())
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  subscription CausasSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@unique([subscriptionId, nidCausa])
+  @@index([subscriptionId])
+  @@index([subscriptionId, estado])
+}
+
+model TurnosSubscription {
+  id                String    @id @default(cuid())
+  userId            String
+  status            String    @default("pending_payment") // pending_payment, active, provisioning, suspended, cancelled
+  plan              String // basico, profesional, estudio
+  slug              String    @unique // URL-friendly identifier for public booking page
+  businessName      String // name of the law firm / business
+  businessType      String    @default("Estudio Juridico")
+  logoUrl           String?
+  colorPrimary      String    @default("#1a365d")
+  colorAccent       String    @default("#c9a84c")
+  // Schedule configuration (JSON)
+  scheduleDays      String    @default("[]") // e.g. [2,4,5] = Tue,Thu,Fri
+  scheduleSlots     String    @default("{}") // e.g. {"2":["16:00","16:30"],"4":["16:00","16:30"]}
+  slotDuration      Int       @default(30) // minutes
+  practiceAreas     String    @default("[]") // e.g. ["Civil","Penal","Laboral"]
+  holidays          String    @default("[]") // e.g. ["2026-01-01","2026-03-24"]
+  // Integration IDs
+  n8nWorkflowId     String? // cloned workflow ID in n8n
+  googleCalendarId  String? // Google Calendar ID for this client
+  googleSheetId     String? // Google Sheet ID for appointments log
+  // Contact
+  notificationEmail String // email where appointment notifications go
+  payerEmail        String
+  phone             String    @default("")
+  address           String    @default("")
+  preapprovalId     String?
+  couponId          String?
+  discountApplied   Int       @default(0)
+  provisionedAt     DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  coupon Coupon? @relation(fields: [couponId], references: [id])
+
+  @@index([userId, status])
+  @@index([slug])
+  @@index([preapprovalId])
+}
+
+model SuiteJuridicaSubscription {
+  id               String    @id @default(cuid())
+  userId           String
+  status           String    @default("pending_payment") // pending_payment, active, provisioning, suspended, cancelled
+  plan             String // abogado, profesional, estudio
+  // References to the 4 individual subscriptions created on provisioning
+  monitoringSubId  String?
+  facturacionSubId String?
+  causasSubId      String?
+  turnosSubId      String?
+  // Billing
+  preapprovalId    String?
+  payerEmail       String
+  couponId         String?
+  discountApplied  Int       @default(0)
+  provisionedAt    DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  coupon Coupon? @relation(fields: [couponId], references: [id])
+
+  @@index([userId, status])
+  @@index([preapprovalId])
 }
 
 model Project {

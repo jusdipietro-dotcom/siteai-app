@@ -17,6 +17,11 @@ const PROTECTED_PATHS = [
   '/leads',
   '/email-marketing',
   '/trading',
+  '/facturacion',
+  '/causas',
+  '/turnos',
+  '/suite-juridica',
+  '/jurisprudencia',
   '/admin',
 ]
 
@@ -69,6 +74,12 @@ export async function middleware(req: NextRequest) {
         loginUrl.searchParams.set('next', 'resenas')
       } else if (pathname.startsWith('/crypto')) {
         loginUrl.searchParams.set('next', 'crypto')
+      } else if (pathname.startsWith('/facturacion')) {
+        loginUrl.searchParams.set('next', 'facturacion')
+      } else if (pathname.startsWith('/causas')) {
+        loginUrl.searchParams.set('next', 'causas')
+      } else if (pathname.startsWith('/turnos')) {
+        loginUrl.searchParams.set('next', 'turnos')
       } else {
         loginUrl.searchParams.set('callbackUrl', `${baseUrl}${req.nextUrl.pathname}`)
       }

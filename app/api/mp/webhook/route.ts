@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createHmac } from 'crypto'
+import { createHmac, timingSafeEqual } from 'crypto'
 import { prisma } from '@/lib/prisma'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 import { sendPaymentConfirmationEmail, sendSubscriptionCancelledEmail } from '@/lib/email'
@@ -41,7 +41,10 @@ function verifyMPSignature(req: NextRequest, body: Record<string, unknown>): boo
   const manifest = `id:${dataId};request-id:${xRequestId};ts:${ts};`
   const hmac = createHmac('sha256', MP_WEBHOOK_SECRET).update(manifest).digest('hex')
 
-  return hmac === v1
+  const hmacBuf = Buffer.from(hmac, 'hex')
+  const v1Buf = Buffer.from(v1, 'hex')
+  if (hmacBuf.length !== v1Buf.length) return false
+  return timingSafeEqual(hmacBuf, v1Buf)
 }
 
 export async function POST(req: NextRequest) {
@@ -138,29 +141,33 @@ export async function POST(req: NextRequest) {
         }
 
         if ((status === 'cancelled' || status === 'paused') && subscriptionId) {
-          await prisma.monitoringSubscription.update({
-            where: { id: subscriptionId },
+          const { count } = await prisma.monitoringSubscription.updateMany({
+            where: { id: subscriptionId, status: { in: ['active', 'provisioning', 'pending_payment'] } },
             data: { status: 'suspended' },
           })
-          console.log(`[MP Webhook] Monitoring ${subscriptionId} suspended (${status})`)
+          if (count === 0) {
+            console.log(`[MP Webhook] Monitoring ${subscriptionId} already suspended/cancelled — skipping`)
+          } else {
+            console.log(`[MP Webhook] Monitoring ${subscriptionId} suspended (${status})`)
 
-          // Trigger deprovisioning — remove tenant from n8n scrapers
-          await triggerDeprovisioning(subscriptionId)
+            // Trigger deprovisioning — remove tenant from n8n scrapers
+            await triggerDeprovisioning(subscriptionId)
 
-          // Send cancellation email
-          try {
-            const subForEmail = await prisma.monitoringSubscription.findUnique({
-              where: { id: subscriptionId },
-              include: { user: { select: { email: true } } },
-            })
-            if (subForEmail?.user.email) {
-              await sendSubscriptionCancelledEmail(subForEmail.user.email, {
-                type: 'monitoring',
-                plan,
+            // Send cancellation email
+            try {
+              const subForEmail = await prisma.monitoringSubscription.findUnique({
+                where: { id: subscriptionId },
+                include: { user: { select: { email: true } } },
               })
+              if (subForEmail?.user.email) {
+                await sendSubscriptionCancelledEmail(subForEmail.user.email, {
+                  type: 'monitoring',
+                  plan,
+                })
+              }
+            } catch (emailErr) {
+              console.error('[MP Webhook] Failed to send cancellation email:', emailErr)
             }
-          } catch (emailErr) {
-            console.error('[MP Webhook] Failed to send cancellation email:', emailErr)
           }
         }
 
@@ -222,28 +229,32 @@ export async function POST(req: NextRequest) {
         }
 
         if ((status === 'cancelled' || status === 'paused') && reviewsSubId) {
-          await prisma.reviewsSubscription.update({
-            where: { id: reviewsSubId },
+          const { count: rCount } = await prisma.reviewsSubscription.updateMany({
+            where: { id: reviewsSubId, status: { in: ['active', 'provisioning', 'pending_payment'] } },
             data: { status: 'suspended' },
           })
-          console.log(`[MP Webhook] Reviews ${reviewsSubId} suspended (${status})`)
+          if (rCount === 0) {
+            console.log(`[MP Webhook] Reviews ${reviewsSubId} already suspended/cancelled — skipping`)
+          } else {
+            console.log(`[MP Webhook] Reviews ${reviewsSubId} suspended (${status})`)
 
-          // Trigger deprovisioning
-          await triggerReviewsDeprovisioning(reviewsSubId)
+            // Trigger deprovisioning
+            await triggerReviewsDeprovisioning(reviewsSubId)
 
-          try {
-            const subForEmail = await prisma.reviewsSubscription.findUnique({
-              where: { id: reviewsSubId },
-              include: { user: { select: { email: true } } },
-            })
-            if (subForEmail?.user.email) {
-              await sendSubscriptionCancelledEmail(subForEmail.user.email, {
-                type: 'reviews',
-                plan: reviewsPlan,
+            try {
+              const subForEmail = await prisma.reviewsSubscription.findUnique({
+                where: { id: reviewsSubId },
+                include: { user: { select: { email: true } } },
               })
+              if (subForEmail?.user.email) {
+                await sendSubscriptionCancelledEmail(subForEmail.user.email, {
+                  type: 'reviews',
+                  plan: reviewsPlan,
+                })
+              }
+            } catch (emailErr) {
+              console.error('[MP Webhook] Failed to send reviews cancellation email:', emailErr)
             }
-          } catch (emailErr) {
-            console.error('[MP Webhook] Failed to send reviews cancellation email:', emailErr)
           }
         }
 
@@ -302,25 +313,29 @@ export async function POST(req: NextRequest) {
         }
 
         if ((status === 'cancelled' || status === 'paused') && linkedinSubId) {
-          await prisma.linkedInSubscription.update({
-            where: { id: linkedinSubId },
+          const { count: lCount } = await prisma.linkedInSubscription.updateMany({
+            where: { id: linkedinSubId, status: { in: ['active', 'provisioning', 'pending_payment'] } },
             data: { status: 'suspended' },
           })
-          console.log(`[MP Webhook] LinkedIn ${linkedinSubId} suspended (${status})`)
+          if (lCount === 0) {
+            console.log(`[MP Webhook] LinkedIn ${linkedinSubId} already suspended/cancelled — skipping`)
+          } else {
+            console.log(`[MP Webhook] LinkedIn ${linkedinSubId} suspended (${status})`)
 
-          try {
-            const subForEmail = await prisma.linkedInSubscription.findUnique({
-              where: { id: linkedinSubId },
-              include: { user: { select: { email: true } } },
-            })
-            if (subForEmail?.user.email) {
-              await sendSubscriptionCancelledEmail(subForEmail.user.email, {
-                type: 'linkedin',
-                plan: linkedinPlan,
+            try {
+              const subForEmail = await prisma.linkedInSubscription.findUnique({
+                where: { id: linkedinSubId },
+                include: { user: { select: { email: true } } },
               })
+              if (subForEmail?.user.email) {
+                await sendSubscriptionCancelledEmail(subForEmail.user.email, {
+                  type: 'linkedin',
+                  plan: linkedinPlan,
+                })
+              }
+            } catch (emailErr) {
+              console.error('[MP Webhook] Failed to send linkedin cancellation email:', emailErr)
             }
-          } catch (emailErr) {
-            console.error('[MP Webhook] Failed to send linkedin cancellation email:', emailErr)
           }
         }
 
@@ -379,25 +394,29 @@ export async function POST(req: NextRequest) {
         }
 
         if ((status === 'cancelled' || status === 'paused') && tradingSubId) {
-          await prisma.tradingSubscription.update({
-            where: { id: tradingSubId },
+          const { count: tCount } = await prisma.tradingSubscription.updateMany({
+            where: { id: tradingSubId, status: { in: ['active', 'provisioning', 'pending_payment'] } },
             data: { status: 'suspended' },
           })
-          console.log(`[MP Webhook] Trading ${tradingSubId} suspended (${status})`)
+          if (tCount === 0) {
+            console.log(`[MP Webhook] Trading ${tradingSubId} already suspended/cancelled — skipping`)
+          } else {
+            console.log(`[MP Webhook] Trading ${tradingSubId} suspended (${status})`)
 
-          try {
-            const subForEmail = await prisma.tradingSubscription.findUnique({
-              where: { id: tradingSubId },
-              include: { user: { select: { email: true } } },
-            })
-            if (subForEmail?.user.email) {
-              await sendSubscriptionCancelledEmail(subForEmail.user.email, {
-                type: 'trading',
-                plan: tradingPlan,
+            try {
+              const subForEmail = await prisma.tradingSubscription.findUnique({
+                where: { id: tradingSubId },
+                include: { user: { select: { email: true } } },
               })
+              if (subForEmail?.user.email) {
+                await sendSubscriptionCancelledEmail(subForEmail.user.email, {
+                  type: 'trading',
+                  plan: tradingPlan,
+                })
+              }
+            } catch (emailErr) {
+              console.error('[MP Webhook] Failed to send trading cancellation email:', emailErr)
             }
-          } catch (emailErr) {
-            console.error('[MP Webhook] Failed to send trading cancellation email:', emailErr)
           }
         }
 
@@ -456,25 +475,29 @@ export async function POST(req: NextRequest) {
         }
 
         if ((status === 'cancelled' || status === 'paused') && leadsSubId) {
-          await prisma.leadsSubscription.update({
-            where: { id: leadsSubId },
+          const { count: ldCount } = await prisma.leadsSubscription.updateMany({
+            where: { id: leadsSubId, status: { in: ['active', 'provisioning', 'pending_payment'] } },
             data: { status: 'suspended' },
           })
-          console.log(`[MP Webhook] Leads ${leadsSubId} suspended (${status})`)
+          if (ldCount === 0) {
+            console.log(`[MP Webhook] Leads ${leadsSubId} already suspended/cancelled — skipping`)
+          } else {
+            console.log(`[MP Webhook] Leads ${leadsSubId} suspended (${status})`)
 
-          try {
-            const subForEmail = await prisma.leadsSubscription.findUnique({
-              where: { id: leadsSubId },
-              include: { user: { select: { email: true } } },
-            })
-            if (subForEmail?.user.email) {
-              await sendSubscriptionCancelledEmail(subForEmail.user.email, {
-                type: 'leads',
-                plan: leadsPlan,
+            try {
+              const subForEmail = await prisma.leadsSubscription.findUnique({
+                where: { id: leadsSubId },
+                include: { user: { select: { email: true } } },
               })
+              if (subForEmail?.user.email) {
+                await sendSubscriptionCancelledEmail(subForEmail.user.email, {
+                  type: 'leads',
+                  plan: leadsPlan,
+                })
+              }
+            } catch (emailErr) {
+              console.error('[MP Webhook] Failed to send leads cancellation email:', emailErr)
             }
-          } catch (emailErr) {
-            console.error('[MP Webhook] Failed to send leads cancellation email:', emailErr)
           }
         }
 
@@ -543,28 +566,32 @@ export async function POST(req: NextRequest) {
         }
 
         if ((status === 'cancelled' || status === 'paused') && emSubId) {
-          await prisma.emailMarketingSubscription.update({
-            where: { id: emSubId },
+          const { count: emCount } = await prisma.emailMarketingSubscription.updateMany({
+            where: { id: emSubId, status: { in: ['active', 'provisioning', 'pending_payment'] } },
             data: { status: 'suspended' },
           })
-          console.log(`[MP Webhook] Email Marketing ${emSubId} suspended (${status})`)
+          if (emCount === 0) {
+            console.log(`[MP Webhook] Email Marketing ${emSubId} already suspended/cancelled — skipping`)
+          } else {
+            console.log(`[MP Webhook] Email Marketing ${emSubId} suspended (${status})`)
 
-          // Trigger deprovisioning (disable n8n workflow)
-          await triggerEmailMarketingDeprovisioning(emSubId)
+            // Trigger deprovisioning (disable n8n workflow)
+            await triggerEmailMarketingDeprovisioning(emSubId)
 
-          try {
-            const subForEmail = await prisma.emailMarketingSubscription.findUnique({
-              where: { id: emSubId },
-              include: { user: { select: { email: true } } },
-            })
-            if (subForEmail?.user.email) {
-              await sendSubscriptionCancelledEmail(subForEmail.user.email, {
-                type: 'email-marketing',
-                plan: emPlan,
+            try {
+              const subForEmail = await prisma.emailMarketingSubscription.findUnique({
+                where: { id: emSubId },
+                include: { user: { select: { email: true } } },
               })
+              if (subForEmail?.user.email) {
+                await sendSubscriptionCancelledEmail(subForEmail.user.email, {
+                  type: 'email-marketing',
+                  plan: emPlan,
+                })
+              }
+            } catch (emailErr) {
+              console.error('[MP Webhook] Failed to send email marketing cancellation email:', emailErr)
             }
-          } catch (emailErr) {
-            console.error('[MP Webhook] Failed to send email marketing cancellation email:', emailErr)
           }
         }
 
@@ -634,28 +661,403 @@ export async function POST(req: NextRequest) {
         }
 
         if ((status === 'cancelled' || status === 'paused') && prospSubId) {
-          await prisma.prospeccionSubscription.update({
-            where: { id: prospSubId },
+          const { count: pCount } = await prisma.prospeccionSubscription.updateMany({
+            where: { id: prospSubId, status: { in: ['active', 'provisioning', 'pending_payment'] } },
             data: { status: 'suspended' },
           })
-          console.log(`[MP Webhook] Prospeccion ${prospSubId} suspended (${status})`)
+          if (pCount === 0) {
+            console.log(`[MP Webhook] Prospeccion ${prospSubId} already suspended/cancelled — skipping`)
+          } else {
+            console.log(`[MP Webhook] Prospeccion ${prospSubId} suspended (${status})`)
 
-          // Trigger deprovisioning (disable n8n workflows)
-          await triggerProspeccionDeprovisioning(prospSubId)
+            // Trigger deprovisioning (disable n8n workflows)
+            await triggerProspeccionDeprovisioning(prospSubId)
+
+            try {
+              const subForEmail = await prisma.prospeccionSubscription.findUnique({
+                where: { id: prospSubId },
+                include: { user: { select: { email: true } } },
+              })
+              if (subForEmail?.user.email) {
+                await sendSubscriptionCancelledEmail(subForEmail.user.email, {
+                  type: 'prospeccion',
+                  plan: prospPlan,
+                })
+              }
+            } catch (emailErr) {
+              console.error('[MP Webhook] Failed to send prospeccion cancellation email:', emailErr)
+            }
+          }
+        }
+
+        return NextResponse.json({ received: true })
+      }
+
+      // ─── Turnos subscription: "turnos:subscriptionId:plan" ───
+      if (parts[0] === 'turnos') {
+        if (parts.length < 3 || !parts[1] || !parts[2]) {
+          console.warn('[MP Webhook] Invalid turnos external_reference:', external_reference)
+          return NextResponse.json({ received: true })
+        }
+        const turnosSubId = parts[1]
+        const turnosPlan = parts[2]
+
+        if (status === 'authorized' && turnosSubId) {
+          const { count } = await prisma.turnosSubscription.updateMany({
+            where: { id: turnosSubId, status: 'pending_payment' },
+            data: { status: 'provisioning', preapprovalId },
+          })
+
+          if (count === 0) {
+            console.log(`[MP Webhook] Turnos ${turnosSubId} already processed — skipping`)
+            return NextResponse.json({ received: true })
+          }
+
+          const currentTurnosSub = await prisma.turnosSubscription.findUnique({ where: { id: turnosSubId } })
+          if (currentTurnosSub?.couponId) {
+            await prisma.coupon.update({
+              where: { id: currentTurnosSub.couponId },
+              data: { usedCount: { increment: 1 } },
+            })
+          }
+
+          console.log(`[MP Webhook] Turnos ${turnosSubId} → provisioning (plan: ${turnosPlan})`)
+
+          // Mark as active (n8n workflow provisioning is done manually or via script)
+          await prisma.turnosSubscription.update({
+            where: { id: turnosSubId },
+            data: { status: 'active', provisionedAt: new Date() },
+          })
 
           try {
-            const subForEmail = await prisma.prospeccionSubscription.findUnique({
-              where: { id: prospSubId },
+            const subForEmail = await prisma.turnosSubscription.findUnique({
+              where: { id: turnosSubId },
               include: { user: { select: { email: true } } },
             })
             if (subForEmail?.user.email) {
-              await sendSubscriptionCancelledEmail(subForEmail.user.email, {
-                type: 'prospeccion',
-                plan: prospPlan,
+              await sendPaymentConfirmationEmail(subForEmail.user.email, {
+                type: 'turnos',
+                plan: turnosPlan,
               })
             }
           } catch (emailErr) {
-            console.error('[MP Webhook] Failed to send prospeccion cancellation email:', emailErr)
+            console.error('[MP Webhook] Failed to send turnos payment email:', emailErr)
+          }
+        }
+
+        if ((status === 'cancelled' || status === 'paused') && turnosSubId) {
+          const { count: tCount } = await prisma.turnosSubscription.updateMany({
+            where: { id: turnosSubId, status: { in: ['active', 'provisioning', 'pending_payment'] } },
+            data: { status: 'suspended' },
+          })
+          if (tCount > 0) {
+            console.log(`[MP Webhook] Turnos ${turnosSubId} suspended (${status})`)
+
+            // Deactivate n8n workflow
+            const turnosSub = await prisma.turnosSubscription.findUnique({ where: { id: turnosSubId } })
+            if (turnosSub?.n8nWorkflowId) {
+              try {
+                const n8nUrl = process.env.N8N_API_URL
+                const n8nKey = process.env.N8N_API_KEY
+                if (n8nUrl && n8nKey) {
+                  await fetch(`${n8nUrl}/api/v1/workflows/${turnosSub.n8nWorkflowId}/deactivate`, {
+                    method: 'POST',
+                    headers: { 'X-N8N-API-KEY': n8nKey },
+                  })
+                }
+              } catch (e) { console.error('[MP Webhook] Turnos n8n deactivation error:', e) }
+            }
+
+            try {
+              const subForEmail = await prisma.turnosSubscription.findUnique({
+                where: { id: turnosSubId },
+                include: { user: { select: { email: true } } },
+              })
+              if (subForEmail?.user.email) {
+                await sendSubscriptionCancelledEmail(subForEmail.user.email, { type: 'turnos', plan: turnosPlan })
+              }
+            } catch (emailErr) {
+              console.error('[MP Webhook] Failed to send turnos cancellation email:', emailErr)
+            }
+          }
+        }
+
+        return NextResponse.json({ received: true })
+      }
+
+      // ─── Causas subscription: "causas:subscriptionId:plan" ───
+      if (parts[0] === 'causas') {
+        if (parts.length < 3 || !parts[1] || !parts[2]) {
+          console.warn('[MP Webhook] Invalid causas external_reference:', external_reference)
+          return NextResponse.json({ received: true })
+        }
+        const causasSubId = parts[1]
+        const causasPlan = parts[2]
+
+        if (status === 'authorized' && causasSubId) {
+          const { count } = await prisma.causasSubscription.updateMany({
+            where: { id: causasSubId, status: 'pending_payment' },
+            data: { status: 'provisioning', preapprovalId },
+          })
+
+          if (count === 0) {
+            console.log(`[MP Webhook] Causas ${causasSubId} already processed — skipping`)
+            return NextResponse.json({ received: true })
+          }
+
+          // Increment coupon usage
+          const currentCausasSub = await prisma.causasSubscription.findUnique({
+            where: { id: causasSubId },
+          })
+          if (currentCausasSub?.couponId) {
+            await prisma.coupon.update({
+              where: { id: currentCausasSub.couponId },
+              data: { usedCount: { increment: 1 } },
+            })
+          }
+
+          console.log(`[MP Webhook] Causas ${causasSubId} → provisioning (plan: ${causasPlan})`)
+
+          // Trigger auto-provisioning (register tenant in scraper service)
+          await triggerCausasProvisioning(causasSubId)
+
+          // Send payment confirmation email
+          try {
+            const subForEmail = await prisma.causasSubscription.findUnique({
+              where: { id: causasSubId },
+              include: { user: { select: { email: true } } },
+            })
+            if (subForEmail?.user.email) {
+              await sendPaymentConfirmationEmail(subForEmail.user.email, {
+                type: 'causas',
+                plan: causasPlan,
+              })
+            }
+          } catch (emailErr) {
+            console.error('[MP Webhook] Failed to send causas payment email:', emailErr)
+          }
+        }
+
+        if ((status === 'cancelled' || status === 'paused') && causasSubId) {
+          const { count: cCount } = await prisma.causasSubscription.updateMany({
+            where: { id: causasSubId, status: { in: ['active', 'provisioning', 'pending_payment'] } },
+            data: { status: 'suspended' },
+          })
+          if (cCount === 0) {
+            console.log(`[MP Webhook] Causas ${causasSubId} already suspended/cancelled — skipping`)
+          } else {
+            console.log(`[MP Webhook] Causas ${causasSubId} suspended (${status})`)
+
+            // Deactivate scraper tenant
+            await triggerCausasDeprovisioning(causasSubId)
+
+            try {
+              const subForEmail = await prisma.causasSubscription.findUnique({
+                where: { id: causasSubId },
+                include: { user: { select: { email: true } } },
+              })
+              if (subForEmail?.user.email) {
+                await sendSubscriptionCancelledEmail(subForEmail.user.email, {
+                  type: 'causas',
+                  plan: causasPlan,
+                })
+              }
+            } catch (emailErr) {
+              console.error('[MP Webhook] Failed to send causas cancellation email:', emailErr)
+            }
+          }
+        }
+
+        return NextResponse.json({ received: true })
+      }
+
+      // ─── Facturacion subscription: "facturacion:subscriptionId:plan" ───
+      if (parts[0] === 'facturacion') {
+        if (parts.length < 3 || !parts[1] || !parts[2]) {
+          console.warn('[MP Webhook] Invalid facturacion external_reference:', external_reference)
+          return NextResponse.json({ received: true })
+        }
+        const factSubId = parts[1]
+        const factPlan = parts[2]
+
+        if (status === 'authorized' && factSubId) {
+          // Atomic idempotency: only update if still pending_payment
+          const { count } = await prisma.facturacionSubscription.updateMany({
+            where: { id: factSubId, status: 'pending_payment' },
+            data: { status: 'provisioning', preapprovalId },
+          })
+
+          if (count === 0) {
+            console.log(`[MP Webhook] Facturacion ${factSubId} already processed — skipping`)
+            return NextResponse.json({ received: true })
+          }
+
+          // Increment coupon usage
+          const currentSub = await prisma.facturacionSubscription.findUnique({
+            where: { id: factSubId },
+          })
+          if (currentSub?.couponId) {
+            await prisma.coupon.update({
+              where: { id: currentSub.couponId },
+              data: { usedCount: { increment: 1 } },
+            })
+          }
+
+          console.log(`[MP Webhook] Facturacion ${factSubId} → provisioning (plan: ${factPlan})`)
+
+          // Trigger auto-provisioning (create tenant in Flask backend)
+          await triggerFacturacionProvisioning(factSubId)
+
+          // Send payment confirmation email
+          try {
+            const subForEmail = await prisma.facturacionSubscription.findUnique({
+              where: { id: factSubId },
+              include: { user: { select: { email: true } } },
+            })
+            if (subForEmail?.user.email) {
+              await sendPaymentConfirmationEmail(subForEmail.user.email, {
+                type: 'facturacion',
+                plan: factPlan,
+              })
+            }
+          } catch (emailErr) {
+            console.error('[MP Webhook] Failed to send facturacion payment email:', emailErr)
+          }
+        }
+
+        if ((status === 'cancelled' || status === 'paused') && factSubId) {
+          const { count: fCount } = await prisma.facturacionSubscription.updateMany({
+            where: { id: factSubId, status: { in: ['active', 'provisioning', 'pending_payment'] } },
+            data: { status: 'suspended' },
+          })
+          if (fCount === 0) {
+            console.log(`[MP Webhook] Facturacion ${factSubId} already suspended/cancelled — skipping`)
+          } else {
+            console.log(`[MP Webhook] Facturacion ${factSubId} suspended (${status})`)
+
+            // Deactivate Flask tenant
+            await triggerFacturacionDeprovisioning(factSubId)
+
+            try {
+              const subForEmail = await prisma.facturacionSubscription.findUnique({
+                where: { id: factSubId },
+                include: { user: { select: { email: true } } },
+              })
+              if (subForEmail?.user.email) {
+                await sendSubscriptionCancelledEmail(subForEmail.user.email, {
+                  type: 'facturacion',
+                  plan: factPlan,
+                })
+              }
+            } catch (emailErr) {
+              console.error('[MP Webhook] Failed to send facturacion cancellation email:', emailErr)
+            }
+          }
+        }
+
+        return NextResponse.json({ received: true })
+      }
+
+      // ─── Suite Juridica subscription: "suite:subscriptionId:plan" ───
+      if (parts[0] === 'suite') {
+        if (parts.length < 3 || !parts[1] || !parts[2]) {
+          console.warn('[MP Webhook] Invalid suite external_reference:', external_reference)
+          return NextResponse.json({ received: true })
+        }
+        const suiteSubId = parts[1]
+        const suitePlan = parts[2]
+
+        if (status === 'authorized' && suiteSubId) {
+          // Atomic idempotency
+          const { count } = await prisma.suiteJuridicaSubscription.updateMany({
+            where: { id: suiteSubId, status: 'pending_payment' },
+            data: { status: 'provisioning', preapprovalId },
+          })
+
+          if (count === 0) {
+            console.log(`[MP Webhook] Suite ${suiteSubId} already processed — skipping`)
+            return NextResponse.json({ received: true })
+          }
+
+          // Increment coupon usage
+          const currentSub = await prisma.suiteJuridicaSubscription.findUnique({
+            where: { id: suiteSubId },
+          })
+          if (currentSub?.couponId) {
+            await prisma.coupon.update({
+              where: { id: currentSub.couponId },
+              data: { usedCount: { increment: 1 } },
+            })
+          }
+
+          console.log(`[MP Webhook] Suite ${suiteSubId} → provisioning (plan: ${suitePlan})`)
+
+          // Provision: create 4 individual subscriptions in cascade
+          await provisionSuiteJuridica(suiteSubId, suitePlan)
+
+          // Send payment confirmation email
+          try {
+            const subForEmail = await prisma.suiteJuridicaSubscription.findUnique({
+              where: { id: suiteSubId },
+              include: { user: { select: { email: true } } },
+            })
+            if (subForEmail?.user.email) {
+              await sendPaymentConfirmationEmail(subForEmail.user.email, {
+                type: 'monitoring', // use monitoring type for Suite email (closest match)
+                plan: `Suite Juridica ${suitePlan}`,
+              })
+            }
+          } catch (emailErr) {
+            console.error('[MP Webhook] Failed to send suite payment email:', emailErr)
+          }
+        }
+
+        if ((status === 'cancelled' || status === 'paused') && suiteSubId) {
+          const { count: sCount } = await prisma.suiteJuridicaSubscription.updateMany({
+            where: { id: suiteSubId, status: { in: ['active', 'provisioning', 'pending_payment'] } },
+            data: { status: 'suspended' },
+          })
+          if (sCount === 0) {
+            console.log(`[MP Webhook] Suite ${suiteSubId} already suspended/cancelled — skipping`)
+          } else {
+            console.log(`[MP Webhook] Suite ${suiteSubId} suspended (${status})`)
+
+            // Suspend all 4 individual subscriptions
+            const sub = await prisma.suiteJuridicaSubscription.findUnique({ where: { id: suiteSubId } })
+            if (sub) {
+              const suspendSub = async (table: string, id: string | null) => {
+                if (!id) return
+                try {
+                  await prisma.$executeRawUnsafe(
+                    `UPDATE "${table}" SET status = 'suspended' WHERE id = $1 AND status IN ('active', 'provisioning')`,
+                    id
+                  )
+                } catch (e) {
+                  console.error(`[Suite Suspend] Error suspending ${table} ${id}:`, e)
+                }
+              }
+              await Promise.all([
+                suspendSub('MonitoringSubscription', sub.monitoringSubId),
+                suspendSub('FacturacionSubscription', sub.facturacionSubId),
+                suspendSub('CausasSubscription', sub.causasSubId),
+                suspendSub('TurnosSubscription', sub.turnosSubId),
+              ])
+            }
+
+            try {
+              const subForEmail = await prisma.suiteJuridicaSubscription.findUnique({
+                where: { id: suiteSubId },
+                include: { user: { select: { email: true } } },
+              })
+              if (subForEmail?.user.email) {
+                await sendSubscriptionCancelledEmail(subForEmail.user.email, {
+                  type: 'monitoring', // closest match for suite email
+                  plan: `Suite Juridica ${suitePlan}`,
+                })
+              }
+            } catch (emailErr) {
+              console.error('[MP Webhook] Failed to send suite cancellation email:', emailErr)
+            }
           }
         }
 
@@ -731,12 +1133,16 @@ async function triggerProvisioning(subscriptionId: string) {
     payerEmail: sub.payerEmail,
   })
 
+  const provApiKey = process.env.SCRAPER_API_KEY
   const MAX_RETRIES = 3
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
       const res = await fetch(webhookUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(provApiKey && { 'x-api-key': provApiKey }),
+        },
         body: payload,
       })
 
@@ -776,10 +1182,10 @@ async function triggerDeprovisioning(subscriptionId: string) {
       return
     }
 
-    const tenantsRemoveUrl = `https://n8n.abogadoenquilmes.com/webhook/alj-tenants-remove?apiKey=${apiKey}`
+    const tenantsRemoveUrl = `https://n8n.abogadoenquilmes.com/webhook/alj-tenants-remove`
     const res = await fetch(tenantsRemoveUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey },
       body: JSON.stringify({ tenantId: sub.n8nTenantId }),
     })
 
@@ -1167,6 +1573,279 @@ async function triggerProspeccionDeprovisioning(subscriptionId: string) {
     console.log(`[MP Webhook] Prospeccion deprovisioning triggered for ${subscriptionId}`)
   } catch (err) {
     console.error(`[MP Webhook] Prospeccion deprovisioning failed for ${subscriptionId}:`, err)
+  }
+}
+
+/** Trigger facturacion provisioning — create tenant in Flask backend */
+/** Register causas tenant in scraper service */
+async function triggerCausasProvisioning(subscriptionId: string) {
+  const scraperUrl = process.env.CAUSAS_SCRAPER_URL
+  const scraperKey = process.env.CAUSAS_SCRAPER_API_KEY
+
+  if (!scraperUrl || !scraperKey) {
+    console.warn('[MP Webhook] CAUSAS_SCRAPER_URL or CAUSAS_SCRAPER_API_KEY not configured — manual provisioning required')
+    // Still mark as active so user can access the dashboard
+    await prisma.causasSubscription.update({
+      where: { id: subscriptionId },
+      data: { status: 'active', provisionedAt: new Date() },
+    })
+    return
+  }
+
+  const maxRetries = 3
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const provisionResp = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'https://automaticialab.com'}/api/causas/provision`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-portal-secret': scraperKey,
+        },
+        body: JSON.stringify({ subscriptionId }),
+      })
+
+      if (provisionResp.ok) {
+        console.log(`[MP Webhook] Causas ${subscriptionId} provisioned successfully`)
+        return
+      }
+
+      console.warn(`[MP Webhook] Causas provision attempt ${attempt}/${maxRetries} failed: ${provisionResp.status}`)
+    } catch (err) {
+      console.error(`[MP Webhook] Causas provision attempt ${attempt}/${maxRetries} error:`, err)
+    }
+
+    if (attempt < maxRetries) {
+      await new Promise((r) => setTimeout(r, attempt * 2000))
+    }
+  }
+
+  // If all retries fail, still mark as active
+  console.error(`[MP Webhook] Causas ${subscriptionId} provisioning FAILED after ${maxRetries} attempts — marking active anyway`)
+  await prisma.causasSubscription.update({
+    where: { id: subscriptionId },
+    data: { status: 'active', provisionedAt: new Date() },
+  })
+}
+
+/** Deactivate causas tenant in scraper service */
+async function triggerCausasDeprovisioning(subscriptionId: string) {
+  const scraperUrl = process.env.CAUSAS_SCRAPER_URL
+  const scraperKey = process.env.CAUSAS_SCRAPER_API_KEY
+
+  if (!scraperUrl || !scraperKey) return
+
+  const sub = await prisma.causasSubscription.findUnique({
+    where: { id: subscriptionId },
+  })
+  if (!sub?.scraperTenantId) return
+
+  try {
+    await fetch(`${scraperUrl}/api/tenant/${sub.scraperTenantId}/deactivate`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${scraperKey}`,
+        'Content-Type': 'application/json',
+      },
+    })
+    console.log(`[MP Webhook] Causas deprovisioning triggered for ${subscriptionId}`)
+  } catch (err) {
+    console.error(`[MP Webhook] Causas deprovisioning failed for ${subscriptionId}:`, err)
+  }
+}
+
+async function triggerFacturacionProvisioning(subscriptionId: string) {
+  const flaskUrl = process.env.FLASK_BACKEND_URL
+  const provisionSecret = process.env.FLASK_PROVISION_SECRET
+
+  if (!flaskUrl || !provisionSecret) {
+    console.warn('[MP Webhook] FLASK_BACKEND_URL or FLASK_PROVISION_SECRET not configured — manual provisioning required')
+    return
+  }
+
+  const sub = await prisma.facturacionSubscription.findUnique({
+    where: { id: subscriptionId },
+    include: { user: { select: { email: true, name: true } } },
+  })
+  if (!sub) return
+
+  const maxRetries = 3
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const res = await fetch(`${flaskUrl}/auth/portal-provision`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Portal-Secret': provisionSecret,
+        },
+        body: JSON.stringify({
+          cuit: sub.cuit,
+          razonSocial: sub.razonSocial,
+          puntoVenta: sub.puntoVenta,
+          condicionIva: sub.condicionIva,
+          email: sub.user.email,
+          nombre: sub.user.name || sub.razonSocial,
+          plan: sub.plan,
+        }),
+      })
+
+      if (res.ok) {
+        const data = await res.json()
+        await prisma.facturacionSubscription.update({
+          where: { id: subscriptionId },
+          data: {
+            status: 'active',
+            flaskTenantId: data.tenantId,
+            flaskUserEmail: data.userEmail || sub.user.email,
+            provisionedAt: new Date(),
+          },
+        })
+        console.log(`[MP Webhook] Facturacion ${subscriptionId} provisioned (Flask tenant: ${data.tenantId})`)
+        return
+      }
+
+      console.warn(`[MP Webhook] Facturacion provision attempt ${attempt}/${maxRetries} failed: ${res.status}`)
+    } catch (err) {
+      console.error(`[MP Webhook] Facturacion provision attempt ${attempt}/${maxRetries} error:`, err)
+    }
+
+    if (attempt < maxRetries) {
+      await new Promise((r) => setTimeout(r, attempt * 2000))
+    }
+  }
+
+  console.error(`[MP Webhook] Facturacion ${subscriptionId} provisioning FAILED after ${maxRetries} attempts`)
+}
+
+/** Deactivate facturacion tenant in Flask backend */
+async function triggerFacturacionDeprovisioning(subscriptionId: string) {
+  const flaskUrl = process.env.FLASK_BACKEND_URL
+  const provisionSecret = process.env.FLASK_PROVISION_SECRET
+
+  if (!flaskUrl || !provisionSecret) return
+
+  const sub = await prisma.facturacionSubscription.findUnique({
+    where: { id: subscriptionId },
+  })
+  if (!sub?.flaskTenantId) return
+
+  try {
+    await fetch(`${flaskUrl}/auth/portal-deprovision`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Portal-Secret': provisionSecret,
+      },
+      body: JSON.stringify({ tenantId: sub.flaskTenantId }),
+    })
+    console.log(`[MP Webhook] Facturacion deprovisioning triggered for ${subscriptionId}`)
+  } catch (err) {
+    console.error(`[MP Webhook] Facturacion deprovisioning failed for ${subscriptionId}:`, err)
+  }
+}
+
+/** Provision Suite Juridica: create 4 individual subscriptions in cascade */
+async function provisionSuiteJuridica(suiteSubId: string, suitePlan: string) {
+  try {
+    const { SUITE_JURIDICA_PLANS } = await import('@/lib/suite-juridica-plans')
+    const planConfig = SUITE_JURIDICA_PLANS[suitePlan as keyof typeof SUITE_JURIDICA_PLANS]
+    if (!planConfig) {
+      console.error(`[Suite Provision] Unknown plan: ${suitePlan}`)
+      return
+    }
+
+    const suite = await prisma.suiteJuridicaSubscription.findUnique({
+      where: { id: suiteSubId },
+      include: { user: { select: { id: true, email: true } } },
+    })
+    if (!suite) return
+
+    const userId = suite.user.id
+    const email = suite.user.email
+    const limits = planConfig.limits
+
+    // Create 4 individual subscriptions (already "active" — billing is via suite)
+    const [monitoring, facturacion, causas, turnos] = await Promise.all([
+      prisma.monitoringSubscription.create({
+        data: {
+          userId,
+          plan: limits.monitoringPlan,
+          status: 'active',
+          portal: 'AMBOS',
+          cuil: '',
+          credentialUser: '', // user will configure credentials from their dashboard
+          credentialPass: '',
+          credentialIv: '',
+          credentialTag: '',
+          notificationEmail: email,
+          payerEmail: email,
+          provisionedAt: new Date(),
+        },
+      }),
+      prisma.facturacionSubscription.create({
+        data: {
+          userId,
+          plan: limits.facturacionPlan,
+          status: 'active',
+          cuit: '',
+          razonSocial: '',
+          puntoVenta: 0, // user will configure from their dashboard
+          notificationEmail: email,
+          payerEmail: email,
+          provisionedAt: new Date(),
+        },
+      }),
+      prisma.causasSubscription.create({
+        data: {
+          userId,
+          plan: limits.causasPlan,
+          status: 'active',
+          mevUser: '',
+          mevPass: '',
+          mevIv: '',
+          mevTag: '',
+          dptoTipo: '',
+          dptoId: '',
+          scrapeFrequency: limits.causasPlan === 'estudio' ? '2h' : limits.causasPlan === 'profesional' ? '6h' : '24h',
+          notificationEmail: email,
+          payerEmail: email,
+          provisionedAt: new Date(),
+        },
+      }),
+      prisma.turnosSubscription.create({
+        data: {
+          userId,
+          plan: limits.turnosPlan,
+          status: 'active',
+          slug: `suite-${suiteSubId.slice(0, 8)}`,
+          businessName: '',
+          notificationEmail: email,
+          payerEmail: email,
+          provisionedAt: new Date(),
+        },
+      }),
+    ])
+
+    // Update suite with references to individual subs
+    await prisma.suiteJuridicaSubscription.update({
+      where: { id: suiteSubId },
+      data: {
+        status: 'active',
+        monitoringSubId: monitoring.id,
+        facturacionSubId: facturacion.id,
+        causasSubId: causas.id,
+        turnosSubId: turnos.id,
+        provisionedAt: new Date(),
+      },
+    })
+
+    console.log(`[Suite Provision] Suite ${suiteSubId} provisioned with 4 subs (${limits.monitoringPlan}/${limits.facturacionPlan}/${limits.causasPlan}/${limits.turnosPlan})`)
+  } catch (err) {
+    console.error(`[Suite Provision] Error provisioning suite ${suiteSubId}:`, err)
+    // Mark as active anyway — individual subs can be configured later
+    await prisma.suiteJuridicaSubscription.update({
+      where: { id: suiteSubId },
+      data: { status: 'active', provisionedAt: new Date() },
+    }).catch(() => {})
   }
 }
 

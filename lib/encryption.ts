@@ -1,16 +1,25 @@
-import { createCipheriv, createDecipheriv, randomBytes } from 'crypto'
+import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from 'crypto'
 
 const ALGORITHM = 'aes-256-gcm'
 const KEY_LENGTH = 32 // 256 bits
 const IV_LENGTH = 16
+const KDF_SALT = 'automaticialab-credentials-v1' // fixed salt — key uniqueness comes from the passphrase
+
+let _cachedKey: Buffer | null = null
 
 function getKey(): Buffer {
+  if (_cachedKey) return _cachedKey
   const raw = process.env.CREDENTIALS_ENCRYPTION_KEY
   if (!raw || raw.length < 32) {
     throw new Error('CREDENTIALS_ENCRYPTION_KEY must be set (min 32 chars)')
   }
-  // Use first 32 bytes of the key string as the encryption key
-  return Buffer.from(raw.slice(0, KEY_LENGTH), 'utf-8')
+  // If key is 64 hex chars, decode directly; otherwise derive via scrypt
+  if (/^[0-9a-fA-F]{64}$/.test(raw)) {
+    _cachedKey = Buffer.from(raw, 'hex')
+  } else {
+    _cachedKey = scryptSync(raw, KDF_SALT, KEY_LENGTH)
+  }
+  return _cachedKey
 }
 
 export interface EncryptedData {
