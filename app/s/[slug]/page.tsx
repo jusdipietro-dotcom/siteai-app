@@ -52,7 +52,8 @@ export default async function PublicSitePage({ params }: { params: { slug: strin
 
   const bd = parseJSON<BusinessData>(row.businessData as string, {} as BusinessData)
   const sections = parseJSON<SectionConfig[]>(row.sections as string, [])
-  const color = bd.branding?.primaryColor || '#6366f1'
+  const rawColor = bd.branding?.primaryColor || '#6366f1'
+  const color = /^#[0-9a-fA-F]{3,8}$/.test(rawColor) ? rawColor : '#6366f1'
   const name = bd.name || row.name
 
   const has = (id: string) => sectionEnabled(sections, id)
@@ -62,12 +63,14 @@ export default async function PublicSitePage({ params }: { params: { slug: strin
   const fontBodyId = bd.branding?.fontBody || 'inter'
   const headingFont = typographyOptions.find((f) => f.id === fontHeadingId)
   const bodyFont = typographyOptions.find((f) => f.id === fontBodyId)
-  const headingFamily = headingFont?.cssFamily || 'Inter'
-  const bodyFamily = bodyFont?.cssFamily || 'Inter'
+  const sanitizeFont = (f: string) => f.replace(/[^a-zA-Z0-9\s-]/g, '')
+  const headingFamily = sanitizeFont(headingFont?.cssFamily || 'Inter')
+  const bodyFamily = sanitizeFont(bodyFont?.cssFamily || 'Inter')
   const fontUrls = Array.from(new Set([headingFont?.googleUrl, bodyFont?.googleUrl].filter((u): u is string => !!u)))
 
   const whatsappNum = bd.contact?.whatsapp?.replace(/\D/g, '')
-  const gaId = row.plan === 'professional' && bd.gaId ? (bd.gaId as string).trim() : null
+  const rawGaId = row.plan === 'professional' && bd.gaId ? (bd.gaId as string).trim() : null
+  const gaId = rawGaId && /^(G|GT|UA)-[A-Za-z0-9-]+$/.test(rawGaId) ? rawGaId : null
   const sitemapEnabled = bd.seo?.sitemapEnabled && row.hasPaid
 
   return (

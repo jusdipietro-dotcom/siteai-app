@@ -58,19 +58,42 @@ export default function RubroPage({ params }: PageProps) {
 
   const schema = {
     '@context': 'https://schema.org',
-    '@type': 'SoftwareApplication',
+    '@type': 'WebPage',
     name: `Creador de Sitios Web para ${rubro.name}`,
     description: rubro.description,
     url: `https://automaticialab.com/para/${rubro.slug}`,
-    applicationCategory: 'WebApplications',
-    offers: { '@type': 'Offer', price: '0', priceCurrency: 'ARS' },
-    aggregateRating: { '@type': 'AggregateRating', ratingValue: '4.9', ratingCount: '500' },
+    provider: {
+      '@type': 'Organization',
+      name: 'Automatic IA Lab',
+      url: 'https://automaticialab.com',
+    },
     keywords: rubro.keywords.join(', '),
+  }
+
+  const schemas = [schema]
+
+  // Add monitoreo product schema for abogados cross-sell
+  if (rubro.crossSell) {
+    schemas.push({
+      '@context': 'https://schema.org',
+      '@type': 'Product' as const,
+      name: rubro.crossSell.title,
+      description: rubro.crossSell.description,
+      url: `https://automaticialab.com${rubro.crossSell.ctaHref}`,
+      provider: {
+        '@type': 'Organization',
+        name: 'Automatic IA Lab',
+        url: 'https://automaticialab.com',
+      },
+      keywords: '',
+    } as typeof schema)
   }
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
+      {schemas.map((s, i) => (
+        <script key={i} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(s) }} />
+      ))}
       <div className="min-h-screen bg-white">
         <Navbar />
         <RubroContent rubro={rubro} otherRubros={otherRubros} />

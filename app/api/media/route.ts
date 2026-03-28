@@ -44,7 +44,11 @@ export async function POST(req: NextRequest) {
 
     await mkdir(UPLOAD_DIR, { recursive: true })
 
-    const ext = file.name.split('.').pop() ?? 'jpg'
+    const ext = (file.name.split('.').pop() ?? 'jpg').toLowerCase()
+    const ALLOWED_EXTS = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'avif']
+    if (!ALLOWED_EXTS.includes(ext)) {
+      return NextResponse.json({ error: `Formato no permitido. Permitidos: ${ALLOWED_EXTS.join(', ')}` }, { status: 400 })
+    }
     const filename = `${generateId()}.${ext}`
     const bytes = await file.arrayBuffer()
     await writeFile(join(UPLOAD_DIR, filename), Buffer.from(bytes))
@@ -75,10 +79,11 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   }
 
-  const { id, ...data } = await req.json()
+  const body = await req.json()
+  const { id, name, category } = body
   const media = await prisma.media.update({
     where: { id, userId: session.user.id },
-    data,
+    data: { ...(name !== undefined && { name }), ...(category !== undefined && { category }) },
   })
 
   return NextResponse.json(media)

@@ -1,17 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { timingSafeEqual } from 'crypto'
 import { prisma } from '@/lib/prisma'
 
 const PROVISIONING_SECRET = process.env.SCRAPER_API_KEY
 
 function authenticateRequest(req: NextRequest): boolean {
-  // Prefer header auth over query params (query params leak in logs)
   const apiKey = req.headers.get('x-api-key')
-    || req.nextUrl.searchParams.get('apiKey')
-  if (!PROVISIONING_SECRET) {
-    console.error('[Reviews Provision] SCRAPER_API_KEY not configured')
-    return false
-  }
-  return apiKey === PROVISIONING_SECRET
+  if (!PROVISIONING_SECRET || !apiKey) return false
+  if (apiKey.length !== PROVISIONING_SECRET.length) return false
+  return timingSafeEqual(Buffer.from(apiKey), Buffer.from(PROVISIONING_SECRET))
 }
 
 /**

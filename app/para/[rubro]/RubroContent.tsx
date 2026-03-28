@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { ArrowRight, CheckCircle2, Zap, Sparkles } from 'lucide-react'
+import { ArrowRight, CheckCircle2, Zap, Sparkles, Bell } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { Rubro } from '@/data/rubros'
 
@@ -94,6 +94,50 @@ export function RubroContent({ rubro, otherRubros }: { rubro: Rubro; otherRubros
           </div>
         </div>
       </section>
+
+      {/* Cross-sell Section */}
+      {rubro.crossSell && (
+        <section className="py-20 bg-surface-50">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} custom={0}
+              className={`relative overflow-hidden rounded-3xl bg-gradient-to-br ${rubro.crossSell.gradient} p-8 lg:p-12 text-white`}>
+              <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
+              <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2" />
+              <div className="relative z-10">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
+                    <Bell className="w-5 h-5 text-white" />
+                  </div>
+                  <span className="text-sm font-semibold uppercase tracking-wider text-white/80">Complemento ideal</span>
+                </div>
+                <h3 className="text-2xl sm:text-3xl font-extrabold mb-2">{rubro.crossSell.title}</h3>
+                <p className="text-lg text-white/80 mb-4">{rubro.crossSell.subtitle}</p>
+                <p className="text-white/70 leading-relaxed mb-6 max-w-2xl">{rubro.crossSell.description}</p>
+                <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
+                  {rubro.crossSell.features.map((f) => (
+                    <li key={f} className="flex items-center gap-2 text-sm text-white/90">
+                      <CheckCircle2 className="w-4 h-4 text-white/70 shrink-0" />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                  <Link href={rubro.crossSell.ctaHref}>
+                    <Button size="lg" className="gap-2 bg-white text-surface-900 hover:bg-white/90 font-bold">
+                      {rubro.crossSell.cta}
+                      <ArrowRight className="w-4 h-4" />
+                    </Button>
+                  </Link>
+                  <div>
+                    <p className="text-sm font-bold text-white">{rubro.crossSell.price}</p>
+                    <p className="text-xs text-white/60">{rubro.crossSell.priceNote}</p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </section>
+      )}
 
       {/* CTA Section */}
       <section className="py-20 bg-surface-50">

@@ -52,10 +52,10 @@ export async function POST(req: NextRequest) {
     // 2. Deactivate tenant in n8n scrapers
     if (sub.n8nTenantId && SCRAPER_API_KEY) {
       try {
-        const removeUrl = `https://n8n.abogadoenquilmes.com/webhook/alj-tenants-remove?apiKey=${SCRAPER_API_KEY}`
+        const removeUrl = `https://n8n.abogadoenquilmes.com/webhook/alj-tenants-remove`
         await fetch(removeUrl, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'x-api-key': SCRAPER_API_KEY },
           body: JSON.stringify({ tenantId: sub.n8nTenantId }),
         })
         console.log(`[Cancel] Tenant ${sub.n8nTenantId} removed`)

@@ -48,74 +48,17 @@ export async function POST(req: NextRequest) {
     if ((portal === 'SCBA' || portal === 'AMBOS') && (!scbaUser || !scbaPass)) {
       return NextResponse.json({ error: 'Las credenciales de SCBA son obligatorias' }, { status: 400 })
     }
-    if (!notificationEmail || !notificationEmail.includes('@')) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!notificationEmail || !emailRegex.test(notificationEmail) || notificationEmail.length > 254) {
       return NextResponse.json({ error: 'Email de notificaciones inválido' }, { status: 400 })
     }
-    if (!payerEmail || !payerEmail.includes('@')) {
+    if (!payerEmail || !emailRegex.test(payerEmail) || payerEmail.length > 254) {
       return NextResponse.json({ error: 'Email de facturación inválido' }, { status: 400 })
     }
 
-    // Check existing active subscription for same CUIT
     const normalizedCuil = cuil.replace(/[-\s]/g, '')
-    const existing = await prisma.monitoringSubscription.findFirst({
-      where: {
-        userId: session.user.id,
-        cuil: normalizedCuil,
-        status: { in: ['active', 'provisioning'] },
-      },
-    })
-    if (existing) {
-      return NextResponse.json(
-        { error: 'Ya tenés una suscripción activa para este CUIT' },
-        { status: 409 }
-      )
-    }
 
-    // Enforce max CUITs per plan
-    const activeSubs = await prisma.monitoringSubscription.count({
-      where: {
-        userId: session.user.id,
-        status: { in: ['active', 'provisioning', 'pending_payment'] },
-      },
-    })
-    if (activeSubs >= planConfig.maxCuils) {
-      return NextResponse.json(
-        { error: `El plan ${planConfig.title} permite hasta ${planConfig.maxCuils} CUIT${planConfig.maxCuils > 1 ? 's' : ''}. Podés cambiar a un plan superior para agregar más.` },
-        { status: 400 }
-      )
-    }
-
-    // Auto-cancel stale pending_payment records for the same CUIT
-    await prisma.monitoringSubscription.updateMany({
-      where: {
-        userId: session.user.id,
-        cuil: normalizedCuil,
-        status: 'pending_payment',
-      },
-      data: { status: 'cancelled' },
-    })
-
-    // Validate coupon if provided
-    let couponId: string | null = null
-    let discountApplied = 0
-
-    if (couponCode) {
-      const coupon = await prisma.coupon.findUnique({ where: { code: couponCode.toUpperCase() } })
-      if (!coupon || !coupon.active) {
-        return NextResponse.json({ error: 'Cupón inválido o expirado' }, { status: 400 })
-      }
-      if (coupon.usedCount >= coupon.maxUses) {
-        return NextResponse.json({ error: 'Cupón agotado' }, { status: 400 })
-      }
-      const now = new Date()
-      if (now < coupon.validFrom || now > coupon.validUntil) {
-        return NextResponse.json({ error: 'Cupón fuera del período de validez' }, { status: 400 })
-      }
-      couponId = coupon.id
-      discountApplied = Math.min(Math.max(coupon.discount, 0), 100) // Clamp 0-100%
-    }
-
-    // Encrypt credentials (per-portal)
+    // Encrypt credentials (per-portal) — outside transaction (CPU-bound)
     const encrypted = encryptPortalCredentials({
       pjnUser: (portal === 'PJN' || portal === 'AMBOS') ? pjnUser : undefined,
       pjnPass: (portal === 'PJN' || portal === 'AMBOS') ? pjnPass : undefined,
@@ -123,24 +66,88 @@ export async function POST(req: NextRequest) {
       scbaPass: (portal === 'SCBA' || portal === 'AMBOS') ? scbaPass : undefined,
     })
 
-    // Create subscription
-    const subscription = await prisma.monitoringSubscription.create({
-      data: {
-        userId: session.user.id,
-        plan,
-        portal,
-        cuil: normalizedCuil,
-        ...encrypted,
-        notificationEmail: notificationEmail.toLowerCase(),
-        payerEmail: payerEmail.toLowerCase(),
-        couponId,
-        discountApplied,
-      },
+    // Atomic transaction: check + cancel stale + validate coupon + create
+    const result = await prisma.$transaction(async (tx) => {
+      // Check existing active subscription for same CUIT
+      const existing = await tx.monitoringSubscription.findFirst({
+        where: {
+          userId: session.user.id,
+          cuil: normalizedCuil,
+          status: { in: ['active', 'provisioning'] },
+        },
+      })
+      if (existing) {
+        return { error: 'Ya tenés una suscripción activa para este CUIT', status: 409 } as const
+      }
+
+      // Enforce max CUITs per plan (exclude pending_payment to avoid lockout from abandoned flows)
+      const activeSubs = await tx.monitoringSubscription.count({
+        where: {
+          userId: session.user.id,
+          status: { in: ['active', 'provisioning'] },
+        },
+      })
+      if (activeSubs >= planConfig.maxCuils) {
+        return {
+          error: `El plan ${planConfig.title} permite hasta ${planConfig.maxCuils} CUIT${planConfig.maxCuils > 1 ? 's' : ''}. Podés cambiar a un plan superior para agregar más.`,
+          status: 400,
+        } as const
+      }
+
+      // Auto-cancel stale pending_payment records for the same CUIT
+      await tx.monitoringSubscription.updateMany({
+        where: {
+          userId: session.user.id,
+          cuil: normalizedCuil,
+          status: 'pending_payment',
+        },
+        data: { status: 'cancelled' },
+      })
+
+      // Validate coupon if provided
+      let couponId: string | null = null
+      let discountApplied = 0
+
+      if (couponCode) {
+        const coupon = await tx.coupon.findUnique({ where: { code: couponCode.toUpperCase() } })
+        if (!coupon || !coupon.active) {
+          return { error: 'Cupón inválido o expirado', status: 400 } as const
+        }
+        if (coupon.usedCount >= coupon.maxUses) {
+          return { error: 'Cupón agotado', status: 400 } as const
+        }
+        const now = new Date()
+        if (now < coupon.validFrom || now > coupon.validUntil) {
+          return { error: 'Cupón fuera del período de validez', status: 400 } as const
+        }
+        couponId = coupon.id
+        discountApplied = Math.min(Math.max(coupon.discount, 0), 100)
+      }
+
+      // Create subscription
+      const subscription = await tx.monitoringSubscription.create({
+        data: {
+          userId: session.user.id,
+          plan,
+          portal,
+          cuil: normalizedCuil,
+          ...encrypted,
+          notificationEmail: notificationEmail.toLowerCase(),
+          payerEmail: payerEmail.toLowerCase(),
+          couponId,
+          discountApplied,
+        },
+      })
+
+      return { subscription, discountApplied }
     })
 
-    // NOTE: Coupon usedCount is incremented in the MP webhook handler
-    // AFTER payment is confirmed, not here at subscription creation time.
-    // This prevents abandoned checkouts from consuming coupon uses.
+    // Handle transaction result
+    if ('error' in result) {
+      return NextResponse.json({ error: result.error }, { status: result.status })
+    }
+
+    const { subscription, discountApplied } = result
 
     // Calculate final price
     const finalPrice = Math.round(planConfig.monthly * (1 - discountApplied / 100))

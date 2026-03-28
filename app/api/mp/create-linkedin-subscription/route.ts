@@ -74,7 +74,11 @@ export async function POST(req: NextRequest) {
         start_date: startDate,
         transaction_amount: finalPrice,
         currency_id: 'ARS',
-        ...(isFreeTrial ? { free_trial: { frequency: 1, frequency_type: 'months' } } : {}),
+        ...(isFreeTrial
+          ? { free_trial: { frequency: 1, frequency_type: 'months' } }
+          : sub.plan === 'basico'
+            ? { free_trial: { frequency: 3, frequency_type: 'days' } }
+            : {}),
       },
       back_url: backUrl,
     }

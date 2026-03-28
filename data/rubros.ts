@@ -1,3 +1,15 @@
+export interface RubroCrossSell {
+  title: string
+  subtitle: string
+  description: string
+  features: string[]
+  cta: string
+  ctaHref: string
+  price: string
+  priceNote: string
+  gradient: string
+}
+
 export interface Rubro {
   slug: string
   name: string
@@ -7,6 +19,7 @@ export interface Rubro {
   features: string[]
   keywords: string[]
   description: string // meta description
+  crossSell?: RubroCrossSell
 }
 
 export const rubros: Rubro[] = [
@@ -57,6 +70,22 @@ export const rubros: Rubro[] = [
       'web notaría',
     ],
     description: 'Sitio web profesional para estudios de abogados y consultorías jurídicas. Atrae clientes con un diseño serio y confiable. Sin código.',
+    crossSell: {
+      title: 'Monitoreo Judicial Automatico',
+      subtitle: 'Cada proveido y notificacion, directo a tu email',
+      description: 'Monitoreo automatizado de PJN y SCBA cada 2 horas en dias habiles. Recibi el texto completo de cada documento sin entrar al portal. IPs rotativas anti-bloqueo y deduplicacion inteligente.',
+      features: [
+        'Alertas cada 2 horas (lunes a viernes)',
+        'Texto completo del PDF extraido',
+        'Deduplicacion inteligente (sin repetidos)',
+        'Portales PJN y SCBA',
+      ],
+      cta: 'Activar monitoreo judicial',
+      ctaHref: '/register?next=monitoreo',
+      price: 'Desde $19.000/mes',
+      priceNote: 'Por CUIT monitoreado',
+      gradient: 'from-violet-500 to-purple-600',
+    },
   },
   {
     slug: 'medicos',

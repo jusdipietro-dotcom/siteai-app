@@ -28,7 +28,7 @@ const products = [
     id: 'monitoreo-judicial',
     badge: 'Para abogados',
     title: 'Monitoreo Judicial',
-    subtitle: 'Cada proveido, directo a tu email',
+    subtitle: 'Cada proveido y notificacion, directo a tu email',
     description: 'Monitoreo automatico de notificaciones en PJN y SCBA. Recibi alertas por email con el texto completo de cada documento, sin entrar al portal. Ideal para abogados y estudios juridicos.',
     icon: Scale,
     gradient: 'from-violet-500 to-purple-600',
@@ -40,7 +40,7 @@ const products = [
     ],
     cta: 'Activar monitoreo',
     ctaHref: '/register?next=monitoreo',
-    price: 'Desde $15.000/mes',
+    price: 'Desde $19.000/mes',
     priceNote: 'Por CUIT monitoreado',
   },
   {

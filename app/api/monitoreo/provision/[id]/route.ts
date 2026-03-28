@@ -1,17 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { timingSafeEqual } from 'crypto'
 import { prisma } from '@/lib/prisma'
 import { decryptPortalCredentials } from '@/lib/encryption'
 
 const PROVISIONING_SECRET = process.env.SCRAPER_API_KEY
 
 function authenticateRequest(req: NextRequest): boolean {
-  const apiKey = req.nextUrl.searchParams.get('apiKey')
-    || req.headers.get('x-api-key')
-  return !!PROVISIONING_SECRET && apiKey === PROVISIONING_SECRET
+  const apiKey = req.headers.get('x-api-key')
+  if (!PROVISIONING_SECRET || !apiKey) return false
+  if (apiKey.length !== PROVISIONING_SECRET.length) return false
+  return timingSafeEqual(Buffer.from(apiKey), Buffer.from(PROVISIONING_SECRET))
 }
 
 /**
- * GET /api/monitoreo/provision/[id]?apiKey=...
+ * GET /api/monitoreo/provision/[id]
+ * Header: x-api-key
  * Returns decrypted credentials for a subscription (used by n8n provisioning workflow)
  */
 export async function GET(
