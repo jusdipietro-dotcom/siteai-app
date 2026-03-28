@@ -228,7 +228,49 @@ function FacturacionPage() {
   const discount = couponValid?.valid ? couponValid.discount : 0
   const finalPrice = planConfig ? Math.round(planConfig.price * (1 - discount / 100)) : 0
 
+  // --- pending_config state (Suite Juridica flow) ---
+  const [cfgCuit, setCfgCuit] = useState('')
+  const [cfgRazonSocial, setCfgRazonSocial] = useState('')
+  const [cfgPuntoVenta, setCfgPuntoVenta] = useState('1')
+  const [cfgCondicionIva, setCfgCondicionIva] = useState('Responsable Inscripto')
+  const [configuring, setConfiguring] = useState(false)
+
+  const pendingConfigSub = subscriptions.find(s => s.status === 'pending_config')
+
+  const handleConfigure = async (subId: string) => {
+    if (!cfgCuit || !cfgRazonSocial || !cfgPuntoVenta) {
+      toast.error('Completa todos los campos obligatorios')
+      return
+    }
+    setConfiguring(true)
+    try {
+      const res = await fetch('/api/facturacion/configure', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subscriptionId: subId,
+          cuit: cfgCuit,
+          razonSocial: cfgRazonSocial,
+          puntoVenta: cfgPuntoVenta,
+          condicionIva: cfgCondicionIva,
+        }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        toast.success('Configuracion guardada. Activando servicio...')
+        fetchSubscriptions()
+      } else {
+        toast.error(data.error ?? 'Error al configurar')
+      }
+    } catch {
+      toast.error('Error al configurar')
+    } finally {
+      setConfiguring(false)
+    }
+  }
+
   const statusLabel: Record<string, { text: string; color: string }> = {
+    pending_config: { text: 'Pendiente de configuracion', color: 'bg-orange-100 text-orange-800' },
     pending_payment: { text: 'Pendiente de pago', color: 'bg-yellow-100 text-yellow-800' },
     active: { text: 'Activo', color: 'bg-emerald-100 text-emerald-800' },
     provisioning: { text: 'Activando (hasta 24hs)', color: 'bg-blue-100 text-blue-800' },
@@ -248,6 +290,88 @@ function FacturacionPage() {
         <div className="mb-10 flex items-center gap-3 text-surface-500">
           <Loader2 className="w-5 h-5 animate-spin" />
           <span className="text-sm">Cargando suscripciones...</span>
+        </div>
+      )}
+
+      {/* Pending configuration (Suite Juridica flow) */}
+      {!loadingSubs && pendingConfigSub && (
+        <div className="mb-10">
+          <div className="rounded-2xl border-2 border-orange-200 bg-orange-50 overflow-hidden">
+            <div className="p-4 border-b border-orange-200 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center">
+                <AlertCircle className="w-5 h-5 text-orange-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-surface-900 text-sm">Configurar Facturacion Electronica</h3>
+                <p className="text-xs text-surface-500">
+                  Plan {pendingConfigSub.plan} — Completa los datos para activar el servicio.
+                </p>
+              </div>
+            </div>
+            <div className="p-5 space-y-4 max-w-lg">
+              <div>
+                <label className="block text-sm font-medium text-surface-700 mb-1">CUIT *</label>
+                <div className="relative">
+                  <Hash className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-400" />
+                  <input
+                    type="text"
+                    value={cfgCuit}
+                    onChange={e => setCfgCuit(e.target.value)}
+                    placeholder="20-12345678-9"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-surface-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-surface-700 mb-1">Razon Social *</label>
+                <div className="relative">
+                  <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-400" />
+                  <input
+                    type="text"
+                    value={cfgRazonSocial}
+                    onChange={e => setCfgRazonSocial(e.target.value)}
+                    placeholder="Estudio Juridico Garcia & Asociados"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-surface-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="cfg-pv" className="block text-sm font-medium text-surface-700 mb-1">Punto de Venta *</label>
+                  <input
+                    id="cfg-pv"
+                    type="number"
+                    value={cfgPuntoVenta}
+                    onChange={e => setCfgPuntoVenta(e.target.value)}
+                    min="1"
+                    max="99999"
+                    placeholder="1"
+                    className="w-full px-4 py-2.5 rounded-xl border border-surface-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="cfg-iva" className="block text-sm font-medium text-surface-700 mb-1">Condicion IVA</label>
+                  <select
+                    id="cfg-iva"
+                    value={cfgCondicionIva}
+                    onChange={e => setCfgCondicionIva(e.target.value)}
+                    title="Condicion ante el IVA"
+                    className="w-full px-4 py-2.5 rounded-xl border border-surface-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm"
+                  >
+                    {IVA_CONDITIONS.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+              </div>
+              <Button
+                onClick={() => handleConfigure(pendingConfigSub.id)}
+                disabled={configuring || !cfgCuit || !cfgRazonSocial || !cfgPuntoVenta}
+                className="gap-1.5 bg-emerald-600 hover:bg-emerald-700"
+              >
+                {configuring ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                Activar Facturacion
+              </Button>
+            </div>
+          </div>
         </div>
       )}
 

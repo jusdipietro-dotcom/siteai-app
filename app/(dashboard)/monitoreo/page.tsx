@@ -60,7 +60,7 @@ type Subscription = {
 
 export default function MonitoreoPageWrapper() {
   return (
-    <Suspense>
+    <Suspense fallback={<div className="flex items-center justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-surface-400" /></div>}>
       <MonitoreoPage />
     </Suspense>
   )
@@ -70,6 +70,7 @@ function MonitoreoPage() {
   const { data: session } = useSession()
   const searchParams = useSearchParams()
   const mpReturn = searchParams.get('mp_return')
+  const mpStatus = searchParams.get('status') || searchParams.get('collection_status') || ''
   const [step, setStep] = useState<Step>(mpReturn ? 'done' : 'plan')
   const [selectedPlan, setSelectedPlan] = useState('')
   const [selectedPortal, setSelectedPortal] = useState('')
@@ -230,7 +231,62 @@ function MonitoreoPage() {
   const discount = couponValid?.valid ? couponValid.discount : 0
   const finalPrice = planConfig ? Math.round(planConfig.price * (1 - discount / 100)) : 0
 
+  // --- pending_config state (Suite Juridica flow) ---
+  const pendingConfigSub = subscriptions.find(s => s.status === 'pending_config')
+  const [cfgCuil, setCfgCuil] = useState('')
+  const [cfgPortal, setCfgPortal] = useState('AMBOS')
+  const [cfgPjnUser, setCfgPjnUser] = useState('')
+  const [cfgPjnPass, setCfgPjnPass] = useState('')
+  const [cfgScbaUser, setCfgScbaUser] = useState('')
+  const [cfgScbaPass, setCfgScbaPass] = useState('')
+  const [configuring, setConfiguring] = useState(false)
+
+  const handleConfigure = async (subId: string) => {
+    if (!cfgCuil) {
+      toast.error('Ingresa el CUIL a monitorear')
+      return
+    }
+    const needsPjn = cfgPortal === 'PJN' || cfgPortal === 'AMBOS'
+    const needsScba = cfgPortal === 'SCBA' || cfgPortal === 'AMBOS'
+    if (needsPjn && (!cfgPjnUser || !cfgPjnPass)) {
+      toast.error('Completa las credenciales de PJN')
+      return
+    }
+    if (needsScba && (!cfgScbaUser || !cfgScbaPass)) {
+      toast.error('Completa las credenciales de SCBA')
+      return
+    }
+    setConfiguring(true)
+    try {
+      const res = await fetch('/api/monitoreo/configure', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subscriptionId: subId,
+          cuil: cfgCuil,
+          portal: cfgPortal,
+          pjnUser: needsPjn ? cfgPjnUser : undefined,
+          pjnPass: needsPjn ? cfgPjnPass : undefined,
+          scbaUser: needsScba ? cfgScbaUser : undefined,
+          scbaPass: needsScba ? cfgScbaPass : undefined,
+        }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        toast.success('Configuracion guardada. Activando monitoreo...')
+        fetchSubscriptions()
+      } else {
+        toast.error(data.error ?? 'Error al configurar')
+      }
+    } catch {
+      toast.error('Error al configurar')
+    } finally {
+      setConfiguring(false)
+    }
+  }
+
   const statusLabel: Record<string, { text: string; color: string }> = {
+    pending_config: { text: 'Pendiente de configuracion', color: 'bg-orange-100 text-orange-800' },
     pending_payment: { text: 'Pendiente de pago', color: 'bg-yellow-100 text-yellow-800' },
     active: { text: 'Activo', color: 'bg-emerald-100 text-emerald-800' },
     provisioning: { text: 'Activando (hasta 48hs)', color: 'bg-blue-100 text-blue-800' },
@@ -244,6 +300,145 @@ function MonitoreoPage() {
         <h1 className="text-2xl font-bold text-surface-900">Monitoreo Judicial</h1>
         <p className="text-surface-500 mt-1">Recibí alertas automáticas de notificaciones judiciales por email.</p>
       </div>
+
+      {/* Loading subscriptions */}
+      {loadingSubs && (
+        <div className="mb-10 flex items-center gap-3 text-surface-500">
+          <Loader2 className="w-5 h-5 animate-spin" />
+          <span className="text-sm">Cargando suscripciones...</span>
+        </div>
+      )}
+
+      {/* Pending configuration (Suite Juridica flow) */}
+      {!loadingSubs && pendingConfigSub && (
+        <div className="mb-10">
+          <div className="rounded-2xl border-2 border-orange-200 bg-orange-50 overflow-hidden">
+            <div className="p-4 border-b border-orange-200 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center">
+                <AlertCircle className="w-5 h-5 text-orange-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-surface-900 text-sm">Configurar Monitoreo Judicial</h3>
+                <p className="text-xs text-surface-500">
+                  Plan {pendingConfigSub.plan} — Ingresa tu CUIL y credenciales del portal para activar las alertas.
+                </p>
+              </div>
+            </div>
+            <div className="p-5 space-y-4 max-w-lg">
+              <div className="flex items-start gap-2 bg-blue-50 border border-blue-200 rounded-xl p-3">
+                <Shield className="w-4 h-4 text-blue-600 mt-0.5 shrink-0" />
+                <p className="text-xs text-blue-800">
+                  Tus credenciales se encriptan con AES-256-GCM y nunca se almacenan en texto plano.
+                  Solo se usan para acceder al portal judicial en tu nombre.
+                </p>
+              </div>
+
+              <div>
+                <label htmlFor="cfg-cuil" className="block text-sm font-medium text-surface-700 mb-1">CUIL a monitorear *</label>
+                <input
+                  id="cfg-cuil"
+                  type="text"
+                  value={cfgCuil}
+                  onChange={e => setCfgCuil(e.target.value)}
+                  placeholder="20-12345678-9"
+                  className="w-full h-10 px-3 rounded-xl border border-surface-200 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="cfg-portal" className="block text-sm font-medium text-surface-700 mb-1">Portal judicial *</label>
+                <select
+                  id="cfg-portal"
+                  title="Seleccionar portal judicial"
+                  value={cfgPortal}
+                  onChange={e => setCfgPortal(e.target.value)}
+                  className="w-full h-10 px-3 rounded-xl border border-surface-200 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none"
+                >
+                  {PORTALS.map(p => <option key={p.id} value={p.id}>{p.name} — {p.desc}</option>)}
+                </select>
+              </div>
+
+              {/* PJN credentials */}
+              {(cfgPortal === 'PJN' || cfgPortal === 'AMBOS') && (
+                <div className="rounded-2xl border border-surface-100 p-4 space-y-3">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xs font-bold uppercase tracking-wider text-violet-600 bg-violet-100 px-2 py-0.5 rounded-full">PJN</span>
+                    <span className="text-xs text-surface-400">Poder Judicial de la Nacion</span>
+                  </div>
+                  <div>
+                    <label htmlFor="cfg-pjn-user" className="block text-sm font-medium text-surface-700 mb-1">Usuario PJN *</label>
+                    <input
+                      id="cfg-pjn-user"
+                      type="text"
+                      autoComplete="off"
+                      value={cfgPjnUser}
+                      onChange={e => setCfgPjnUser(e.target.value)}
+                      placeholder="CUIT sin guiones (ej: 20345678901)"
+                      className="w-full h-10 px-3 rounded-xl border border-surface-200 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="cfg-pjn-pass" className="block text-sm font-medium text-surface-700 mb-1">Contrasena PJN *</label>
+                    <input
+                      id="cfg-pjn-pass"
+                      type="password"
+                      autoComplete="off"
+                      value={cfgPjnPass}
+                      onChange={e => setCfgPjnPass(e.target.value)}
+                      placeholder="Contrasena del portal PJN"
+                      className="w-full h-10 px-3 rounded-xl border border-surface-200 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* SCBA credentials */}
+              {(cfgPortal === 'SCBA' || cfgPortal === 'AMBOS') && (
+                <div className="rounded-2xl border border-surface-100 p-4 space-y-3">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xs font-bold uppercase tracking-wider text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">SCBA</span>
+                    <span className="text-xs text-surface-400">Suprema Corte de Buenos Aires</span>
+                  </div>
+                  <div>
+                    <label htmlFor="cfg-scba-user" className="block text-sm font-medium text-surface-700 mb-1">Usuario SCBA *</label>
+                    <input
+                      id="cfg-scba-user"
+                      type="text"
+                      autoComplete="off"
+                      value={cfgScbaUser}
+                      onChange={e => setCfgScbaUser(e.target.value)}
+                      placeholder="CUIT@notificaciones.scba.gov.ar"
+                      className="w-full h-10 px-3 rounded-xl border border-surface-200 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="cfg-scba-pass" className="block text-sm font-medium text-surface-700 mb-1">Contrasena SCBA *</label>
+                    <input
+                      id="cfg-scba-pass"
+                      type="password"
+                      autoComplete="off"
+                      value={cfgScbaPass}
+                      onChange={e => setCfgScbaPass(e.target.value)}
+                      placeholder="Contrasena del portal SCBA"
+                      className="w-full h-10 px-3 rounded-xl border border-surface-200 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <Button
+                type="button"
+                onClick={() => handleConfigure(pendingConfigSub.id)}
+                disabled={configuring || !cfgCuil}
+                className="gap-1.5"
+              >
+                {configuring ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                Activar Monitoreo Judicial
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Existing subscriptions */}
       {!loadingSubs && subscriptions.length > 0 && (
@@ -389,18 +584,20 @@ function MonitoreoPage() {
           })}
         </div>
 
-        <div className="p-6 sm:p-8">
+        <div className="p-6 sm:p-8" aria-live="polite">
           <AnimatePresence mode="wait">
             {/* Step 1: Plan selection */}
             {step === 'plan' && (
               <motion.div key="plan" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
                 <h2 className="text-xl font-bold text-surface-900 mb-2">Elegí tu plan</h2>
                 <p className="text-sm text-surface-500 mb-6">Cada plan incluye monitoreo automático con alertas por email.</p>
-                <div className="grid sm:grid-cols-3 gap-4">
+                <div className="grid sm:grid-cols-3 gap-4" role="radiogroup" aria-label="Seleccionar plan">
                   {PLANS.map(plan => (
                     <button
                       key={plan.id}
                       type="button"
+                      role="radio"
+                      aria-checked={selectedPlan === plan.id}
                       onClick={() => { setSelectedPlan(plan.id); setStep('portal') }}
                       className={`relative text-left p-5 rounded-2xl border-2 transition-all hover:shadow-md ${
                         selectedPlan === plan.id ? 'border-brand-500 bg-brand-50' : 'border-surface-100 hover:border-surface-200'
@@ -434,11 +631,13 @@ function MonitoreoPage() {
               <motion.div key="portal" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
                 <h2 className="text-xl font-bold text-surface-900 mb-2">Elegí el portal judicial</h2>
                 <p className="text-sm text-surface-500 mb-6">Seleccioná el portal donde querés recibir alertas.</p>
-                <div className="grid sm:grid-cols-3 gap-4 mb-6">
+                <div className="grid sm:grid-cols-3 gap-4 mb-6" role="radiogroup" aria-label="Seleccionar portal">
                   {PORTALS.map(p => (
                     <button
                       key={p.id}
                       type="button"
+                      role="radio"
+                      aria-checked={selectedPortal === p.id}
                       onClick={() => {
                         setSelectedPortal(p.id)
                         if (p.id === 'PJN') { setScbaUser(''); setScbaPass('') }
@@ -484,40 +683,52 @@ function MonitoreoPage() {
 
                 <div className="space-y-5 max-w-lg">
                   <div>
-                    <label className="block text-sm font-medium text-surface-700 mb-1.5">CUIT a monitorear</label>
+                    <label htmlFor="cuil" className="block text-sm font-medium text-surface-700 mb-1.5">CUIT a monitorear</label>
                     <input
+                      id="cuil"
                       type="text"
                       value={cuil}
                       onChange={e => setCuil(e.target.value)}
                       placeholder="20-12345678-9"
                       className="w-full h-10 px-3 rounded-xl border border-surface-200 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none"
                     />
+                    {cuil && !/^\d{2}-?\d{7,8}-?\d$/.test(cuil.replace(/\s/g, '')) && (
+                      <p className="text-xs text-red-500 mt-1">Formato de CUIT invalido. Ej: 20-12345678-9</p>
+                    )}
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-surface-700 mb-1.5">
+                    <label htmlFor="notificationEmail" className="block text-sm font-medium text-surface-700 mb-1.5">
                       <Mail className="w-3.5 h-3.5 inline mr-1.5 -mt-0.5" />
                       Email donde recibir las alertas judiciales
                     </label>
                     <input
+                      id="notificationEmail"
                       type="email"
                       value={notificationEmail}
                       onChange={e => setNotificationEmail(e.target.value)}
                       placeholder="alertas@estudio.com"
                       className="w-full h-10 px-3 rounded-xl border border-surface-200 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none"
                     />
-                    <p className="text-xs text-surface-400 mt-1">Acá vas a recibir cada nueva notificación judicial.</p>
+                    {notificationEmail && !notificationEmail.includes('@') && (
+                      <p className="text-xs text-red-500 mt-1">Ingresa un email valido.</p>
+                    )}
+                    <p className="text-xs text-surface-400 mt-1">Aca vas a recibir cada nueva notificacion judicial.</p>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-surface-700 mb-1.5">Email de facturación</label>
+                    <label htmlFor="payerEmail" className="block text-sm font-medium text-surface-700 mb-1.5">Email de facturacion</label>
                     <input
+                      id="payerEmail"
                       type="email"
                       value={payerEmail}
                       onChange={e => setPayerEmail(e.target.value)}
                       placeholder="facturacion@estudio.com"
                       className="w-full h-10 px-3 rounded-xl border border-surface-200 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none"
                     />
+                    {payerEmail && !payerEmail.includes('@') && (
+                      <p className="text-xs text-red-500 mt-1">Ingresa un email valido.</p>
+                    )}
                   </div>
 
                   {/* PJN Credentials */}
@@ -528,9 +739,11 @@ function MonitoreoPage() {
                         <span className="text-xs text-surface-400">Poder Judicial de la Nación</span>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-surface-700 mb-1.5">Usuario PJN</label>
+                        <label htmlFor="pjnUser" className="block text-sm font-medium text-surface-700 mb-1.5">Usuario PJN</label>
                         <input
+                          id="pjnUser"
                           type="text"
+                          autoComplete="off"
                           value={pjnUser}
                           onChange={e => setPjnUser(e.target.value)}
                           placeholder="CUIT sin guiones (ej: 20345678901)"
@@ -538,12 +751,14 @@ function MonitoreoPage() {
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-surface-700 mb-1.5">Contraseña PJN</label>
+                        <label htmlFor="pjnPass" className="block text-sm font-medium text-surface-700 mb-1.5">Contrasena PJN</label>
                         <input
+                          id="pjnPass"
                           type="password"
+                          autoComplete="off"
                           value={pjnPass}
                           onChange={e => setPjnPass(e.target.value)}
-                          placeholder="Contraseña del portal PJN"
+                          placeholder="Contrasena del portal PJN"
                           className="w-full h-10 px-3 rounded-xl border border-surface-200 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none"
                         />
                       </div>
@@ -558,9 +773,11 @@ function MonitoreoPage() {
                         <span className="text-xs text-surface-400">Suprema Corte de Buenos Aires</span>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-surface-700 mb-1.5">Usuario SCBA</label>
+                        <label htmlFor="scbaUser" className="block text-sm font-medium text-surface-700 mb-1.5">Usuario SCBA</label>
                         <input
+                          id="scbaUser"
                           type="text"
+                          autoComplete="off"
                           value={scbaUser}
                           onChange={e => setScbaUser(e.target.value)}
                           placeholder="CUIT@notificaciones.scba.gov.ar"
@@ -568,12 +785,14 @@ function MonitoreoPage() {
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-surface-700 mb-1.5">Contraseña SCBA</label>
+                        <label htmlFor="scbaPass" className="block text-sm font-medium text-surface-700 mb-1.5">Contrasena SCBA</label>
                         <input
+                          id="scbaPass"
                           type="password"
+                          autoComplete="off"
                           value={scbaPass}
                           onChange={e => setScbaPass(e.target.value)}
-                          placeholder="Contraseña del portal SCBA"
+                          placeholder="Contrasena del portal SCBA"
                           className="w-full h-10 px-3 rounded-xl border border-surface-200 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none"
                         />
                       </div>
@@ -608,7 +827,9 @@ function MonitoreoPage() {
                 <p className="text-sm text-surface-500 mb-6">Si tenés un código de descuento, ingresalo acá. Si no, podés continuar directamente.</p>
 
                 <div className="flex gap-3 max-w-md mb-4">
+                  <label htmlFor="couponCode" className="sr-only">Codigo de cupon</label>
                   <input
+                    id="couponCode"
                     type="text"
                     value={couponCode}
                     onChange={e => { setCouponCode(e.target.value.toUpperCase()); setCouponValid(null) }}
@@ -717,28 +938,52 @@ function MonitoreoPage() {
             {step === 'done' && (
               <motion.div key="done" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
                 <div className="text-center py-8">
-                  <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
-                    <CheckCircle2 className="w-8 h-8 text-emerald-600" />
-                  </div>
-                  <h2 className="text-xl font-bold text-surface-900 mb-2">Pago registrado</h2>
-                  <p className="text-sm text-surface-500 max-w-md mx-auto mb-6">
-                    Tu suscripción de monitoreo judicial está siendo procesada.
-                    Recibirás un email de confirmación cuando el servicio esté activo (dentro de las 48 horas hábiles).
-                  </p>
-                  <div className="bg-surface-50 rounded-2xl p-5 max-w-sm mx-auto space-y-2 mb-6">
-                    <div className="flex items-center gap-2 text-sm">
-                      <Check className="w-4 h-4 text-emerald-500" />
-                      <span className="text-surface-700">Pago con MercadoPago procesado</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <Clock className="w-4 h-4 text-amber-500" />
-                      <span className="text-surface-700">Activación en curso (hasta 48hs)</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <Bell className="w-4 h-4 text-blue-500" />
-                      <span className="text-surface-700">Te avisamos por email cuando esté listo</span>
-                    </div>
-                  </div>
+                  {(mpStatus === 'approved' || (!mpStatus && mpReturn)) ? (
+                    <>
+                      <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
+                        <CheckCircle2 className="w-8 h-8 text-emerald-600" />
+                      </div>
+                      <h2 className="text-xl font-bold text-surface-900 mb-2">Pago registrado</h2>
+                      <p className="text-sm text-surface-500 max-w-md mx-auto mb-6">
+                        Tu suscripcion de monitoreo judicial esta siendo procesada.
+                        Recibiras un email de confirmacion cuando el servicio este activo (dentro de las 48 horas habiles).
+                      </p>
+                      <div className="bg-surface-50 rounded-2xl p-5 max-w-sm mx-auto space-y-2 mb-6">
+                        <div className="flex items-center gap-2 text-sm">
+                          <Check className="w-4 h-4 text-emerald-500" />
+                          <span className="text-surface-700">Pago con MercadoPago procesado</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm">
+                          <Clock className="w-4 h-4 text-amber-500" />
+                          <span className="text-surface-700">Activacion en curso (hasta 48hs)</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm">
+                          <Bell className="w-4 h-4 text-blue-500" />
+                          <span className="text-surface-700">Te avisamos por email cuando este listo</span>
+                        </div>
+                      </div>
+                    </>
+                  ) : mpStatus === 'pending' ? (
+                    <>
+                      <div className="w-16 h-16 rounded-full bg-yellow-100 flex items-center justify-center mx-auto mb-4">
+                        <Clock className="w-8 h-8 text-yellow-600" />
+                      </div>
+                      <h2 className="text-xl font-bold text-surface-900 mb-2">Pago pendiente</h2>
+                      <p className="text-sm text-surface-500 max-w-md mx-auto mb-6">
+                        Pago pendiente de confirmacion. Te notificaremos cuando se acredite.
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
+                        <AlertCircle className="w-8 h-8 text-red-600" />
+                      </div>
+                      <h2 className="text-xl font-bold text-surface-900 mb-2">Pago no completado</h2>
+                      <p className="text-sm text-surface-500 max-w-md mx-auto mb-6">
+                        El pago no se pudo completar. Intenta nuevamente.
+                      </p>
+                    </>
+                  )}
                   <Button
                     variant="outline"
                     onClick={() => { setStep('plan'); fetchSubscriptions(); window.history.replaceState({}, '', '/monitoreo') }}

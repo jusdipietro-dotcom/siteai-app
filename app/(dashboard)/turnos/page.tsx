@@ -164,6 +164,7 @@ function TurnosPage() {
   }, [mpReturn])
 
   const activeSub = subscriptions.find(s => s.status === 'active' || s.status === 'provisioning')
+  const pendingConfigSub = subscriptions.find(s => s.status === 'pending_config')
 
   // Load config when active subscription exists
   useEffect(() => {
@@ -344,7 +345,47 @@ function TurnosPage() {
   const maxDays = selectedPlan === 'basico' ? [1, 2, 3, 4, 5] : [1, 2, 3, 4, 5, 6]
   const planMaxAreas = selectedPlan === 'basico' ? 1 : selectedPlan === 'profesional' ? 5 : 999
 
+  // --- pending_config state (Suite Juridica flow) ---
+  const [cfgBusinessName, setCfgBusinessName] = useState('')
+  const [cfgSlug, setCfgSlug] = useState('')
+  const [cfgPhone, setCfgPhone] = useState('')
+  const [cfgAddress, setCfgAddress] = useState('')
+  const [configuring, setConfiguring] = useState(false)
+
+  const handleConfigure = async (subId: string) => {
+    if (!cfgBusinessName || !cfgSlug) {
+      toast.error('Completa al menos el nombre del negocio y el slug')
+      return
+    }
+    setConfiguring(true)
+    try {
+      const res = await fetch('/api/turnos/configure', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subscriptionId: subId,
+          businessName: cfgBusinessName,
+          slug: normalizeSlug(cfgSlug),
+          phone: cfgPhone,
+          address: cfgAddress,
+        }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        toast.success('Configuracion guardada. Activando servicio...')
+        fetchSubscriptions()
+      } else {
+        toast.error(data.error ?? 'Error al configurar')
+      }
+    } catch {
+      toast.error('Error al configurar')
+    } finally {
+      setConfiguring(false)
+    }
+  }
+
   const statusLabel: Record<string, { text: string; color: string }> = {
+    pending_config: { text: 'Pendiente de configuracion', color: 'bg-orange-100 text-orange-800' },
     pending_payment: { text: 'Pendiente de pago', color: 'bg-yellow-100 text-yellow-800' },
     active: { text: 'Activo', color: 'bg-emerald-100 text-emerald-800' },
     provisioning: { text: 'Activando...', color: 'bg-blue-100 text-blue-800' },
@@ -364,6 +405,86 @@ function TurnosPage() {
         <div className="mb-10 flex items-center gap-3 text-surface-500">
           <Loader2 className="w-5 h-5 animate-spin" />
           <span className="text-sm">Cargando suscripciones...</span>
+        </div>
+      )}
+
+      {/* Pending configuration (Suite Juridica flow) */}
+      {!loadingSubs && pendingConfigSub && (
+        <div className="mb-10">
+          <div className="rounded-2xl border-2 border-orange-200 bg-orange-50 overflow-hidden">
+            <div className="p-4 border-b border-orange-200 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center">
+                <AlertCircle className="w-5 h-5 text-orange-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-surface-900 text-sm">Configurar Turnos Online</h3>
+                <p className="text-xs text-surface-500">
+                  Plan {pendingConfigSub.plan} — Completa los datos de tu negocio para activar la pagina de turnos.
+                </p>
+              </div>
+            </div>
+            <div className="p-5 space-y-4 max-w-lg">
+              <div>
+                <label htmlFor="cfg-biz-name" className="block text-sm font-medium text-surface-700 mb-1">Nombre del negocio *</label>
+                <input
+                  id="cfg-biz-name"
+                  type="text"
+                  value={cfgBusinessName}
+                  onChange={e => setCfgBusinessName(e.target.value)}
+                  placeholder="Estudio Juridico Garcia & Asociados"
+                  className="w-full px-4 py-2.5 rounded-xl border border-surface-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none text-sm"
+                />
+              </div>
+              <div>
+                <label htmlFor="cfg-slug" className="block text-sm font-medium text-surface-700 mb-1">Slug (URL publica) *</label>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-surface-400 shrink-0">turnos.automaticialab.com/</span>
+                  <input
+                    id="cfg-slug"
+                    type="text"
+                    value={cfgSlug}
+                    onChange={e => setCfgSlug(e.target.value)}
+                    placeholder="estudio-garcia"
+                    className="flex-1 px-4 py-2.5 rounded-xl border border-surface-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none text-sm"
+                  />
+                </div>
+                {cfgSlug && (
+                  <p className="text-xs text-surface-400 mt-1">URL final: turnos.automaticialab.com/{normalizeSlug(cfgSlug)}</p>
+                )}
+              </div>
+              <div>
+                <label htmlFor="cfg-phone" className="block text-sm font-medium text-surface-700 mb-1">Telefono</label>
+                <input
+                  id="cfg-phone"
+                  type="text"
+                  value={cfgPhone}
+                  onChange={e => setCfgPhone(e.target.value)}
+                  placeholder="11 1234-5678"
+                  className="w-full px-4 py-2.5 rounded-xl border border-surface-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none text-sm"
+                />
+              </div>
+              <div>
+                <label htmlFor="cfg-address" className="block text-sm font-medium text-surface-700 mb-1">Direccion</label>
+                <input
+                  id="cfg-address"
+                  type="text"
+                  value={cfgAddress}
+                  onChange={e => setCfgAddress(e.target.value)}
+                  placeholder="Av. Rivadavia 1234, CABA"
+                  className="w-full px-4 py-2.5 rounded-xl border border-surface-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none text-sm"
+                />
+              </div>
+              <Button
+                type="button"
+                onClick={() => handleConfigure(pendingConfigSub.id)}
+                disabled={configuring || !cfgBusinessName || !cfgSlug}
+                className="gap-1.5"
+              >
+                {configuring ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                Activar Turnos Online
+              </Button>
+            </div>
+          </div>
         </div>
       )}
 
