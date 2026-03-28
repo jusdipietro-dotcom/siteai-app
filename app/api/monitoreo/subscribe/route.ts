@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { encryptPortalCredentials } from '@/lib/encryption'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 import { isUserFreeAccount } from '@/lib/free-account'
+import { getTrialEndDate } from '@/lib/trial'
 
 const MONITORING_PLANS: Record<string, { monthly: number; title: string; maxCuils: number }> = {
   basico:       { monthly: 19000, title: 'Monitoreo Judicial Básico',       maxCuils: 1 },
@@ -74,7 +75,7 @@ export async function POST(req: NextRequest) {
         where: {
           userId: session.user.id,
           cuil: normalizedCuil,
-          status: { in: ['active', 'provisioning'] },
+          status: { in: ['active', 'provisioning', 'trial'] },
         },
       })
       if (existing) {
@@ -85,7 +86,7 @@ export async function POST(req: NextRequest) {
       const activeSubs = await tx.monitoringSubscription.count({
         where: {
           userId: session.user.id,
-          status: { in: ['active', 'provisioning'] },
+          status: { in: ['active', 'provisioning', 'trial'] },
         },
       })
       if (activeSubs >= planConfig.maxCuils) {
@@ -163,6 +164,28 @@ export async function POST(req: NextRequest) {
         status: 'active',
         nextStep: 'done',
         freeAccount: true,
+      })
+    }
+
+    // Trial: check if user already used trial for this service
+    const previousSub = await prisma.monitoringSubscription.findFirst({
+      where: {
+        userId: session.user.id,
+        status: { in: ['cancelled', 'suspended', 'trial_expired'] },
+      },
+    })
+    // First time → 3-day trial (no payment needed)
+    if (!previousSub) {
+      await prisma.monitoringSubscription.update({
+        where: { id: subscription.id },
+        data: { status: 'trial', trialEndsAt: getTrialEndDate() },
+      })
+      return NextResponse.json({
+        subscriptionId: subscription.id,
+        plan,
+        status: 'trial',
+        trialEndsAt: getTrialEndDate().toISOString(),
+        nextStep: 'trial_started',
       })
     }
 

@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard, BookTemplate, Settings, HelpCircle,
   Plus, LogOut, Search as SearchIcon, Image, ChevronLeft, ChevronRight,
-  Scale, Tag, Users, MessageSquare, Linkedin, TrendingUp, Send, Target, Receipt, FileSearch, CalendarDays, Briefcase, Shield,
+  Scale, Tag, Users, MessageSquare, Linkedin, TrendingUp, Send, Target, Receipt, FileSearch, CalendarDays, Briefcase, Shield, Gift,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useUIStore } from '@/store/useUIStore'
@@ -205,6 +205,16 @@ export function DashboardSidebar() {
             >
               <Users className="h-3.5 w-3.5 shrink-0" />
               Suscripciones
+            </Link>
+            <Link
+              href="/admin/cuentas-gratis"
+              className={cn(
+                'flex items-center gap-2.5 h-8 px-2 rounded-lg text-xs text-white/50 hover:bg-white/6 hover:text-white/80 transition-all',
+                pathname.includes('/admin/cuentas-gratis') && 'bg-white/8 text-white/80'
+              )}
+            >
+              <Gift className="h-3.5 w-3.5 shrink-0" />
+              Cuentas Gratis
             </Link>
           </div>
         )}

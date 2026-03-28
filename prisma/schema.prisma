@@ -83,6 +83,7 @@ model MonitoringSubscription {
   preapprovalId     String?
   couponId          String?
   discountApplied   Int       @default(0) // percentage discount applied
+  trialEndsAt       DateTime?
   provisionedAt     DateTime?
   n8nTenantId       String? // tenant ID in n8n workflows once provisioned
   createdAt         DateTime  @default(now())
@@ -124,7 +125,7 @@ model Coupon {
 model TradingSubscription {
   id                String    @id @default(cuid())
   userId            String
-  status            String    @default("pending_payment") // pending_payment, active, provisioning, suspended, cancelled
+  status            String    @default("pending_payment") // pending_payment, trial, active, provisioning, suspended, cancelled
   plan              String // basico, profesional, premium
   symbols           String    @default("BTC/USDT,ETH/USDT,SOL/USDT,BNB/USDT,XRP/USDT") // pares monitoreados
   timeframe         String    @default("1h") // 1h, 4h, 15m
@@ -135,6 +136,7 @@ model TradingSubscription {
   preapprovalId     String?
   couponId          String?
   discountApplied   Int       @default(0)
+  trialEndsAt       DateTime?
   provisionedAt     DateTime?
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
@@ -148,7 +150,7 @@ model TradingSubscription {
 model ReviewsSubscription {
   id                String    @id @default(cuid())
   userId            String
-  status            String    @default("pending_payment") // pending_payment, active, provisioning, suspended, cancelled
+  status            String    @default("pending_payment") // pending_payment, trial, active, provisioning, suspended, cancelled
   plan              String // basico, profesional, premium
   businessName      String
   businessType      String
@@ -160,6 +162,7 @@ model ReviewsSubscription {
   preapprovalId     String?
   couponId          String?
   discountApplied   Int       @default(0)
+  trialEndsAt       DateTime?
   provisionedAt     DateTime?
   n8nTenantId       String?
   createdAt         DateTime  @default(now())
@@ -188,6 +191,7 @@ model LinkedInSubscription {
   preapprovalId     String?
   couponId          String?
   discountApplied   Int       @default(0)
+  trialEndsAt       DateTime?
   provisionedAt     DateTime?
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
@@ -213,6 +217,7 @@ model LeadsSubscription {
   preapprovalId     String?
   couponId          String?
   discountApplied   Int       @default(0)
+  trialEndsAt       DateTime?
   provisionedAt     DateTime?
   n8nWorkflowId     String?
   createdAt         DateTime  @default(now())
@@ -238,6 +243,7 @@ model EmailMarketingSubscription {
   preapprovalId      String?
   couponId           String?
   discountApplied    Int       @default(0)
+  trialEndsAt        DateTime?
   provisionedAt      DateTime?
   n8nWorkflowId      String? // ID del workflow en n8n una vez provisionado
   googleSheetId      String? // ID de la Google Sheet con contactos del cliente
@@ -270,6 +276,7 @@ model ProspeccionSubscription {
   preapprovalId           String?
   couponId                String?
   discountApplied         Int       @default(0)
+  trialEndsAt             DateTime?
   provisionedAt           DateTime?
   n8nLeadWorkflowId       String?
   n8nIcebreakerWorkflowId String?
@@ -299,6 +306,7 @@ model FacturacionSubscription {
   preapprovalId     String?
   couponId          String?
   discountApplied   Int       @default(0) // percentage discount applied
+  trialEndsAt       DateTime?
   provisionedAt     DateTime?
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
@@ -331,6 +339,7 @@ model CausasSubscription {
   preapprovalId     String?
   couponId          String?
   discountApplied   Int       @default(0)
+  trialEndsAt       DateTime?
   provisionedAt     DateTime?
   scraperTenantId   String? // tenant ID in scraper service once provisioned
   createdAt         DateTime  @default(now())
@@ -397,6 +406,7 @@ model TurnosSubscription {
   preapprovalId     String?
   couponId          String?
   discountApplied   Int       @default(0)
+  trialEndsAt       DateTime?
   provisionedAt     DateTime?
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
@@ -424,6 +434,7 @@ model SuiteJuridicaSubscription {
   payerEmail       String
   couponId         String?
   discountApplied  Int       @default(0)
+  trialEndsAt      DateTime?
   provisionedAt    DateTime?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt

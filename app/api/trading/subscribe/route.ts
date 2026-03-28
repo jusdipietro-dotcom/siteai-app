@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 import { isUserFreeAccount } from '@/lib/free-account'
+import { getTrialEndDate } from '@/lib/trial'
 
 const TRADING_PLANS: Record<string, { monthly: number; title: string; maxPairs: number; reportes: boolean }> = {
   basico:      { monthly: 20000, title: 'Señales Crypto IA Básico',      maxPairs: 30, reportes: false },
@@ -54,7 +55,7 @@ export async function POST(req: NextRequest) {
     const existing = await prisma.tradingSubscription.findFirst({
       where: {
         userId: session.user.id,
-        status: { in: ['active', 'provisioning'] },
+        status: { in: ['active', 'provisioning', 'trial'] },
       },
     })
     if (existing) {
@@ -108,6 +109,28 @@ export async function POST(req: NextRequest) {
         status: 'active',
         nextStep: 'done',
         freeAccount: true,
+      })
+    }
+
+    // Trial: check if user already used trial for this service
+    const previousSub = await prisma.tradingSubscription.findFirst({
+      where: {
+        userId: session.user.id,
+        status: { in: ['cancelled', 'suspended', 'trial_expired'] },
+      },
+    })
+    // First time → 3-day trial (no payment needed)
+    if (!previousSub) {
+      await prisma.tradingSubscription.update({
+        where: { id: subscription.id },
+        data: { status: 'trial', trialEndsAt: getTrialEndDate() },
+      })
+      return NextResponse.json({
+        subscriptionId: subscription.id,
+        plan,
+        status: 'trial',
+        trialEndsAt: getTrialEndDate().toISOString(),
+        nextStep: 'trial_started',
       })
     }
 

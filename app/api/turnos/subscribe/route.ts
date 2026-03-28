@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 import { TURNOS_PLANS } from '@/lib/turnos-plans'
 import { isUserFreeAccount } from '@/lib/free-account'
+import { getTrialEndDate } from '@/lib/trial'
 
 export async function POST(req: NextRequest) {
   try {
@@ -66,7 +67,7 @@ export async function POST(req: NextRequest) {
     const result = await prisma.$transaction(async (tx) => {
       // Check existing active subscriptions against plan limit (maxProfesionales)
       const activeSubs = await tx.turnosSubscription.count({
-        where: { userId: session.user.id, status: { in: ['active', 'provisioning', 'pending_config'] } },
+        where: { userId: session.user.id, status: { in: ['active', 'provisioning', 'pending_config', 'trial'] } },
       })
       if (activeSubs >= planConfig.maxProfesionales) {
         return {
@@ -147,6 +148,28 @@ export async function POST(req: NextRequest) {
         status: 'active',
         nextStep: 'done',
         freeAccount: true,
+      })
+    }
+
+    // Trial: check if user already used trial for this service
+    const previousSub = await prisma.turnosSubscription.findFirst({
+      where: {
+        userId: session.user.id,
+        status: { in: ['cancelled', 'suspended', 'trial_expired'] },
+      },
+    })
+    // First time → 3-day trial (no payment needed)
+    if (!previousSub) {
+      await prisma.turnosSubscription.update({
+        where: { id: subscription.id },
+        data: { status: 'trial', trialEndsAt: getTrialEndDate() },
+      })
+      return NextResponse.json({
+        subscriptionId: subscription.id,
+        plan,
+        status: 'trial',
+        trialEndsAt: getTrialEndDate().toISOString(),
+        nextStep: 'trial_started',
       })
     }
 

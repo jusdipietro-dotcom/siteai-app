@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 import { getPlanConfig } from '@/lib/email-marketing-plans'
 import { isUserFreeAccount } from '@/lib/free-account'
+import { getTrialEndDate } from '@/lib/trial'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 const MAX_NAME_LENGTH = 200
@@ -100,7 +101,7 @@ export async function POST(req: NextRequest) {
       where: {
         userId,
         businessName: { equals: businessName, mode: 'insensitive' },
-        status: { in: ['active', 'provisioning'] },
+        status: { in: ['active', 'provisioning', 'trial'] },
       },
     })
     if (existing) {
@@ -112,7 +113,7 @@ export async function POST(req: NextRequest) {
 
     // ── Check active campaigns limit ──
     const activeSubs = await prisma.emailMarketingSubscription.count({
-      where: { userId, status: { in: ['active', 'provisioning'] } },
+      where: { userId, status: { in: ['active', 'provisioning', 'trial'] } },
     })
     if (activeSubs >= planConfig.maxCampaigns) {
       const label = planConfig.maxCampaigns >= 99 ? 'campañas ilimitadas' : `${planConfig.maxCampaigns} campaña${planConfig.maxCampaigns > 1 ? 's' : ''}`
@@ -124,7 +125,7 @@ export async function POST(req: NextRequest) {
 
     // ── Check distinct senders limit (case-insensitive) ──
     const distinctSendersRaw = await prisma.emailMarketingSubscription.findMany({
-      where: { userId, status: { in: ['active', 'provisioning'] } },
+      where: { userId, status: { in: ['active', 'provisioning', 'trial'] } },
       select: { senderEmail: true },
       distinct: ['senderEmail'],
     })
@@ -193,6 +194,28 @@ export async function POST(req: NextRequest) {
         status: 'active',
         nextStep: 'done',
         freeAccount: true,
+      })
+    }
+
+    // Trial: check if user already used trial for this service
+    const previousSub = await prisma.emailMarketingSubscription.findFirst({
+      where: {
+        userId,
+        status: { in: ['cancelled', 'suspended', 'trial_expired'] },
+      },
+    })
+    // First time → 3-day trial (no payment needed)
+    if (!previousSub) {
+      await prisma.emailMarketingSubscription.update({
+        where: { id: subscription.id },
+        data: { status: 'trial', trialEndsAt: getTrialEndDate() },
+      })
+      return NextResponse.json({
+        subscriptionId: subscription.id,
+        plan,
+        status: 'trial',
+        trialEndsAt: getTrialEndDate().toISOString(),
+        nextStep: 'trial_started',
       })
     }
 
