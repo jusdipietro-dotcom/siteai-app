@@ -56,7 +56,7 @@ export async function sendPasswordResetEmail(to: string, resetUrl: string) {
 export async function sendPaymentConfirmationEmail(
   to: string,
   details: {
-    type: 'monitoring' | 'project' | 'reviews' | 'linkedin' | 'trading' | 'leads' | 'email-marketing' | 'prospeccion' | 'facturacion' | 'causas' | 'turnos'
+    type: 'monitoring' | 'project' | 'reviews' | 'linkedin' | 'trading' | 'leads' | 'email-marketing' | 'prospeccion' | 'facturacion' | 'causas' | 'turnos' | 'suite-juridica'
     plan: string
     amount?: string
   }
@@ -73,6 +73,7 @@ export async function sendPaymentConfirmationEmail(
     facturacion: 'Facturación Electrónica ARCA',
     causas: 'Dashboard Causas MEV',
     turnos: 'Turnos Online',
+    'suite-juridica': 'Suite Jurídica',
   }
   const dashboardUrls: Record<string, string> = {
     monitoring: `${APP_URL}/monitoreo`,
@@ -86,6 +87,7 @@ export async function sendPaymentConfirmationEmail(
     causas: `${APP_URL}/causas`,
     turnos: `${APP_URL}/turnos`,
     'email-marketing': `${APP_URL}/email-marketing`,
+    'suite-juridica': `${APP_URL}/suite-juridica`,
   }
   const productName = productNames[details.type] ?? 'Servicio'
   const dashboardUrl = dashboardUrls[details.type] ?? `${APP_URL}/dashboard`
@@ -126,7 +128,7 @@ export async function sendPaymentConfirmationEmail(
 
 export async function sendSubscriptionCancelledEmail(
   to: string,
-  details: { type: 'monitoring' | 'project' | 'reviews' | 'linkedin' | 'trading' | 'leads' | 'email-marketing' | 'prospeccion' | 'facturacion' | 'causas' | 'turnos'; plan: string }
+  details: { type: 'monitoring' | 'project' | 'reviews' | 'linkedin' | 'trading' | 'leads' | 'email-marketing' | 'prospeccion' | 'facturacion' | 'causas' | 'turnos' | 'suite-juridica'; plan: string }
 ) {
   const productNames: Record<string, string> = {
     monitoring: 'Monitoreo Judicial',
@@ -140,6 +142,7 @@ export async function sendSubscriptionCancelledEmail(
     facturacion: 'Facturación Electrónica ARCA',
     causas: 'Dashboard Causas MEV',
     turnos: 'Turnos Online',
+    'suite-juridica': 'Suite Jurídica',
   }
   const productName = productNames[details.type] ?? 'Servicio'
 

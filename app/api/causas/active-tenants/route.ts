@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { timingSafeEqual } from 'crypto'
 import { prisma } from '@/lib/prisma'
 import { decryptCredentials } from '@/lib/encryption'
+
+function safeCompare(a: string, b: string): boolean {
+  if (a.length !== b.length) return false
+  return timingSafeEqual(Buffer.from(a), Buffer.from(b))
+}
 
 /**
  * Returns active causas tenants for the scraper service.
@@ -10,7 +16,7 @@ export async function GET(req: NextRequest) {
   try {
     const apiKey = req.headers.get('authorization')?.replace('Bearer ', '')
     const expected = process.env.CAUSAS_SCRAPER_API_KEY
-    if (!expected || !apiKey || apiKey !== expected) {
+    if (!expected || !apiKey || !safeCompare(apiKey, expected)) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
 

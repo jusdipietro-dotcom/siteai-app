@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { timingSafeEqual } from 'crypto'
 import { prisma } from '@/lib/prisma'
+
+function safeCompare(a: string, b: string): boolean {
+  if (a.length !== b.length) return false
+  return timingSafeEqual(Buffer.from(a), Buffer.from(b))
+}
 
 /**
  * Provision a turnos subscription:
@@ -14,7 +20,7 @@ export async function POST(req: NextRequest) {
   try {
     const secret = req.headers.get('x-portal-secret')
     const expected = process.env.TURNOS_PROVISION_SECRET || process.env.N8N_API_KEY
-    if (!expected || !secret || secret !== expected) {
+    if (!expected || !secret || !safeCompare(secret, expected)) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
 

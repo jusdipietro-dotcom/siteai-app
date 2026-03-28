@@ -12,7 +12,24 @@ export async function GET() {
 
     const subscriptions = await prisma.causasSubscription.findMany({
       where: { userId: session.user.id },
-      include: { coupon: { select: { code: true, discount: true } } },
+      select: {
+        id: true,
+        status: true,
+        plan: true,
+        dptoTipo: true,
+        dptoId: true,
+        totalCausas: true,
+        lastScrapeAt: true,
+        scrapeFrequency: true,
+        notificationEmail: true,
+        scraperTenantId: true,
+        preapprovalId: true,
+        discountApplied: true,
+        provisionedAt: true,
+        createdAt: true,
+        updatedAt: true,
+        coupon: { select: { code: true, discount: true } },
+      },
       orderBy: { createdAt: 'desc' },
     })
 

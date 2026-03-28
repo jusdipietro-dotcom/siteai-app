@@ -1003,7 +1003,7 @@ export async function POST(req: NextRequest) {
             })
             if (subForEmail?.user.email) {
               await sendPaymentConfirmationEmail(subForEmail.user.email, {
-                type: 'monitoring', // use monitoring type for Suite email (closest match)
+                type: 'suite-juridica',
                 plan: `Suite Juridica ${suitePlan}`,
               })
             }
@@ -1714,6 +1714,12 @@ async function triggerFacturacionProvisioning(subscriptionId: string) {
   }
 
   console.error(`[MP Webhook] Facturacion ${subscriptionId} provisioning FAILED after ${maxRetries} attempts`)
+
+  // Fallback: mark as active so user isn't stuck — Flask provisioning can be retried later
+  await prisma.facturacionSubscription.update({
+    where: { id: subscriptionId },
+    data: { status: 'active', provisionedAt: new Date() },
+  }).catch(() => {})
 }
 
 /** Deactivate facturacion tenant in Flask backend */
@@ -1763,42 +1769,41 @@ async function provisionSuiteJuridica(suiteSubId: string, suitePlan: string) {
     const email = suite.user.email
     const limits = planConfig.limits
 
-    // Create 4 individual subscriptions (already "active" — billing is via suite)
+    // Create 4 individual subscriptions — "pending_config" means user must
+    // fill credentials/config before they are provisioned. Billing is via suite.
     const [monitoring, facturacion, causas, turnos] = await Promise.all([
       prisma.monitoringSubscription.create({
         data: {
           userId,
           plan: limits.monitoringPlan,
-          status: 'active',
+          status: 'pending_config',
           portal: 'AMBOS',
           cuil: '',
-          credentialUser: '', // user will configure credentials from their dashboard
+          credentialUser: '',
           credentialPass: '',
           credentialIv: '',
           credentialTag: '',
           notificationEmail: email,
           payerEmail: email,
-          provisionedAt: new Date(),
         },
       }),
       prisma.facturacionSubscription.create({
         data: {
           userId,
           plan: limits.facturacionPlan,
-          status: 'active',
+          status: 'pending_config',
           cuit: '',
           razonSocial: '',
-          puntoVenta: 0, // user will configure from their dashboard
+          puntoVenta: 0,
           notificationEmail: email,
           payerEmail: email,
-          provisionedAt: new Date(),
         },
       }),
       prisma.causasSubscription.create({
         data: {
           userId,
           plan: limits.causasPlan,
-          status: 'active',
+          status: 'pending_config',
           mevUser: '',
           mevPass: '',
           mevIv: '',
@@ -1808,19 +1813,17 @@ async function provisionSuiteJuridica(suiteSubId: string, suitePlan: string) {
           scrapeFrequency: limits.causasPlan === 'estudio' ? '2h' : limits.causasPlan === 'profesional' ? '6h' : '24h',
           notificationEmail: email,
           payerEmail: email,
-          provisionedAt: new Date(),
         },
       }),
       prisma.turnosSubscription.create({
         data: {
           userId,
           plan: limits.turnosPlan,
-          status: 'active',
+          status: 'pending_config',
           slug: `suite-${suiteSubId.slice(0, 8)}`,
           businessName: '',
           notificationEmail: email,
           payerEmail: email,
-          provisionedAt: new Date(),
         },
       }),
     ])

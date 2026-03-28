@@ -80,6 +80,10 @@ export async function middleware(req: NextRequest) {
         loginUrl.searchParams.set('next', 'causas')
       } else if (pathname.startsWith('/turnos')) {
         loginUrl.searchParams.set('next', 'turnos')
+      } else if (pathname.startsWith('/suite-juridica')) {
+        loginUrl.searchParams.set('next', 'suite-juridica')
+      } else if (pathname.startsWith('/jurisprudencia')) {
+        loginUrl.searchParams.set('next', 'jurisprudencia')
       } else {
         loginUrl.searchParams.set('callbackUrl', `${baseUrl}${req.nextUrl.pathname}`)
       }

@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { timingSafeEqual } from 'crypto'
 import { prisma } from '@/lib/prisma'
 
 const FLASK_BACKEND_URL = process.env.FLASK_BACKEND_URL
 const FLASK_PROVISION_SECRET = process.env.FLASK_PROVISION_SECRET
+
+function safeCompare(a: string, b: string): boolean {
+  if (a.length !== b.length) return false
+  return timingSafeEqual(Buffer.from(a), Buffer.from(b))
+}
 
 /**
  * Provision a facturacion subscription by creating a tenant in the Flask backend.
@@ -13,7 +19,7 @@ export async function POST(req: NextRequest) {
   try {
     // Auth: only internal calls with provision secret
     const secret = req.headers.get('x-portal-secret')
-    if (!FLASK_PROVISION_SECRET || secret !== FLASK_PROVISION_SECRET) {
+    if (!FLASK_PROVISION_SECRET || !secret || !safeCompare(secret, FLASK_PROVISION_SECRET)) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
 
