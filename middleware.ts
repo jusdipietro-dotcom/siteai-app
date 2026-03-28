@@ -58,8 +58,12 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next()
   }
 
+  // ── Public routes that start with a protected prefix ────────────────────────
+  // /turnos/[slug] is the public booking page — must NOT require auth
+  const isPublicTurnos = /^\/turnos\/[^/]+/.test(pathname) && pathname !== '/turnos'
+
   // ── Auth: proteger rutas del dashboard ──────────────────────────────────────
-  const isProtected = PROTECTED_PATHS.some((p) => pathname.startsWith(p))
+  const isProtected = !isPublicTurnos && PROTECTED_PATHS.some((p) => pathname.startsWith(p))
   if (isProtected) {
     const token = await getToken({ req })
     if (!token) {
