@@ -63,12 +63,17 @@ export async function POST(req: NextRequest) {
     }
 
     const result = await prisma.$transaction(async (tx) => {
-      // Check existing active subscription
-      const existing = await tx.turnosSubscription.findFirst({
-        where: { userId: session.user.id, status: { in: ['active', 'provisioning'] } },
+      // Check existing active subscriptions against plan limit (maxProfesionales)
+      const activeSubs = await tx.turnosSubscription.count({
+        where: { userId: session.user.id, status: { in: ['active', 'provisioning', 'pending_config'] } },
       })
-      if (existing) {
-        return { error: 'Ya tenes una suscripcion activa de Turnos Online', status: 409 } as const
+      if (activeSubs >= planConfig.maxProfesionales) {
+        return {
+          error: activeSubs === 1
+            ? 'Ya tenes una agenda activa de Turnos Online. Actualiza al plan Estudio para agregar mas profesionales.'
+            : `Ya tenes ${activeSubs} agendas activas (maximo ${planConfig.maxProfesionales} para plan ${planConfig.name}).`,
+          status: 409,
+        } as const
       }
 
       // Check slug uniqueness

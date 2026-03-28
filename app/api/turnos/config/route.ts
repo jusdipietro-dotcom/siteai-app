@@ -10,34 +10,50 @@ function getAllowedDays(diasPermitidos: string): number[] {
   return [1, 2, 3, 4, 5] // L-V default
 }
 
-/** GET: return current config. PUT: update config. */
+function formatSub(sub: {
+  id: string; slug: string; businessName: string; businessType: string | null;
+  colorPrimary: string | null; colorAccent: string | null; scheduleDays: string;
+  scheduleSlots: string; slotDuration: number; practiceAreas: string;
+  holidays: string; phone: string | null; address: string | null;
+  notificationEmail: string; plan: string;
+}) {
+  return {
+    id: sub.id,
+    slug: sub.slug,
+    businessName: sub.businessName,
+    businessType: sub.businessType,
+    colorPrimary: sub.colorPrimary,
+    colorAccent: sub.colorAccent,
+    scheduleDays: JSON.parse(sub.scheduleDays),
+    scheduleSlots: JSON.parse(sub.scheduleSlots),
+    slotDuration: sub.slotDuration,
+    practiceAreas: JSON.parse(sub.practiceAreas),
+    holidays: JSON.parse(sub.holidays),
+    phone: sub.phone,
+    address: sub.address,
+    notificationEmail: sub.notificationEmail,
+    plan: sub.plan,
+    publicUrl: `https://automaticialab.com/turnos/${sub.slug}`,
+  }
+}
+
+/** GET: return current config (all agendas). PUT: update config for a specific agenda. */
 export async function GET() {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
-    const sub = await prisma.turnosSubscription.findFirst({
+    const subs = await prisma.turnosSubscription.findMany({
       where: { userId: session.user.id, status: 'active' },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: 'asc' },
     })
-    if (!sub) return NextResponse.json({ error: 'No tenes una suscripcion activa' }, { status: 404 })
+    if (subs.length === 0) return NextResponse.json({ error: 'No tenes una suscripcion activa' }, { status: 404 })
 
+    // Return array of agendas + primary (first) for backwards compat
+    const agendas = subs.map(formatSub)
     return NextResponse.json({
-      id: sub.id,
-      slug: sub.slug,
-      businessName: sub.businessName,
-      businessType: sub.businessType,
-      colorPrimary: sub.colorPrimary,
-      colorAccent: sub.colorAccent,
-      scheduleDays: JSON.parse(sub.scheduleDays),
-      scheduleSlots: JSON.parse(sub.scheduleSlots),
-      slotDuration: sub.slotDuration,
-      practiceAreas: JSON.parse(sub.practiceAreas),
-      holidays: JSON.parse(sub.holidays),
-      phone: sub.phone,
-      address: sub.address,
-      notificationEmail: sub.notificationEmail,
-      publicUrl: `https://automaticialab.com/turnos/${sub.slug}`,
+      ...agendas[0],
+      agendas,
     })
   } catch (err) {
     console.error('[Turnos Config GET] Error:', err)
@@ -50,9 +66,17 @@ export async function PUT(req: NextRequest) {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
-    const sub = await prisma.turnosSubscription.findFirst({
-      where: { userId: session.user.id, status: 'active' },
-    })
+    const url = new URL(req.url)
+    const agendaId = url.searchParams.get('agendaId')
+
+    // Find specific agenda by id, or default to first active
+    const sub = agendaId
+      ? await prisma.turnosSubscription.findFirst({
+          where: { id: agendaId, userId: session.user.id, status: 'active' },
+        })
+      : await prisma.turnosSubscription.findFirst({
+          where: { userId: session.user.id, status: 'active' },
+        })
     if (!sub) return NextResponse.json({ error: 'No tenes una suscripcion activa' }, { status: 404 })
 
     const body = await req.json()

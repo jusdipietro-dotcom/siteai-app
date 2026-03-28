@@ -32,9 +32,9 @@ api_bp = Blueprint("api", __name__)
 
 # Plan limits for facturacion
 PLAN_LIMITS = {
-    "basico": {"max_facturas_mes": 50, "tipos_permitidos": ["B"]},
-    "profesional": {"max_facturas_mes": 200, "tipos_permitidos": ["A", "B"]},
-    "estudio": {"max_facturas_mes": 999999, "tipos_permitidos": ["A", "B", "C"]},
+    "basico": {"max_facturas_mes": 50, "tipos_permitidos": ["B"], "max_puntos_venta": 1},
+    "profesional": {"max_facturas_mes": 200, "tipos_permitidos": ["A", "B"], "max_puntos_venta": 1},
+    "estudio": {"max_facturas_mes": 999999, "tipos_permitidos": ["A", "B", "C"], "max_puntos_venta": 3},
 }
 
 
@@ -175,8 +175,21 @@ def emitir_factura():
     elif doc_tipo == DOC_SIN_IDENTIFICAR:
         cond_iva_codigo = COND_IVA_CONSUMIDOR_FINAL
 
+    # Allow selecting a specific punto_venta (estudio plan can have up to 3)
+    requested_pv = data.get("punto_venta")
+    if requested_pv is not None:
+        try:
+            requested_pv = int(requested_pv)
+        except (ValueError, TypeError):
+            return jsonify({"error": "punto_venta invalido"}), 400
+        if requested_pv not in tenant.all_puntos_venta:
+            return jsonify({"error": f"Punto de venta {requested_pv} no esta habilitado para tu cuenta. PVs disponibles: {tenant.all_puntos_venta}"}), 403
+        selected_pv = requested_pv
+    else:
+        selected_pv = tenant.punto_venta
+
     factura_data = {
-        "punto_venta": tenant.punto_venta,
+        "punto_venta": selected_pv,
         "tipo_cbte": tipo_cbte,
         "concepto": concepto,
         "doc_tipo": doc_tipo,
@@ -252,11 +265,22 @@ def ultimo_comprobante():
     tipo_str = request.args.get("tipo", "B").upper()
     tipo_map = {"A": TIPO_FACTURA_A, "B": TIPO_FACTURA_B}
     tipo_cbte = tipo_map.get(tipo_str, TIPO_FACTURA_B)
+    # Allow querying a specific PV
+    pv_param = request.args.get("punto_venta")
+    if pv_param:
+        try:
+            pv = int(pv_param)
+        except (ValueError, TypeError):
+            return jsonify({"error": "punto_venta invalido"}), 400
+        if pv not in g.tenant.all_puntos_venta:
+            return jsonify({"error": f"Punto de venta {pv} no habilitado"}), 403
+    else:
+        pv = g.tenant.punto_venta
 
     try:
         client = get_wsfe_client()
-        nro = client.ultimo_comprobante(g.tenant.punto_venta, tipo_cbte)
-        return jsonify({"punto_venta": g.tenant.punto_venta, "tipo": tipo_str, "ultimo_nro": nro})
+        nro = client.ultimo_comprobante(pv, tipo_cbte)
+        return jsonify({"punto_venta": pv, "tipo": tipo_str, "ultimo_nro": nro})
     except RuntimeError as e:
         return jsonify({"error": str(e)}), 400
     except Exception:
@@ -390,6 +414,8 @@ def api_get_config():
         "iibb": t.iibb,
         "inicio_actividades": t.inicio_actividades,
         "punto_venta": t.punto_venta,
+        "puntos_venta": t.all_puntos_venta,
+        "max_puntos_venta": plan_limits["max_puntos_venta"],
         "cuit": t.cuit,
         "has_certificates": t.has_certificates,
         "plan": t.plan or "basico",
@@ -413,6 +439,28 @@ def api_save_config():
             setattr(t, field, data[field])
     if "punto_venta" in data and isinstance(data["punto_venta"], int) and data["punto_venta"] > 0:
         t.punto_venta = data["punto_venta"]
+
+    # Manage extra puntos de venta (estudio plan only)
+    if "puntos_venta_extra" in data:
+        plan_limits = PLAN_LIMITS.get(t.plan or "basico", PLAN_LIMITS["basico"])
+        max_pvs = plan_limits["max_puntos_venta"]
+        extras = data["puntos_venta_extra"]
+        if not isinstance(extras, list):
+            return jsonify({"error": "puntos_venta_extra debe ser un array"}), 400
+        # Total PVs = 1 (principal) + extras
+        if 1 + len(extras) > max_pvs:
+            return jsonify({"error": f"Tu plan permite hasta {max_pvs} puntos de venta en total"}), 403
+        # Validate each extra PV
+        validated = []
+        for pv in extras:
+            try:
+                pv_int = int(pv)
+                if pv_int < 1 or pv_int > 99999:
+                    return jsonify({"error": f"Punto de venta invalido: {pv}"}), 400
+                validated.append(pv_int)
+            except (ValueError, TypeError):
+                return jsonify({"error": f"Punto de venta invalido: {pv}"}), 400
+        t.puntos_venta_extra = json.dumps(validated)
 
     db.session.commit()
     return jsonify({"status": "ok"})

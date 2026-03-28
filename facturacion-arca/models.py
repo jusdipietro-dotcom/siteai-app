@@ -21,6 +21,7 @@ class Tenant(db.Model):
     iibb = db.Column(db.String(50), default="")
     inicio_actividades = db.Column(db.String(20), default="")
     punto_venta = db.Column(db.Integer, nullable=False)
+    puntos_venta_extra = db.Column(db.Text, default="[]")  # JSON array of extra PVs (estudio plan)
     plan = db.Column(db.String(30), default="basico")  # basico, profesional, estudio
     cert_encrypted = db.Column(db.LargeBinary, nullable=True)
     key_encrypted = db.Column(db.LargeBinary, nullable=True)
@@ -35,6 +36,19 @@ class Tenant(db.Model):
     @property
     def has_certificates(self):
         return self.cert_encrypted is not None and self.key_encrypted is not None
+
+    @property
+    def all_puntos_venta(self):
+        """Returns list of all allowed puntos de venta."""
+        import json
+        pvs = [self.punto_venta]
+        try:
+            extras = json.loads(self.puntos_venta_extra or "[]")
+            if isinstance(extras, list):
+                pvs.extend(int(pv) for pv in extras if pv)
+        except (json.JSONDecodeError, ValueError):
+            pass
+        return pvs
 
     @property
     def emisor_data(self):
