@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from flask import Blueprint, request, jsonify, send_from_directory, g, current_app
 from auth import login_required
 from models import db, Client, Invoice, Tenant
-from sqlalchemy import func, extract
+from sqlalchemy import func, text
 from tenant import get_wsfe_client
 from utils import validar_cuit
 from wsfe import (
@@ -65,12 +65,17 @@ def emitir_factura():
     if tipo_str not in limits["tipos_permitidos"]:
         return jsonify({"error": f"Tu plan '{tenant.plan}' no permite Factura {tipo_str}. Tipos habilitados: {', '.join(limits['tipos_permitidos'])}"}), 403
 
-    # Monthly invoice limit
+    # Monthly invoice limit (SQLite-compatible)
     now = datetime.now(timezone.utc)
+    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    if now.month == 12:
+        month_end = month_start.replace(year=now.year + 1, month=1)
+    else:
+        month_end = month_start.replace(month=now.month + 1)
     month_count = Invoice.query.filter(
         Invoice.tenant_id == tenant.id,
-        extract('year', Invoice.created_at) == now.year,
-        extract('month', Invoice.created_at) == now.month,
+        Invoice.created_at >= month_start,
+        Invoice.created_at < month_end,
     ).count()
     if month_count >= limits["max_facturas_mes"]:
         return jsonify({"error": f"Limite mensual alcanzado ({limits['max_facturas_mes']} facturas). Actualiza tu plan para emitir mas."}), 403
@@ -402,10 +407,15 @@ def api_get_config():
     t = g.tenant
     plan_limits = PLAN_LIMITS.get(t.plan or "basico", PLAN_LIMITS["basico"])
     now = datetime.now(timezone.utc)
+    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    if now.month == 12:
+        month_end = month_start.replace(year=now.year + 1, month=1)
+    else:
+        month_end = month_start.replace(month=now.month + 1)
     month_count = Invoice.query.filter(
         Invoice.tenant_id == t.id,
-        extract('year', Invoice.created_at) == now.year,
-        extract('month', Invoice.created_at) == now.month,
+        Invoice.created_at >= month_start,
+        Invoice.created_at < month_end,
     ).count()
     return jsonify({
         "razon_social": t.razon_social,
