@@ -276,6 +276,7 @@ def portal_provision():
     razon_social = (data.get("razonSocial") or "").strip()
     punto_venta = data.get("puntoVenta")
     condicion_iva = data.get("condicionIva", "Responsable Inscripto")
+    plan = (data.get("plan") or "basico").strip().lower()
     email = (data.get("email") or "").strip().lower()
     nombre = (data.get("nombre") or "").strip()
 
@@ -285,11 +286,12 @@ def portal_provision():
     # Check if tenant with this CUIT already exists
     existing_tenant = Tenant.query.filter_by(cuit=int(cuit)).first()
     if existing_tenant:
-        # Reactivate if deactivated
+        # Reactivate if deactivated, update plan
         if not existing_tenant.active:
             existing_tenant.active = True
-            db.session.commit()
-            logger.info("Portal: reactivated tenant CUIT %s", cuit)
+        existing_tenant.plan = plan
+        db.session.commit()
+        logger.info("Portal: reactivated tenant CUIT %s (plan: %s)", cuit, plan)
 
         # Find or create user for this tenant
         user = User.query.filter_by(email=email, tenant_id=existing_tenant.id).first()
@@ -320,6 +322,7 @@ def portal_provision():
         razon_social=razon_social,
         condicion_iva=condicion_iva,
         punto_venta=pv,
+        plan=plan,
         active=True,
     )
     db.session.add(tenant)

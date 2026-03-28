@@ -21,6 +21,7 @@ class Tenant(db.Model):
     iibb = db.Column(db.String(50), default="")
     inicio_actividades = db.Column(db.String(20), default="")
     punto_venta = db.Column(db.Integer, nullable=False)
+    plan = db.Column(db.String(30), default="basico")  # basico, profesional, estudio
     cert_encrypted = db.Column(db.LargeBinary, nullable=True)
     key_encrypted = db.Column(db.LargeBinary, nullable=True)
     production = db.Column(db.Boolean, default=True)

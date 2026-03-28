@@ -53,6 +53,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `El plan ${planConfig.name} permite hasta ${planConfig.maxAreas} areas` }, { status: 400 })
     }
 
+    // Validate schedule days against plan (L-V vs L-S)
+    if (Array.isArray(scheduleDays)) {
+      const allowedDays = planConfig.diasPermitidos === 'L-S' ? [1,2,3,4,5,6] : [1,2,3,4,5]
+      const invalidDays = scheduleDays.filter((d: number) => !allowedDays.includes(d))
+      if (invalidDays.length > 0) {
+        return NextResponse.json({ error: `El plan ${planConfig.name} permite dias ${planConfig.diasPermitidos}` }, { status: 400 })
+      }
+    }
+
     const result = await prisma.$transaction(async (tx) => {
       // Check existing active subscription
       const existing = await tx.turnosSubscription.findFirst({

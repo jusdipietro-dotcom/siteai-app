@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { timingSafeEqual } from 'crypto'
 import { prisma } from '@/lib/prisma'
+import { CAUSAS_PLANS, type CausasPlanId } from '@/lib/causas-plans'
 
 function safeCompare(a: string, b: string): boolean {
   if (a.length !== b.length) return false
@@ -30,6 +31,28 @@ export async function POST(req: NextRequest) {
     })
     if (!sub) {
       return NextResponse.json({ error: 'Subscription not found or inactive' }, { status: 404 })
+    }
+
+    // Enforce maxCausas limit per plan
+    const planConfig = CAUSAS_PLANS[sub.plan as CausasPlanId]
+    const maxCausas = planConfig?.maxCausas ?? 30
+    const currentCount = await prisma.causasCase.count({ where: { subscriptionId } })
+    const newCaseIds = new Set(
+      cases.filter((c: { nidCausa?: string }) => c.nidCausa).map((c: { nidCausa: string }) => String(c.nidCausa))
+    )
+    // Count how many of the incoming cases are truly new (not updates)
+    const existingCases = await prisma.causasCase.findMany({
+      where: { subscriptionId, nidCausa: { in: [...newCaseIds] } },
+      select: { nidCausa: true },
+    })
+    const existingIds = new Set(existingCases.map((c) => c.nidCausa))
+    const trulyNewCount = [...newCaseIds].filter((id) => !existingIds.has(id)).length
+    if (maxCausas < 999999 && currentCount + trulyNewCount > maxCausas) {
+      return NextResponse.json({
+        error: `Plan ${sub.plan} permite hasta ${maxCausas} causas. Actualmente: ${currentCount}, intentando agregar ${trulyNewCount} nuevas.`,
+        currentCount,
+        maxCausas,
+      }, { status: 403 })
     }
 
     // Upsert each case

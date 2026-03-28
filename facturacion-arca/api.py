@@ -7,9 +7,11 @@ import os
 import re
 import json
 import logging
+from datetime import datetime, timezone
 from flask import Blueprint, request, jsonify, send_from_directory, g, current_app
 from auth import login_required
 from models import db, Client, Invoice, Tenant
+from sqlalchemy import func, extract
 from tenant import get_wsfe_client
 from utils import validar_cuit
 from wsfe import (
@@ -27,6 +29,13 @@ from pdf_generator import generar_pdf
 logger = logging.getLogger("facturacion.api")
 
 api_bp = Blueprint("api", __name__)
+
+# Plan limits for facturacion
+PLAN_LIMITS = {
+    "basico": {"max_facturas_mes": 50, "tipos_permitidos": ["B"]},
+    "profesional": {"max_facturas_mes": 200, "tipos_permitidos": ["A", "B"]},
+    "estudio": {"max_facturas_mes": 999999, "tipos_permitidos": ["A", "B", "C"]},
+}
 
 
 def _get_tenant_pdf_dir():
@@ -48,8 +57,24 @@ def emitir_factura():
 
     tenant = g.tenant
 
+    # ── Plan limits enforcement ──
+    limits = PLAN_LIMITS.get(tenant.plan or "basico", PLAN_LIMITS["basico"])
+
     # Tipo de comprobante
     tipo_str = data.get("tipo", "B").upper()
+    if tipo_str not in limits["tipos_permitidos"]:
+        return jsonify({"error": f"Tu plan '{tenant.plan}' no permite Factura {tipo_str}. Tipos habilitados: {', '.join(limits['tipos_permitidos'])}"}), 403
+
+    # Monthly invoice limit
+    now = datetime.now(timezone.utc)
+    month_count = Invoice.query.filter(
+        Invoice.tenant_id == tenant.id,
+        extract('year', Invoice.created_at) == now.year,
+        extract('month', Invoice.created_at) == now.month,
+    ).count()
+    if month_count >= limits["max_facturas_mes"]:
+        return jsonify({"error": f"Limite mensual alcanzado ({limits['max_facturas_mes']} facturas). Actualiza tu plan para emitir mas."}), 403
+
     tipo_map = {"A": TIPO_FACTURA_A, "B": TIPO_FACTURA_B}
     tipo_cbte = tipo_map.get(tipo_str)
     if not tipo_cbte:
@@ -351,6 +376,13 @@ def api_get_historial():
 def api_get_config():
     """Retorna configuración del tenant."""
     t = g.tenant
+    plan_limits = PLAN_LIMITS.get(t.plan or "basico", PLAN_LIMITS["basico"])
+    now = datetime.now(timezone.utc)
+    month_count = Invoice.query.filter(
+        Invoice.tenant_id == t.id,
+        extract('year', Invoice.created_at) == now.year,
+        extract('month', Invoice.created_at) == now.month,
+    ).count()
     return jsonify({
         "razon_social": t.razon_social,
         "domicilio": t.domicilio,
@@ -360,6 +392,10 @@ def api_get_config():
         "punto_venta": t.punto_venta,
         "cuit": t.cuit,
         "has_certificates": t.has_certificates,
+        "plan": t.plan or "basico",
+        "facturas_este_mes": month_count,
+        "max_facturas_mes": plan_limits["max_facturas_mes"],
+        "tipos_permitidos": plan_limits["tipos_permitidos"],
     })
 
 
