@@ -59,6 +59,8 @@ type Subscription = {
   createdAt: string
   updatedAt: string
   coupon?: { code: string; discount: number } | null
+  trialEndsAt?: string | null
+  freeAccount?: boolean
 }
 
 export default function ResenasPageWrapper() {
@@ -169,6 +171,13 @@ function ResenasPage() {
         return
       }
 
+      if (subData.nextStep === 'trial_started' || subData.nextStep === 'done') {
+        toast.success(subData.freeAccount ? 'Servicio activado!' : 'Trial de 3 dias activado!')
+        fetchSubscriptions()
+        setStep('plan')
+        return
+      }
+
       // Step 2: Create MercadoPago payment
       const mpRes = await fetch('/api/mp/create-reviews-subscription', {
         method: 'POST',
@@ -204,6 +213,8 @@ function ResenasPage() {
     provisioning: { text: 'Configurando (hasta 48hs)', color: 'bg-blue-100 text-blue-800' },
     suspended: { text: 'Suspendido', color: 'bg-red-100 text-red-800' },
     cancelled: { text: 'Cancelado', color: 'bg-surface-100 text-surface-600' },
+    trial: { text: 'Trial activo', color: 'bg-blue-100 text-blue-700' },
+    trial_expired: { text: 'Trial finalizado', color: 'bg-orange-100 text-orange-700' },
   }
 
   return (
@@ -261,6 +272,35 @@ function ResenasPage() {
                       </div>
                     )}
                   </div>
+                  {/* Trial banners */}
+                  {sub.status === 'trial' && sub.trialEndsAt && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4 mx-4 mt-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-blue-800">Trial gratuito activo</p>
+                          <p className="text-xs text-blue-600">
+                            Vence: {new Date(sub.trialEndsAt).toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                          </p>
+                        </div>
+                        <Button size="sm" variant="outline" onClick={() => setStep('plan')}>
+                          Suscribirse
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                  {sub.status === 'trial_expired' && (
+                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-4 mx-4 mt-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-orange-800">Tu trial ha finalizado</p>
+                          <p className="text-xs text-orange-600">Suscribite para seguir usando el servicio</p>
+                        </div>
+                        <Button size="sm" onClick={() => setStep('plan')}>
+                          Elegir plan
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                   {isActive && (
                     <div className="border-t border-surface-100 px-4 py-2">
                       <div className="flex justify-end">
