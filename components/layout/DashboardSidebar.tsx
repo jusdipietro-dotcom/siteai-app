@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard, BookTemplate, Settings, HelpCircle,
   Plus, LogOut, Search as SearchIcon, Image, ChevronLeft, ChevronRight,
-  Scale, Tag, Users, MessageSquare, Linkedin, TrendingUp, Send, Target, Receipt, FileSearch, CalendarDays, Briefcase, Shield, Gift,
+  Scale, Tag, Users, MessageSquare, Linkedin, TrendingUp, Send, Target, Receipt, FileSearch, CalendarDays, Briefcase, Shield, Gift, FileText,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useUIStore } from '@/store/useUIStore'
@@ -28,6 +28,7 @@ const NAV_ITEMS = [
   { href: '/facturacion', label: 'Facturación ARCA', icon: Receipt },
   { href: '/causas', label: 'Dashboard Causas', icon: FileSearch },
   { href: '/turnos', label: 'Turnos Online', icon: CalendarDays },
+  { href: '/lexpost', label: 'LexPost Legal', icon: FileText },
   { href: '/suite-juridica', label: 'Suite Juridica', icon: Briefcase },
   { href: '/jurisprudencia', label: 'Jurisprudencia IA', icon: Shield },
 ]

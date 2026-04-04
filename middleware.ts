@@ -21,6 +21,7 @@ const PROTECTED_PATHS = [
   '/causas',
   '/turnos',
   '/suite-juridica',
+  '/lexpost',
   '/jurisprudencia',
   '/admin',
 ]
@@ -86,6 +87,8 @@ export async function middleware(req: NextRequest) {
         loginUrl.searchParams.set('next', 'turnos')
       } else if (pathname.startsWith('/suite-juridica')) {
         loginUrl.searchParams.set('next', 'suite-juridica')
+      } else if (pathname.startsWith('/lexpost')) {
+        loginUrl.searchParams.set('next', 'lexpost')
       } else if (pathname.startsWith('/jurisprudencia')) {
         loginUrl.searchParams.set('next', 'jurisprudencia')
       } else {

@@ -1,7 +1,7 @@
 'use client'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { ArrowRight, Globe, Scale, Target, Search, MessageSquare, Linkedin, Send, CandlestickChart, Instagram, CalendarCheck, Bot } from 'lucide-react'
+import { ArrowRight, Globe, Scale, Target, Search, MessageSquare, Linkedin, Send, CandlestickChart, Instagram, CalendarCheck, Bot, FileText } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 const productPricing = [
@@ -22,6 +22,15 @@ const productPricing = [
     note: 'Por CUIT monitoreado',
     gradient: 'from-violet-500 to-purple-600',
     href: '/register?next=monitoreo',
+  },
+  {
+    icon: FileText,
+    name: 'LexPost Legal',
+    price: 'Desde $15.000',
+    period: '/mes',
+    note: 'Publicacion legal en Instagram',
+    gradient: 'from-indigo-600 to-blue-800',
+    href: '/register?next=lexpost',
   },
   {
     icon: Target,
