@@ -1,7 +1,7 @@
 'use client'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { ArrowRight, Globe, Scale, Bot, Check, Zap, Bell, FileText, Shield, Clock, Mail, Webhook, MessageSquare, Linkedin, TrendingUp, Users, PenTool, CandlestickChart, Activity, BarChart3, Search, Send, UserCheck, MailX, Target, CalendarCheck, Instagram, Newspaper, Image } from 'lucide-react'
+import { ArrowRight, Globe, Scale, Bot, Check, Zap, Bell, FileText, Shield, Clock, Mail, Webhook, MessageSquare, Linkedin, TrendingUp, Users, PenTool, CandlestickChart, Activity, BarChart3, Search, Send, UserCheck, MailX, Target, CalendarCheck, Instagram, Newspaper, Image, BookOpen, Database, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 const products = [
@@ -23,6 +23,25 @@ const products = [
     ctaHref: '/register',
     price: 'Desde $0/mes',
     priceNote: 'Plan gratuito disponible',
+  },
+  {
+    id: 'jurisprudencia',
+    badge: 'Para abogados',
+    title: 'JurisArgentina',
+    subtitle: 'Buscador de jurisprudencia con texto completo',
+    description: '+285.000 fallos de SAIJ, JUBA y Corte Suprema con texto completo. Busqueda avanzada con operadores booleanos, filtros por jurisdiccion, materia y tribunal. Exportacion PDF y cita automatica. Actualizado diariamente con fallos de toda Argentina.',
+    icon: BookOpen,
+    gradient: 'from-blue-600 to-indigo-700',
+    bgGlow: 'bg-blue-500/10',
+    features: [
+      { icon: Database, text: '+285.000 fallos con texto completo' },
+      { icon: Search, text: 'Busqueda avanzada con operadores booleanos' },
+      { icon: Download, text: 'Exportar PDF y copiar cita' },
+    ],
+    cta: 'Acceder a JurisArgentina',
+    ctaHref: 'https://juris.automaticialab.com',
+    price: 'Desde $0/mes',
+    priceNote: 'Plan gratuito | Premium $14.999/mes',
   },
   {
     id: 'monitoreo-judicial',
