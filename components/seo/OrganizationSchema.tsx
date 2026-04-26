@@ -52,6 +52,8 @@ export function OrganizationSchema() {
     sameAs: [
       'https://www.instagram.com/automaticialab',
       'https://github.com/jusdipietro-dotcom',
+      // Google Business Profile (links the website to the verified GBP)
+      'https://www.google.com/maps?cid=05938724930941089681',
     ],
     contactPoint: {
       '@type': 'ContactPoint',
