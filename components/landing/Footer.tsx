@@ -21,6 +21,7 @@ const links: Record<string, { label: string; href: string }[]> = {
     { label: 'Workflows a medida', href: '/contacto' },
   ],
   'Premium': [
+    { label: 'Para Abogados', href: '/automatizacion-para-abogados' },
     { label: 'Canal de Noticias', href: '/premium#productos' },
     { label: 'Avatar IA Influencer', href: '/premium#productos' },
     { label: 'ERP Indumentaria', href: '/premium#productos' },

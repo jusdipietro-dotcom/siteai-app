@@ -14,10 +14,12 @@ import { CtaSection } from '@/components/landing/CtaSection'
 import { Footer } from '@/components/landing/Footer'
 import { OrganizationSchema } from '@/components/seo/OrganizationSchema'
 import { FaqSchema } from '@/components/seo/FaqSchema'
+import { WebSiteSchema } from '@/components/seo/WebSiteSchema'
 
 export default function LandingPage() {
   return (
     <>
+      <WebSiteSchema />
       <OrganizationSchema />
       <FaqSchema />
       <main className="min-h-screen bg-white">
