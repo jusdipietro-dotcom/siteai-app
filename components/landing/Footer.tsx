@@ -2,17 +2,17 @@ import Link from 'next/link'
 
 const links: Record<string, { label: string; href: string }[]> = {
   Productos: [
-    { label: 'Sitios Web con IA', href: '/#productos' },
-    { label: 'Monitoreo Judicial', href: '/#productos' },
-    { label: 'Prospeccion B2B', href: '/#productos' },
-    { label: 'Captacion de Leads', href: '/#productos' },
-    { label: 'Resenas Google IA', href: '/#productos' },
-    { label: 'LinkedIn Optimizer', href: '/#productos' },
-    { label: 'Email Marketing', href: '/#productos' },
-    { label: 'Senales Crypto', href: '/#productos' },
-    { label: 'Redes Sociales', href: '/#productos' },
-    { label: 'Turnos Online', href: '/#productos' },
-    { label: 'Automatizaciones', href: '/#productos' },
+    { label: 'Sitios Web con IA', href: '/#producto-sitios-web' },
+    { label: 'Monitoreo Judicial', href: '/#producto-monitoreo-judicial' },
+    { label: 'Prospeccion B2B', href: '/#producto-prospeccion' },
+    { label: 'Captacion de Leads', href: '/#producto-captacion-leads' },
+    { label: 'Resenas Google IA', href: '/#producto-resenas-google' },
+    { label: 'LinkedIn Optimizer', href: '/#producto-linkedin-optimizer' },
+    { label: 'Email Marketing', href: '/#producto-email-marketing' },
+    { label: 'Senales Crypto', href: '/#producto-senales-crypto' },
+    { label: 'Redes Sociales', href: '/#producto-redes-sociales' },
+    { label: 'Turnos Online', href: '/#producto-turnos-online' },
+    { label: 'Automatizaciones', href: '/#producto-automatizaciones' },
   ],
   'Servicios a medida': [
     { label: 'Diseno Web', href: '/servicios/diseno-web' },

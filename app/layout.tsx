@@ -1,10 +1,20 @@
 import type { Metadata } from 'next'
+import { Inter } from 'next/font/google'
 import { Toaster } from 'sonner'
 import './globals.css'
 import { CommandPalette } from '@/components/shared/CommandPalette'
 import { GlobalKeyboardShortcuts } from '@/components/shared/GlobalKeyboardShortcuts'
 import { Providers } from '@/components/providers/Providers'
 import { WhatsAppButton } from '@/components/shared/WhatsAppButton'
+
+// Self-host Inter via next/font (auto preload + woff2 + no FOUT).
+// Replaces the previous @import on Google Fonts which blocked render.
+const inter = Inter({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-inter',
+  preload: true,
+})
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://automaticialab.com'),
@@ -37,6 +47,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
+    site: '@automaticialab',
+    creator: '@automaticialab',
     title: 'Automatic IA Lab — Automatización IA para PyMEs y Abogados',
     description:
       'Automatización con IA en Argentina. 13 productos para PyMEs y estudios jurídicos: web, monitoreo judicial, prospección B2B, email, reseñas y más.',
@@ -50,10 +62,8 @@ export const viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es" suppressHydrationWarning>
+    <html lang="es" suppressHydrationWarning className={inter.variable}>
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         {/* Google Analytics — Reemplazar G-KW8GZ3S9DY con tu ID real */}
         <script async src="https://www.googletagmanager.com/gtag/js?id=G-KW8GZ3S9DY" />
         <script
