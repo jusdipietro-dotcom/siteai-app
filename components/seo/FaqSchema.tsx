@@ -7,98 +7,74 @@ export function FaqSchema() {
     mainEntity: [
       {
         '@type': 'Question',
-        name: '¿Necesito saber programar?',
+        name: '¿Qué tipos de proyectos hacen?',
         acceptedAnswer: {
           '@type': 'Answer',
-          text: 'No, solo completás un formulario con la información de tu negocio y nuestra IA genera tu sitio web automáticamente.',
+          text: 'Cuatro pilares: inteligencia artificial aplicada (chatbots, agentes autónomos, automatización con LLMs), marketing digital (Meta Ads, Google Ads, contenido), diseño web a medida y posicionamiento SEO. Cada proyecto se cotiza según alcance.',
         },
       },
       {
         '@type': 'Question',
-        name: '¿Cuánto tarda en generarse?',
+        name: '¿Cómo es el proceso de contratación?',
         acceptedAnswer: {
           '@type': 'Answer',
-          text: 'Menos de 60 segundos. Tu sitio web profesional estará listo en poco tiempo.',
+          text: 'Tres pasos. Primero diagnóstico técnico (USD 300-700, 5-10 días). Después implementación a medida (USD 1.500-5.000, 15-45 días, descuenta el diagnóstico). Finalmente mantenimiento opcional (USD 200-500/mes, sin permanencia).',
         },
       },
       {
         '@type': 'Question',
-        name: '¿Dónde se publica?',
+        name: '¿Por qué cobran el diagnóstico?',
         acceptedAnswer: {
           '@type': 'Answer',
-          text: 'En GitHub Pages con URL propia. Tu sitio es completamente tuyo y está disponible en internet.',
+          text: 'Porque requiere 5-15 horas de trabajo profesional (relevamiento + arquitectura + documentación de 15-30 páginas). El documento es tuyo. Si avanzás con la implementación, descontamos el 100% del diagnóstico.',
         },
       },
       {
         '@type': 'Question',
-        name: '¿Puedo usar mi dominio?',
+        name: '¿Cobran en pesos o en USD?',
         acceptedAnswer: {
           '@type': 'Answer',
-          text: 'Sí, puedes usar tu dominio personalizado con configuración DNS. Te guiaremos en el proceso.',
+          text: 'Cobramos en USD por estabilidad pero aceptamos pago en pesos al MEP/CCL del día. Aceptamos transferencia, MercadoPago o crypto (USDT/USDC). 50% al arrancar, 30% a mitad, 20% contra entrega.',
         },
       },
       {
         '@type': 'Question',
-        name: '¿Incluye WhatsApp?',
+        name: '¿Hay permanencia en el mantenimiento?',
         acceptedAnswer: {
           '@type': 'Answer',
-          text: 'Sí, tu sitio incluye un botón integrado de WhatsApp para que tus clientes te contacten directamente.',
+          text: 'No. Trabajamos mes a mes. Si decidís cortar, nos avisás con 30 días y te entregamos toda la documentación, accesos y aprendizajes. Sin penalidad.',
         },
       },
       {
         '@type': 'Question',
-        name: '¿La IA genera el contenido?',
+        name: '¿Quién es dueño del código y los activos?',
         acceptedAnswer: {
           '@type': 'Answer',
-          text: 'Sí, la IA genera textos optimizados para SEO basados en la información que proporcionas de tu negocio.',
+          text: 'Vos. Te entregamos código fuente, documentación, acceso al servidor y cuentas de ads bajo tu nombre. Sin vendor lock-in.',
         },
       },
       {
         '@type': 'Question',
-        name: '¿Qué pasa si cancelo?',
+        name: '¿Trabajan con cualquier rubro?',
         acceptedAnswer: {
           '@type': 'Answer',
-          text: 'Tu sitio sigue publicado en el plan free. No pierdes tu sitio, solo pierdes acceso a funcionalidades premium.',
+          text: 'Sí, pero somos especialistas en estudios jurídicos (suite con monitoreo PJN/SCBA), e-commerce de indumentaria, gastronomía, clínicas, inmobiliarias, servicios B2B y profesionales independientes.',
         },
       },
       {
         '@type': 'Question',
-        name: '¿Es gratis?',
+        name: '¿Cuánto tarda en estar listo un proyecto?',
         acceptedAnswer: {
           '@type': 'Answer',
-          text: 'Sí, tenemos un plan gratuito con funcionalidades básicas. También ofrecemos planes premium con más características.',
+          text: 'Diagnóstico: 5-10 días. Implementación según tipo: landing simple 5-7 días, sitio institucional 10-15 días, tienda online 15-25 días, sistema con IA 4-8 semanas, integración compleja 8-12 semanas.',
         },
       },
       {
         '@type': 'Question',
-        name: '¿Qué es el Monitoreo Judicial?',
+        name: '¿Cómo es el soporte?',
         acceptedAnswer: {
           '@type': 'Answer',
-          text: 'Es un servicio que revisa automáticamente los portales PJN y SCBA cada 2 horas y te envía por email las nuevas notificaciones con el texto completo del PDF. Ideal para abogados y estudios jurídicos.',
-        },
-      },
-      {
-        '@type': 'Question',
-        name: '¿Cuánto cuesta el monitoreo judicial?',
-        acceptedAnswer: {
-          '@type': 'Answer',
-          text: 'Desde $19.000/mes por CUIT monitoreado en el plan Básico. También ofrecemos planes Profesional (3 CUITs, $35.000/mes) y Estudio (8 CUITs, $75.000/mes).',
-        },
-      },
-      {
-        '@type': 'Question',
-        name: '¿Qué portales judiciales monitorean?',
-        acceptedAnswer: {
-          '@type': 'Answer',
-          text: 'Actualmente monitoreamos PJN (Poder Judicial de la Nación) y SCBA (Suprema Corte de Buenos Aires), con expansión planificada a otros portales durante 2026.',
-        },
-      },
-      {
-        '@type': 'Question',
-        name: '¿Cómo funciona la Captación de Leads IA?',
-        acceptedAnswer: {
-          '@type': 'Answer',
-          text: 'Nuestro sistema busca automáticamente negocios reales en toda Argentina, extrae sus datos de contacto (email, teléfono, web) y valida cada email contra el dominio del negocio. Captura entre 50 y 150 leads únicos por día en tu Google Sheets, 24/7.',
+          text: 'Soporte directo por WhatsApp y email. Sin bots ni tickets. Respondemos consultas en horario L-V 9-18 ART y emergencias críticas fuera de horario.',
         },
       },
     ],
