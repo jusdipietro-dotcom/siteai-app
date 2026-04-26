@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { ArrowRight, Layout, Search, Zap, Mail } from 'lucide-react'
+import { ArrowRight, Layout, Search, Zap, Mail, Crown } from 'lucide-react'
 
 const services = [
   {
@@ -101,19 +101,33 @@ export function ServiciosSection() {
           })}
         </div>
 
-        <div className="mt-12 bg-gradient-to-br from-surface-900 to-surface-800 rounded-2xl p-8 text-center">
-          <h3 className="text-2xl font-bold text-white mb-2">
-            Tenes un proyecto distinto?
-          </h3>
-          <p className="text-surface-300 mb-6 max-w-xl mx-auto">
-            Si necesitas algo que no esta en nuestro catalogo, hablemos. Cotizamos cualquier proyecto de software, automatizacion o IA para tu negocio.
-          </p>
-          <Link
-            href="/contacto"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-white text-surface-900 font-bold rounded-xl hover:bg-surface-100 transition-colors"
-          >
-            Contar mi proyecto <ArrowRight className="w-4 h-4" />
-          </Link>
+        <div className="mt-12 grid md:grid-cols-2 gap-6">
+          <div className="bg-gradient-to-br from-amber-600 via-yellow-600 to-orange-600 rounded-2xl p-8 text-white">
+            <Crown className="w-9 h-9 mb-4 opacity-90" />
+            <h3 className="text-2xl font-bold mb-2">Implementacion Premium</h3>
+            <p className="text-white/90 text-sm leading-relaxed mb-5">
+              Sistemas completos hechos a medida con onboarding 1:1: Pipeline de Noticias multi-agente, Avatar IA Influencer, ERP Indumentaria, Suite Juridica White-Label. Desde $1.200.000 ARS.
+            </p>
+            <Link
+              href="/premium"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-white text-amber-700 font-bold rounded-xl hover:bg-white/90 transition-colors text-sm"
+            >
+              Ver productos premium <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+
+          <div className="bg-gradient-to-br from-surface-900 to-surface-800 rounded-2xl p-8 text-center text-white flex flex-col justify-center">
+            <h3 className="text-2xl font-bold mb-2">Tenes un proyecto distinto?</h3>
+            <p className="text-surface-300 mb-6 max-w-xl mx-auto text-sm">
+              Si necesitas algo que no esta en nuestro catalogo, hablemos. Cotizamos cualquier proyecto de software, automatizacion o IA.
+            </p>
+            <Link
+              href="/contacto"
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-white text-surface-900 font-bold rounded-xl hover:bg-surface-100 transition-colors text-sm self-center"
+            >
+              Contar mi proyecto <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
         </div>
       </div>
     </section>
