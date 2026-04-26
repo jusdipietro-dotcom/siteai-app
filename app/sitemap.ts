@@ -29,6 +29,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${baseUrl}/blog`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
     ...blogEntries,
 
+    // Testimonios (social proof + GBP funnel)
+    { url: `${baseUrl}/testimonios`, lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
+
     // Otros
     { url: `${baseUrl}/recursos`, lastModified: now, changeFrequency: 'monthly', priority: 0.6 },
     { url: `${baseUrl}/gratis`, lastModified: now, changeFrequency: 'monthly', priority: 0.6 },

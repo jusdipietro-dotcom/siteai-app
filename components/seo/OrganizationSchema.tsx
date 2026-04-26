@@ -3,17 +3,78 @@ import { JsonLd } from './JsonLd'
 export function OrganizationSchema() {
   const organizationSchema = {
     '@context': 'https://schema.org',
-    '@type': 'Organization',
+    // ProfessionalService is a subtype of LocalBusiness; valid for service-area
+    // businesses (no physical storefront) like a digital agency.
+    '@type': ['Organization', 'ProfessionalService'],
+    '@id': 'https://automaticialab.com/#organization',
     name: 'Automatic IA Lab',
+    legalName: 'Automatic IA Lab',
+    alternateName: 'Automatic IA Lab — Automatización con IA',
     url: 'https://automaticialab.com',
+    logo: {
+      '@type': 'ImageObject',
+      url: 'https://automaticialab.com/logo.png',
+      width: 512,
+      height: 341,
+    },
+    image: 'https://automaticialab.com/og-image.png',
     email: 'automaticialab@gmail.com',
+    telephone: '+5491171311465',
+    priceRange: '$$',
     address: {
       '@type': 'PostalAddress',
       addressLocality: 'Buenos Aires',
+      addressRegion: 'Ciudad Autónoma de Buenos Aires',
       addressCountry: 'AR',
     },
-    sameAs: ['https://www.instagram.com/automaticialab'],
-    description: 'Plataforma de automatización inteligente. Sitios web con IA, monitoreo judicial automático, captación de leads y automatizaciones a medida para negocios de Argentina.',
+    geo: {
+      '@type': 'GeoCoordinates',
+      latitude: -34.6037,
+      longitude: -58.3816,
+    },
+    // Service-area business: we operate online across all Argentina.
+    areaServed: [
+      { '@type': 'Country', name: 'Argentina' },
+      { '@type': 'AdministrativeArea', name: 'CABA' },
+      { '@type': 'AdministrativeArea', name: 'Buenos Aires' },
+    ],
+    serviceArea: {
+      '@type': 'GeoCircle',
+      geoMidpoint: { '@type': 'GeoCoordinates', latitude: -34.6037, longitude: -58.3816 },
+      geoRadius: '5000000', // 5000km — covers all of Argentina + LATAM neighbors
+    },
+    openingHoursSpecification: {
+      '@type': 'OpeningHoursSpecification',
+      dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+      opens: '09:00',
+      closes: '18:00',
+    },
+    sameAs: [
+      'https://www.instagram.com/automaticialab',
+      'https://github.com/jusdipietro-dotcom',
+    ],
+    contactPoint: {
+      '@type': 'ContactPoint',
+      telephone: '+5491171311465',
+      contactType: 'customer service',
+      areaServed: 'AR',
+      availableLanguage: ['Spanish', 'es-AR'],
+      contactOption: 'TollFree',
+    },
+    description:
+      'Agencia y plataforma de automatización con IA en Argentina. Sitios web con IA, monitoreo judicial automático (PJN/SCBA), captación de leads B2B, email marketing, reseñas Google, LinkedIn y automatizaciones a medida para PyMEs y estudios jurídicos.',
+    knowsAbout: [
+      'Automatización con IA',
+      'Inteligencia artificial generativa',
+      'Software para abogados',
+      'Monitoreo judicial PJN SCBA',
+      'Email marketing automatizado',
+      'Captación de leads B2B',
+      'Generación de sitios web con IA',
+      'Workflow automation n8n',
+      'Reseñas Google Business',
+    ],
+    slogan: 'Automatizá tu negocio con inteligencia artificial',
   }
 
   const softwareApplicationSchema = {
