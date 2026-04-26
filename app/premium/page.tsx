@@ -48,7 +48,7 @@ const products = [
     gradient: 'from-fuchsia-600 to-pink-700',
     accent: 'text-fuchsia-700',
     features: [
-      'Avatar IA disenado a medida (10+ poses base)',
+      'Avatar IA diseñado a medida (10+ poses base)',
       'Bot Telegram conversacional (briefing → contenido)',
       'Generador de imagenes con IA (ComfyUI local)',
       'Pipeline de reels con voz IA + musica',
