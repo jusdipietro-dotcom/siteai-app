@@ -19,12 +19,11 @@ export const metadata: Metadata = {
   },
 }
 
-// Google Business Profile — CID (Customer ID) de Automatic IA Lab.
-// La URL ?cid=... abre el perfil en Maps; desde ahí el cliente clickea
-// "Escribir reseña" (o se puede usar https://g.page/r/{short}/review
-// si el GBP genera un short link en su panel admin).
-const GBP_CID = '05938724930941089681'
-const GOOGLE_REVIEW_URL = `https://www.google.com/maps?cid=${GBP_CID}`
+// Google Business Profile — short link generado en el panel GBP de
+// Automatic IA Lab. Abre el formulario de "escribir reseña" directo
+// (no el perfil), 1-click review.
+const GOOGLE_REVIEW_URL = 'https://g.page/r/Cdv_NiOQ1cdgEAE/review'
+// CID del GBP (para sameAs schema): 05938724930941089681
 
 const WA_LINK =
   'https://wa.me/5491171311465?text=Hola%2C%20quiero%20dejar%20una%20rese%C3%B1a%20de%20Automatic%20IA%20Lab'

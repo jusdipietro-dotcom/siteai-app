@@ -219,10 +219,9 @@ export async function sendReviewRequestEmail(
     daysActive?: number
   }
 ) {
-  // Default: open the Automatic IA Lab GBP via CID.
-  // Customer can override with a per-link short URL (e.g. https://g.page/r/.../review).
+  // GBP short link → opens "write a review" form directly (1-click).
   const reviewUrl =
-    details.googleReviewUrl ?? 'https://www.google.com/maps?cid=05938724930941089681'
+    details.googleReviewUrl ?? 'https://g.page/r/Cdv_NiOQ1cdgEAE/review'
 
   const html = emailWrapper(`Una pregunta corta — Automatic IA Lab`, `
     <p>Hola ${details.customerName.split(' ')[0]},</p>
