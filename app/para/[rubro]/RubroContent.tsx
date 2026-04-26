@@ -51,16 +51,15 @@ export function RubroContent({ rubro, otherRubros }: { rubro: Rubro; otherRubros
 
           <motion.div variants={fadeUp} initial="hidden" animate="visible" custom={3}
             className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link href="/register">
+            <Link href="/contacto">
               <Button size="xl" variant="gradient" className="gap-2 w-full sm:w-auto shadow-brand">
-                <Zap className="w-5 h-5" />
-                Crear sitio web gratis
+                Pedir cotización
                 <ArrowRight className="w-4 h-4" />
               </Button>
             </Link>
             <Link href="/">
               <Button size="xl" variant="outline" className="gap-2 w-full sm:w-auto border-surface-700 text-surface-300 hover:bg-surface-800 hover:text-white hover:border-surface-600">
-                Ver más opciones
+                Ver servicios
               </Button>
             </Link>
           </motion.div>
@@ -144,15 +143,14 @@ export function RubroContent({ rubro, otherRubros }: { rubro: Rubro; otherRubros
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} custom={0}>
             <h2 className="text-3xl sm:text-4xl font-extrabold text-surface-950 mb-6">
-              Tu sitio web en minutos, sin código
+              Tu sitio web a medida, sin templates
             </h2>
             <p className="text-lg text-surface-600 mb-10 max-w-2xl mx-auto">
-              Completá un simple formulario, elegí el estilo y nuestra IA genera un sitio profesional, optimizado para SEO y publicado en minutos.
+              Diseñamos y desarrollamos tu sitio profesional desde cero. Optimizado para SEO, integrado con WhatsApp y MercadoPago, con tu branding único.
             </p>
-            <Link href="/register">
+            <Link href="/contacto">
               <Button size="xl" variant="gradient" className="gap-2 shadow-brand">
-                <Zap className="w-5 h-5" />
-                Empezar ahora
+                Pedir cotización
                 <ArrowRight className="w-4 h-4" />
               </Button>
             </Link>

@@ -81,12 +81,11 @@ export default function RubrosPage() {
               No ves tu rubro específico?
             </h2>
             <p className="text-lg text-surface-400 mb-10 max-w-2xl mx-auto">
-              Nuestro generador de IA se adapta a cualquier tipo de negocio. Comenzá con una base sólida y personalizá según tus necesidades.
+              Trabajamos con cualquier tipo de negocio. Contanos sobre el tuyo y armamos una propuesta a medida.
             </p>
-            <Link href="/register">
+            <Link href="/contacto">
               <Button size="xl" variant="gradient" className="gap-2 shadow-brand">
-                <Zap className="w-5 h-5" />
-                Crear mi sitio web gratis
+                Pedir cotización
                 <ArrowRight className="w-4 h-4" />
               </Button>
             </Link>
