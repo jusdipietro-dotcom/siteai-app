@@ -19,11 +19,11 @@ const inter = Inter({
 export const metadata: Metadata = {
   metadataBase: new URL('https://automaticialab.com'),
   title: {
-    default: 'Automatic IA Lab — Automatización IA para PyMEs y Abogados',
+    default: 'Automatic IA Lab — Agencia de IA, Marketing, Diseño Web y SEO',
     template: '%s · Automatic IA Lab',
   },
   description:
-    'Automatización con IA en Argentina. 13 productos para PyMEs y estudios jurídicos: web, monitoreo judicial, prospección B2B, email, reseñas y más.',
+    'Agencia digital argentina especializada en IA, marketing, diseño web y SEO. Diagnóstico técnico desde USD 300 e implementación a medida.',
   icons: {
     icon: '/favicon.ico',
     shortcut: '/favicon.ico',
@@ -39,19 +39,19 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'es_AR',
     siteName: 'Automatic IA Lab',
-    title: 'Automatic IA Lab — Automatización IA para PyMEs y Abogados',
+    title: 'Automatic IA Lab — Agencia de IA, Marketing, Diseño Web y SEO',
     description:
-      'Automatización con IA en Argentina. 13 productos para PyMEs y estudios jurídicos: web, monitoreo judicial, prospección B2B, email, reseñas y más.',
+      'Agencia digital argentina especializada en IA, marketing, diseño web y SEO. Diagnóstico técnico desde USD 300 e implementación a medida.',
     url: 'https://automaticialab.com',
-    images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'Automatic IA Lab — Automatización con IA' }],
+    images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'Automatic IA Lab — Agencia digital' }],
   },
   twitter: {
     card: 'summary_large_image',
     site: '@automaticialab',
     creator: '@automaticialab',
-    title: 'Automatic IA Lab — Automatización IA para PyMEs y Abogados',
+    title: 'Automatic IA Lab — Agencia de IA, Marketing, Diseño Web y SEO',
     description:
-      'Automatización con IA en Argentina. 13 productos para PyMEs y estudios jurídicos: web, monitoreo judicial, prospección B2B, email, reseñas y más.',
+      'Agencia digital argentina especializada en IA, marketing, diseño web y SEO. Diagnóstico técnico desde USD 300 e implementación a medida.',
     images: ['/og-image.png'],
   },
 }
