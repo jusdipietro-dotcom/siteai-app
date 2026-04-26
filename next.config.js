@@ -8,13 +8,18 @@ const nextConfig = {
     return [
       {
         // Permanent 301 redirect www -> non-www (canonical host).
-        // Avoids duplicate content indexing between
-        // https://www.automaticialab.com and https://automaticialab.com.
         source: '/:path*',
         has: [{ type: 'host', value: 'www.automaticialab.com' }],
         destination: 'https://automaticialab.com/:path*',
         permanent: true,
       },
+      // Legacy SaaS auto-product URLs → /contacto (agency model now).
+      // /admin/* and /(dashboard)/* keep working (auth-gated, internal use).
+      { source: '/gratis', destination: '/contacto', permanent: true },
+      { source: '/recursos', destination: '/contacto', permanent: true },
+      { source: '/leads', destination: '/contacto', permanent: true },
+      { source: '/servicios/email-marketing', destination: '/servicios/marketing-digital', permanent: true },
+      { source: '/servicios/prospeccion', destination: '/servicios/marketing-digital', permanent: true },
     ]
   },
 

@@ -1,20 +1,38 @@
 User-agent: *
 Allow: /
+
+# Páginas internas / dashboards de uso administrativo
 Disallow: /api/
+Disallow: /admin/
 Disallow: /login
 Disallow: /register
 Disallow: /forgot-password
 Disallow: /reset-password
-Disallow: /help
 Disallow: /dashboard
 Disallow: /wizard
 Disallow: /settings
+Disallow: /help
 Disallow: /media
 Disallow: /templates
-Disallow: /monitoreo
-Disallow: /admin/
 Disallow: /projects/
+
+# Dashboards legacy de productos (modelo SaaS antiguo, ahora son uso interno)
+Disallow: /monitoreo
+Disallow: /resenas
+Disallow: /turnos
+Disallow: /linkedin
+Disallow: /lexpost
+Disallow: /facturacion
+Disallow: /causas
+Disallow: /email-marketing
+Disallow: /prospeccion
+Disallow: /crypto
+Disallow: /suite-juridica
+Disallow: /jurisprudencia
+
+# Query strings con tokens de auth o errores
 Disallow: /*?callbackUrl*
 Disallow: /*?error*
+Disallow: /*?token*
 
 Sitemap: https://automaticialab.com/sitemap.xml

@@ -21,7 +21,7 @@ const products = [
     name: 'Canal de Noticias multi-agente',
     tagline: 'Sistema completo de publicacion automatica en Instagram + WhatsApp',
     desc: 'Pipeline real con 3 fuentes RSS, agente investigador, agente redactor, generacion de imagen con IA, publicacion automatica en Instagram y envio a canal de WhatsApp. Misma tecnologia que opera @puntoreporte (Zona Sur, BA).',
-    priceFrom: 1200000,
+    priceFromUsd: 3500,
     duration: '15-25 dias',
     gradient: 'from-violet-600 to-purple-700',
     accent: 'text-violet-700',
@@ -43,7 +43,7 @@ const products = [
     name: 'Avatar IA Influencer',
     tagline: 'Tu avatar virtual generando contenido publicitario para tus productos',
     desc: 'Avatar IA con identidad visual unica que produce reels, fotos y stories promocionando productos reales (los tuyos o los de tus clientes). Bot Telegram conversacional para crear contenido en 1 click. Stack ComfyUI (SDXL) + Stable Horde + LLM.',
-    priceFrom: 1800000,
+    priceFromUsd: 5000,
     duration: '20-30 dias',
     gradient: 'from-fuchsia-600 to-pink-700',
     accent: 'text-fuchsia-700',
@@ -65,7 +65,7 @@ const products = [
     name: 'ERP para Indumentaria (modelo Moia)',
     tagline: 'Sistema completo: stock multi-sucursal + Tiendanube + ARCA',
     desc: 'ERP a medida para marcas de indumentaria con tienda online. Inventario en tiempo real entre tiendas fisicas y online, sync bidireccional con Tiendanube, facturacion electronica AFIP/ARCA, dashboard de ventas, multi-usuario por sucursal.',
-    priceFrom: 2400000,
+    priceFromUsd: 7000,
     duration: '30-45 dias',
     gradient: 'from-orange-600 to-red-600',
     accent: 'text-orange-700',
@@ -87,7 +87,7 @@ const products = [
     name: 'Suite Juridica White-Label',
     tagline: 'Plataforma completa para revender a otros estudios juridicos',
     desc: 'Suite legal completa (PJN + SCBA + JurisArgentina + Agente Secretario + Facturacion ARCA + Turnos) bajo TU marca. Vos vendes a otros abogados, nosotros operamos la infraestructura. Listo para escalar como SaaS.',
-    priceFrom: 3500000,
+    priceFromUsd: 10000,
     duration: '45-60 dias',
     gradient: 'from-blue-700 to-indigo-800',
     accent: 'text-blue-700',
@@ -276,7 +276,7 @@ export default function PremiumPage() {
                     <div className="grid grid-cols-2 gap-4 mb-5 pb-5 border-b border-surface-100">
                       <div>
                         <p className="text-xs text-surface-400 uppercase tracking-wider">Desde</p>
-                        <p className="text-2xl font-extrabold text-surface-900">${p.priceFrom.toLocaleString('es-AR')}</p>
+                        <p className="text-2xl font-extrabold text-surface-900">USD {p.priceFromUsd.toLocaleString('en-US')}</p>
                       </div>
                       <div>
                         <p className="text-xs text-surface-400 uppercase tracking-wider">Implementacion</p>
@@ -411,10 +411,10 @@ export default function PremiumPage() {
             source="/premium"
             accentClass="bg-amber-600 hover:bg-amber-700"
             budgetOptions={[
-              '$1.000.000 - $2.000.000',
-              '$2.000.000 - $3.500.000',
-              '$3.500.000 - $5.000.000',
-              'Mas de $5.000.000',
+              'USD 3.000 - 5.000',
+              'USD 5.000 - 8.000',
+              'USD 8.000 - 12.000',
+              'USD 12.000+',
               'Necesito asesoramiento',
             ]}
             description="Decinos cual de los 4 productos te interesa (o si necesitas algo distinto). Te contactamos para coordinar reunion."
