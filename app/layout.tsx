@@ -7,28 +7,19 @@ import { Providers } from '@/components/providers/Providers'
 import { WhatsAppButton } from '@/components/shared/WhatsAppButton'
 
 export const metadata: Metadata = {
-  title: { default: 'Automatic IA Lab — Automatizaciones con IA', template: '%s · Automatic IA Lab' },
-  description: 'Plataforma de automatizacion con IA: 11 productos para escalar tu negocio. Sitios web, monitoreo judicial, prospeccion B2B, email marketing, resenas Google, LinkedIn, senales crypto, turnos online y mas. Todo sin codigo, desde Argentina.',
-  keywords: [
-    'automatizacion con inteligencia artificial',
-    'crear sitio web gratis',
-    'generador de sitios web con IA',
-    'notificaciones judiciales automaticas',
-    'monitoreo judicial Argentina',
-    'automatizacion para abogados',
-    'responder resenas google con ia',
-    'gestion de resenas google business',
-    'optimizar perfil linkedin con ia',
-    'linkedin optimizer bot',
-    'prospeccion b2b con ia',
-    'captacion de leads automatica',
-    'email marketing automatizado argentina',
-    'senales crypto trading bot',
-    'turnos online profesionales',
-    'automatizacion redes sociales instagram',
-    'automatic ia lab',
-  ],
-  icons: { icon: '/favicon.ico' },
+  metadataBase: new URL('https://automaticialab.com'),
+  title: {
+    default: 'Automatic IA Lab — Automatización IA para PyMEs y Abogados',
+    template: '%s · Automatic IA Lab',
+  },
+  description:
+    'Automatización con IA en Argentina. 13 productos para PyMEs y estudios jurídicos: web, monitoreo judicial, prospección B2B, email, reseñas y más.',
+  icons: {
+    icon: '/favicon.ico',
+    shortcut: '/favicon.ico',
+    apple: '/logo.png',
+  },
+  manifest: undefined,
   robots: 'index, follow',
   verification: { google: 'C1f6_LmId69To22LmPBUOUV_Ys0Gwiu0jdJCbFdkaP0' },
   alternates: {
@@ -38,17 +29,23 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'es_AR',
     siteName: 'Automatic IA Lab',
-    title: 'Automatic IA Lab — Automatizaciones con IA',
-    description: 'Plataforma de automatizacion con IA: 11 productos para escalar tu negocio. Sitios web, monitoreo judicial, prospeccion B2B, email marketing y mas.',
+    title: 'Automatic IA Lab — Automatización IA para PyMEs y Abogados',
+    description:
+      'Automatización con IA en Argentina. 13 productos para PyMEs y estudios jurídicos: web, monitoreo judicial, prospección B2B, email, reseñas y más.',
     url: 'https://automaticialab.com',
-    images: [{ url: 'https://automaticialab.com/og-image.png', width: 1200, height: 630, alt: 'Automatic IA Lab' }],
+    images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'Automatic IA Lab — Automatización con IA' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Automatic IA Lab — Automatizaciones con IA',
-    description: 'Plataforma de automatizacion con IA: 11 productos para escalar tu negocio. Sitios web, monitoreo judicial, prospeccion B2B, email marketing y mas.',
-    images: ['https://automaticialab.com/og-image.png'],
+    title: 'Automatic IA Lab — Automatización IA para PyMEs y Abogados',
+    description:
+      'Automatización con IA en Argentina. 13 productos para PyMEs y estudios jurídicos: web, monitoreo judicial, prospección B2B, email, reseñas y más.',
+    images: ['/og-image.png'],
   },
+}
+
+export const viewport = {
+  themeColor: '#0099ff',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
