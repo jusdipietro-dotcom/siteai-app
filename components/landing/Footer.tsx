@@ -20,6 +20,12 @@ const links: Record<string, { label: string; href: string }[]> = {
     { label: 'Email Marketing', href: '/servicios/email-marketing' },
     { label: 'Prospeccion IA', href: '/servicios/prospeccion' },
   ],
+  'Premium': [
+    { label: 'Canal de Noticias', href: '/premium#productos' },
+    { label: 'Avatar IA Influencer', href: '/premium#productos' },
+    { label: 'ERP Indumentaria', href: '/premium#productos' },
+    { label: 'Suite Juridica WL', href: '/premium#productos' },
+  ],
   Recursos: [
     { label: 'Blog', href: '/blog' },
     { label: 'Preguntas frecuentes', href: '/#faq' },
@@ -38,7 +44,7 @@ export function Footer() {
   return (
     <footer className="bg-surface-950 border-t border-surface-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-10 mb-12">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-10 mb-12">
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
             <div className="flex items-center gap-2 mb-4">
