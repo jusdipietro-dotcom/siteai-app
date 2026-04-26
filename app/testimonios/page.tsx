@@ -19,12 +19,12 @@ export const metadata: Metadata = {
   },
 }
 
-// TODO: reemplazar con el Place ID real una vez creado el Google Business Profile.
-// Mientras tanto, usamos una búsqueda directa que abre el perfil cuando exista.
-const GOOGLE_REVIEW_URL =
-  'https://www.google.com/search?q=Automatic+IA+Lab+Buenos+Aires+rese%C3%B1a&hl=es-AR'
-// Cuando el GBP esté listo, reemplazar por:
-// const GOOGLE_REVIEW_URL = 'https://search.google.com/local/writereview?placeid=YOUR_PLACE_ID'
+// Google Business Profile — CID (Customer ID) de Automatic IA Lab.
+// La URL ?cid=... abre el perfil en Maps; desde ahí el cliente clickea
+// "Escribir reseña" (o se puede usar https://g.page/r/{short}/review
+// si el GBP genera un short link en su panel admin).
+const GBP_CID = '05938724930941089681'
+const GOOGLE_REVIEW_URL = `https://www.google.com/maps?cid=${GBP_CID}`
 
 const WA_LINK =
   'https://wa.me/5491171311465?text=Hola%2C%20quiero%20dejar%20una%20rese%C3%B1a%20de%20Automatic%20IA%20Lab'
