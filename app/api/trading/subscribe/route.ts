@@ -5,11 +5,8 @@ import { prisma } from '@/lib/prisma'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 import { isUserFreeAccount } from '@/lib/free-account'
 import { getTrialEndDate } from '@/lib/trial'
-
-const TRADING_PLANS: Record<string, { monthly: number; title: string; maxPairs: number; reportes: boolean }> = {
-  basico:      { monthly: 20000, title: 'Señales Crypto IA Básico',      maxPairs: 30, reportes: false },
-  profesional: { monthly: 35000, title: 'Señales Crypto IA Profesional', maxPairs: 30, reportes: true },
-}
+import { isValidEmail } from '@/lib/validators'
+import { TRADING_PLANS } from '@/lib/trading-plans'
 
 export async function POST(req: NextRequest) {
   try {
@@ -34,10 +31,10 @@ export async function POST(req: NextRequest) {
     }
 
     // Validate emails
-    if (!notificationEmail?.includes('@')) {
+    if (!isValidEmail(notificationEmail)) {
       return NextResponse.json({ error: 'Email de notificaciones inválido' }, { status: 400 })
     }
-    if (!payerEmail?.includes('@')) {
+    if (!isValidEmail(payerEmail)) {
       return NextResponse.json({ error: 'Email de facturación inválido' }, { status: 400 })
     }
 

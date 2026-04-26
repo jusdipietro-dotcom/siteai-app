@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { ArrowRight, Layout, Search, Zap, Mail, Crown } from 'lucide-react'
+import { ArrowRight, Layout, Search, Zap, MessageCircle, Crown } from 'lucide-react'
 
 const services = [
   {
@@ -28,15 +28,15 @@ const services = [
     cta: 'Pedir auditoria',
   },
   {
-    id: 'email-marketing',
-    icon: Mail,
-    title: 'Email Marketing',
-    desc: 'Enviá emails masivos personalizados a tus contactos. Anti-spam, automatico, en pesos argentinos.',
-    priceFrom: 15000,
-    href: '/servicios/email-marketing',
+    id: 'chatbot-ia',
+    icon: MessageCircle,
+    title: 'Chatbot IA para tu web',
+    desc: 'Implementamos un chatbot IA personalizado en tu sitio: responde consultas, agenda turnos, captura leads. Conectado con tu negocio.',
+    priceFrom: 90000,
+    href: '/contacto',
     gradient: 'from-pink-500 to-rose-600',
     accent: 'text-rose-600',
-    cta: 'Ver planes',
+    cta: 'Solicitar info',
   },
   {
     id: 'custom',

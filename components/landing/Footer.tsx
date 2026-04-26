@@ -17,8 +17,8 @@ const links: Record<string, { label: string; href: string }[]> = {
   'Servicios a medida': [
     { label: 'Diseno Web', href: '/servicios/diseno-web' },
     { label: 'Posicionamiento SEO', href: '/servicios/seo' },
-    { label: 'Email Marketing', href: '/servicios/email-marketing' },
-    { label: 'Prospeccion IA', href: '/servicios/prospeccion' },
+    { label: 'Chatbot IA a medida', href: '/contacto' },
+    { label: 'Workflows a medida', href: '/contacto' },
   ],
   'Premium': [
     { label: 'Canal de Noticias', href: '/premium#productos' },

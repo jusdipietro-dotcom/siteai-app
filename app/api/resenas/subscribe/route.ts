@@ -5,14 +5,9 @@ import { prisma } from '@/lib/prisma'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 import { isUserFreeAccount } from '@/lib/free-account'
 import { getTrialEndDate } from '@/lib/trial'
+import { isValidEmail } from '@/lib/validators'
 
-const REVIEWS_PLANS: Record<string, { monthly: number; title: string; maxProfiles: number }> = {
-  basico:    { monthly: 15000, title: 'Reseñas Google IA Básico',    maxProfiles: 1 },
-  profesional: { monthly: 25000, title: 'Reseñas Google IA Profesional', maxProfiles: 3 },
-  premium:   { monthly: 45000, title: 'Reseñas Google IA Premium',   maxProfiles: 10 },
-}
-
-// Note: REVIEWS_PLANS also defined in create-reviews-subscription/route.ts
+import { RESENAS_PLANS as REVIEWS_PLANS } from '@/lib/resenas-plans'
 
 export async function POST(req: NextRequest) {
   try {
@@ -46,13 +41,13 @@ export async function POST(req: NextRequest) {
     if (!searchUrl?.trim()) {
       return NextResponse.json({ error: 'URL de búsqueda requerida' }, { status: 400 })
     }
-    if (!googleEmail?.includes('@')) {
+    if (!isValidEmail(googleEmail)) {
       return NextResponse.json({ error: 'Email de Google inválido' }, { status: 400 })
     }
-    if (!notificationEmail?.includes('@')) {
+    if (!isValidEmail(notificationEmail)) {
       return NextResponse.json({ error: 'Email de notificaciones inválido' }, { status: 400 })
     }
-    if (!payerEmail?.includes('@')) {
+    if (!isValidEmail(payerEmail)) {
       return NextResponse.json({ error: 'Email de facturación inválido' }, { status: 400 })
     }
     if (!['profesional', 'cercano', 'formal'].includes(responseTone ?? '')) {
