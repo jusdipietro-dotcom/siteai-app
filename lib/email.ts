@@ -126,6 +126,88 @@ export async function sendPaymentConfirmationEmail(
   })
 }
 
+export async function sendInquiryNotificationEmail(
+  inquiry: {
+    id: string
+    service: string
+    packageId?: string | null
+    name: string
+    email: string
+    phone?: string | null
+    company?: string | null
+    website?: string | null
+    budget?: string | null
+    message: string
+    source?: string | null
+  }
+) {
+  const adminEmail = process.env.ADMIN_NOTIFY_EMAIL ?? 'automaticialab@gmail.com'
+  const serviceLabels: Record<string, string> = {
+    'diseno-web': 'Diseno Web',
+    'seo': 'SEO',
+    'custom': 'Workflow a medida',
+    'premium': 'Implementacion Premium',
+  }
+  const label = serviceLabels[inquiry.service] ?? inquiry.service
+
+  const rows: Array<[string, string]> = [
+    ['Servicio', label],
+    ...(inquiry.packageId ? [['Paquete', inquiry.packageId] as [string, string]] : []),
+    ['Nombre', inquiry.name],
+    ['Email', inquiry.email],
+    ...(inquiry.phone ? [['Telefono', inquiry.phone] as [string, string]] : []),
+    ...(inquiry.company ? [['Empresa', inquiry.company] as [string, string]] : []),
+    ...(inquiry.website ? [['Web actual', inquiry.website] as [string, string]] : []),
+    ...(inquiry.budget ? [['Presupuesto', inquiry.budget] as [string, string]] : []),
+    ...(inquiry.source ? [['Origen', inquiry.source] as [string, string]] : []),
+    ['ID interno', inquiry.id],
+  ]
+
+  const rowsHtml = rows
+    .map(
+      ([k, v]) =>
+        `<tr><td style="padding:6px 12px;color:#666;font-size:13px">${k}</td><td style="padding:6px 12px;font-weight:600;font-size:13px">${v}</td></tr>`
+    )
+    .join('')
+
+  const adminHtml = emailWrapper(`Nueva consulta — ${label}`, `
+    <p style="margin:0 0 12px"><strong>${inquiry.name}</strong> pidio info de <strong>${label}</strong>.</p>
+    <table style="width:100%;border-collapse:collapse;background:white;border-radius:8px;overflow:hidden;margin:16px 0">
+      ${rowsHtml}
+    </table>
+    <p style="font-size:13px;color:#444;margin-top:16px"><strong>Mensaje:</strong></p>
+    <p style="background:white;padding:12px;border-radius:8px;font-size:14px;color:#222;white-space:pre-wrap">${inquiry.message}</p>
+    <p style="font-size:12px;color:#999;margin-top:16px">Respondele a <a href="mailto:${inquiry.email}" style="color:#0099ff">${inquiry.email}</a> para tomar el lead.</p>
+  `)
+
+  await transporter.sendMail({
+    from: FROM,
+    to: adminEmail,
+    replyTo: inquiry.email,
+    subject: `[Lead ${label}] ${inquiry.name} — Automatic IA Lab`,
+    html: adminHtml,
+  })
+
+  const userHtml = emailWrapper('Recibimos tu consulta', `
+    <p>Hola ${inquiry.name.split(' ')[0]},</p>
+    <p>Recibimos tu consulta sobre <strong>${label}</strong>. Te respondemos en menos de 24 horas habiles con una propuesta personalizada.</p>
+    <p style="font-size:13px;color:#666">Mientras tanto, si necesitas algo urgente podes escribirnos por WhatsApp al <strong>+54 9 11 7131-1465</strong>.</p>
+    <div style="text-align:center;margin:24px 0">
+      <a href="${APP_URL}" style="display:inline-block;padding:12px 32px;background:#0099ff;color:white;text-decoration:none;border-radius:8px;font-weight:bold;font-size:14px">
+        Volver al sitio
+      </a>
+    </div>
+    <p style="font-size:12px;color:#999">Equipo Automatic IA Lab</p>
+  `)
+
+  await transporter.sendMail({
+    from: FROM,
+    to: inquiry.email,
+    subject: 'Recibimos tu consulta — Automatic IA Lab',
+    html: userHtml,
+  })
+}
+
 export async function sendSubscriptionCancelledEmail(
   to: string,
   details: { type: 'monitoring' | 'project' | 'reviews' | 'linkedin' | 'trading' | 'leads' | 'email-marketing' | 'prospeccion' | 'facturacion' | 'causas' | 'turnos' | 'suite-juridica'; plan: string }

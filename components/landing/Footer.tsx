@@ -14,6 +14,12 @@ const links: Record<string, { label: string; href: string }[]> = {
     { label: 'Turnos Online', href: '/#productos' },
     { label: 'Automatizaciones', href: '/#productos' },
   ],
+  'Servicios a medida': [
+    { label: 'Diseno Web', href: '/servicios/diseno-web' },
+    { label: 'Posicionamiento SEO', href: '/servicios/seo' },
+    { label: 'Email Marketing', href: '/servicios/email-marketing' },
+    { label: 'Prospeccion IA', href: '/servicios/prospeccion' },
+  ],
   Recursos: [
     { label: 'Blog', href: '/blog' },
     { label: 'Preguntas frecuentes', href: '/#faq' },
@@ -32,7 +38,7 @@ export function Footer() {
   return (
     <footer className="bg-surface-950 border-t border-surface-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-10 mb-12">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-10 mb-12">
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
             <div className="flex items-center gap-2 mb-4">
