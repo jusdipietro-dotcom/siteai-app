@@ -117,24 +117,24 @@ export default function BlogPage() {
           <h2 className="text-2xl font-bold text-surface-950 mb-4">Recursos adicionales</h2>
           <p className="text-surface-600 mb-4 max-w-2xl mx-auto">
             Ademas de estos articulos, podes explorar nuestras herramientas gratuitas para mejorar
-            la presencia digital de tu negocio. Desde el generador de sitios web con IA hasta el
-            monitoreo judicial automatico, todo esta diseñado para ahorrarte tiempo y ayudarte a crecer.
+            la presencia digital de tu negocio. Desde diseño web a medida hasta automatización con IA,
+            todo está diseñado para ayudarte a crecer.
           </p>
           <p className="text-surface-600 mb-6 max-w-2xl mx-auto">
-            Publicamos contenido nuevo regularmente sobre las mejores practicas para emprendedores
-            y profesionales que quieren aprovechar la tecnologia sin complicarse. Cada guia esta
+            Publicamos contenido nuevo regularmente sobre las mejores prácticas para emprendedores
+            y profesionales que quieren aprovechar la tecnología sin complicarse. Cada guía está
             escrita pensando en negocios reales de Argentina, con ejemplos concretos y soluciones
-            que podes aplicar hoy mismo sin conocimientos tecnicos previos.
+            que podés aplicar hoy mismo.
           </p>
           <div className="flex flex-wrap justify-center gap-4">
-            <Link href="/gratis" className="text-sm font-semibold text-brand-600 hover:text-brand-700 underline">
-              Crear sitio web gratis
+            <Link href="/contacto" className="text-sm font-semibold text-brand-600 hover:text-brand-700 underline">
+              Pedir cotización
             </Link>
             <Link href="/about" className="text-sm font-semibold text-brand-600 hover:text-brand-700 underline">
               Sobre nosotros
             </Link>
-            <Link href="/contacto" className="text-sm font-semibold text-brand-600 hover:text-brand-700 underline">
-              Contacto
+            <Link href="/testimonios" className="text-sm font-semibold text-brand-600 hover:text-brand-700 underline">
+              Testimonios
             </Link>
           </div>
         </div>
@@ -144,16 +144,16 @@ export default function BlogPage() {
       <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-brand-500 to-brand-600">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl font-bold text-white mb-4">
-            ¿Listo para crear tu sitio web?
+            ¿Listo para crecer tu negocio?
           </h2>
           <p className="text-white/90 mb-8 text-lg">
-            Deja que la IA construya tu presencia online en minutos, no semanas.
+            Trabajemos juntos. Empezamos con un diagnóstico técnico y armamos una propuesta a medida.
           </p>
           <Link
-            href="/register"
+            href="/contacto"
             className="inline-flex items-center gap-2 px-8 py-3 bg-white text-brand-600 font-semibold rounded-lg hover:bg-surface-50 transition-colors"
           >
-            Empezar gratis
+            Pedir cotización
             <span>→</span>
           </Link>
         </div>
