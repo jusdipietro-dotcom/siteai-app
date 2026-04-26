@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Script from 'next/script'
+import { BreadcrumbSchema } from '@/components/seo/BreadcrumbSchema'
 
 export const metadata: Metadata = {
   title: 'Implementacion Premium | Sistemas a medida | Automatic IA Lab',
@@ -114,6 +115,12 @@ const jsonLd = {
 export default function PremiumLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
+      <BreadcrumbSchema
+        items={[
+          { name: 'Inicio', url: 'https://automaticialab.com' },
+          { name: 'Premium', url: 'https://automaticialab.com/premium' },
+        ]}
+      />
       <Script
         id="premium-jsonld"
         type="application/ld+json"

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Script from 'next/script'
+import { BreadcrumbSchema } from '@/components/seo/BreadcrumbSchema'
 
 export const metadata: Metadata = {
   title: 'Email Marketing Automatizado | Automatic IA Lab',
@@ -112,6 +113,13 @@ export default function EmailMarketingLayout({
 }) {
   return (
     <>
+      <BreadcrumbSchema
+        items={[
+          { name: 'Inicio', url: 'https://automaticialab.com' },
+          { name: 'Servicios', url: 'https://automaticialab.com/#servicios' },
+          { name: 'Email Marketing', url: 'https://automaticialab.com/servicios/email-marketing' },
+        ]}
+      />
       <Script
         id="email-marketing-jsonld"
         type="application/ld+json"

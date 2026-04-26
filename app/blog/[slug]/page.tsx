@@ -5,6 +5,8 @@ import { Navbar } from '@/components/layout/Navbar'
 import { Footer } from '@/components/landing/Footer'
 import { blogPosts } from '@/data/blog-posts'
 import { Calendar, Clock, Tag, ArrowLeft } from 'lucide-react'
+import { BreadcrumbSchema } from '@/components/seo/BreadcrumbSchema'
+import { JsonLd } from '@/components/seo/JsonLd'
 
 interface PageProps {
   params: {
@@ -61,8 +63,36 @@ export default function BlogPostPage({ params }: PageProps) {
     day: 'numeric',
   })
 
+  const articleSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'BlogPosting',
+    headline: post.title,
+    description: post.description,
+    image: post.ogImage || 'https://automaticialab.com/og-image.png',
+    datePublished: post.date,
+    dateModified: post.date,
+    author: { '@type': 'Person', name: post.author },
+    publisher: {
+      '@type': 'Organization',
+      name: 'Automatic IA Lab',
+      logo: { '@type': 'ImageObject', url: 'https://automaticialab.com/logo.png' },
+    },
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': `https://automaticialab.com/blog/${post.slug}`,
+    },
+  }
+
   return (
     <main className="min-h-screen bg-white">
+      <BreadcrumbSchema
+        items={[
+          { name: 'Inicio', url: 'https://automaticialab.com' },
+          { name: 'Blog', url: 'https://automaticialab.com/blog' },
+          { name: post.title, url: `https://automaticialab.com/blog/${post.slug}` },
+        ]}
+      />
+      <JsonLd data={articleSchema} />
       <Navbar />
 
       {/* Back Link */}

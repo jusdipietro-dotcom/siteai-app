@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Script from 'next/script'
+import { BreadcrumbSchema } from '@/components/seo/BreadcrumbSchema'
 
 export const metadata: Metadata = {
   title: 'Diseno Web a Medida en Argentina | Automatic IA Lab',
@@ -107,6 +108,13 @@ const jsonLd = {
 export default function DisenoWebLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
+      <BreadcrumbSchema
+        items={[
+          { name: 'Inicio', url: 'https://automaticialab.com' },
+          { name: 'Servicios', url: 'https://automaticialab.com/#servicios' },
+          { name: 'Diseño Web', url: 'https://automaticialab.com/servicios/diseno-web' },
+        ]}
+      />
       <Script
         id="diseno-web-jsonld"
         type="application/ld+json"

@@ -4,6 +4,7 @@ import { Navbar } from '@/components/layout/Navbar'
 import { Footer } from '@/components/landing/Footer'
 import { blogPosts } from '@/data/blog-posts'
 import { Calendar, Clock, Tag } from 'lucide-react'
+import { BreadcrumbSchema } from '@/components/seo/BreadcrumbSchema'
 
 export const metadata: Metadata = {
   title: 'Blog | Tips para tu Negocio Online',
@@ -14,6 +15,12 @@ export const metadata: Metadata = {
 export default function BlogPage() {
   return (
     <main className="min-h-screen bg-white">
+      <BreadcrumbSchema
+        items={[
+          { name: 'Inicio', url: 'https://automaticialab.com' },
+          { name: 'Blog', url: 'https://automaticialab.com/blog' },
+        ]}
+      />
       <Navbar />
 
       {/* Hero Section */}
