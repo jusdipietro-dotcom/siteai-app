@@ -4,6 +4,20 @@ const nextConfig = {
   // En Vercel esto no hace falta y puede ignorarse — Vercel detecta Next.js automáticamente.
   output: process.env.BUILD_STANDALONE === 'true' ? 'standalone' : undefined,
 
+  async redirects() {
+    return [
+      {
+        // Permanent 301 redirect www -> non-www (canonical host).
+        // Avoids duplicate content indexing between
+        // https://www.automaticialab.com and https://automaticialab.com.
+        source: '/:path*',
+        has: [{ type: 'host', value: 'www.automaticialab.com' }],
+        destination: 'https://automaticialab.com/:path*',
+        permanent: true,
+      },
+    ]
+  },
+
   async headers() {
     return [
       {
