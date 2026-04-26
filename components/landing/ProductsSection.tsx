@@ -295,11 +295,12 @@ export function ProductsSection() {
             return (
               <motion.div
                 key={product.id}
+                id={`producto-${product.id}`}
                 initial={{ opacity: 0, y: 32 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
-                className="relative bg-surface-50 rounded-3xl border border-surface-100 overflow-hidden hover:shadow-card transition-shadow duration-300"
+                className="relative bg-surface-50 rounded-3xl border border-surface-100 overflow-hidden hover:shadow-card transition-shadow duration-300 scroll-mt-24"
               >
                 <div className={`grid lg:grid-cols-2 gap-0 ${isReversed ? 'lg:[direction:rtl]' : ''}`}>
                   {/* Content side */}
