@@ -4,13 +4,9 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 import { isUserFreeAccount } from '@/lib/free-account'
+import { isValidEmail } from '@/lib/validators'
 import { getTrialEndDate } from '@/lib/trial'
-
-const LINKEDIN_PLANS: Record<string, { monthly: number; title: string; maxProfiles: number; postsPerMonth: number }> = {
-  basico:      { monthly: 12000, title: 'LinkedIn IA Basico',      maxProfiles: 1,  postsPerMonth: 20 },
-  profesional: { monthly: 20000, title: 'LinkedIn IA Profesional', maxProfiles: 3,  postsPerMonth: 60 },
-  agencia:     { monthly: 45000, title: 'LinkedIn IA Agencia',     maxProfiles: 10, postsPerMonth: 200 },
-}
+import { LINKEDIN_PLANS } from '@/lib/linkedin-plans'
 
 export async function POST(req: NextRequest) {
   try {
@@ -39,10 +35,10 @@ export async function POST(req: NextRequest) {
     if (!audience?.trim()) {
       return NextResponse.json({ error: 'Publico objetivo requerido' }, { status: 400 })
     }
-    if (!notificationEmail?.includes('@')) {
+    if (!isValidEmail(notificationEmail)) {
       return NextResponse.json({ error: 'Email de notificaciones invalido' }, { status: 400 })
     }
-    if (!payerEmail?.includes('@')) {
+    if (!isValidEmail(payerEmail)) {
       return NextResponse.json({ error: 'Email de facturacion invalido' }, { status: 400 })
     }
 

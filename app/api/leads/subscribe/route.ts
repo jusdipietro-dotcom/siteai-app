@@ -5,11 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 import { isUserFreeAccount } from '@/lib/free-account'
 import { getTrialEndDate } from '@/lib/trial'
-
-const LEADS_PLANS: Record<string, { monthly: number; title: string; maxNichos: number; maxCiudades: number }> = {
-  basico:      { monthly: 18000, title: 'Captación de Leads IA Básico', maxNichos: 10, maxCiudades: 5 },
-  profesional: { monthly: 35000, title: 'Captación de Leads IA Profesional', maxNichos: 999, maxCiudades: 999 },
-}
+import { LEADS_PLANS } from '@/lib/leads-plans'
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
