@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils'
 
 const navLinks = [
   { label: 'Productos', href: '/#productos' },
-  { label: 'Como funciona', href: '/#how-it-works' },
+  { label: 'Servicios a medida', href: '/#servicios' },
   { label: 'Precios', href: '/#pricing' },
   { label: 'FAQ', href: '/#faq' },
   { label: 'Blog', href: '/blog' },

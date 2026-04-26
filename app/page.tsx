@@ -1,6 +1,7 @@
 import { Navbar } from '@/components/layout/Navbar'
 import { Hero } from '@/components/landing/Hero'
 import { ProductsSection } from '@/components/landing/ProductsSection'
+import { ServiciosSection } from '@/components/landing/ServiciosSection'
 import { Features } from '@/components/landing/Features'
 import { HowItWorks } from '@/components/landing/HowItWorks'
 import { BusinessTypes } from '@/components/landing/BusinessTypes'
@@ -23,6 +24,7 @@ export default function LandingPage() {
         <Navbar />
         <Hero />
         <ProductsSection />
+        <ServiciosSection />
         <SuiteJuridicaSection />
         <HowItWorks />
         <StatsSection />
