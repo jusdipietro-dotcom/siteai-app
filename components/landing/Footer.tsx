@@ -29,6 +29,7 @@ const links: Record<string, { label: string; href: string }[]> = {
   ],
   Recursos: [
     { label: 'Blog', href: '/blog' },
+    { label: 'Testimonios', href: '/testimonios' },
     { label: 'Preguntas frecuentes', href: '/#faq' },
     { label: 'Precios', href: '/#pricing' },
     { label: 'Plan Gratuito', href: '/gratis' },

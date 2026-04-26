@@ -210,6 +210,41 @@ export async function sendInquiryNotificationEmail(
   })
 }
 
+export async function sendReviewRequestEmail(
+  to: string,
+  details: {
+    customerName: string
+    productUsed: string
+    googleReviewUrl?: string
+    daysActive?: number
+  }
+) {
+  const reviewUrl =
+    details.googleReviewUrl ??
+    'https://www.google.com/search?q=Automatic+IA+Lab+Buenos+Aires+rese%C3%B1a&hl=es-AR'
+
+  const html = emailWrapper(`Una pregunta corta — Automatic IA Lab`, `
+    <p>Hola ${details.customerName.split(' ')[0]},</p>
+    <p>Soy del equipo de <strong>Automatic IA Lab</strong>. Vi que llevas usando <strong>${details.productUsed}</strong>${details.daysActive ? ` hace ${details.daysActive} días` : ''} y me ayudaría mucho saber tu experiencia.</p>
+    <p style="font-size:14px;color:#444">¿Podrías dejarnos una reseña en Google? Tarda menos de 1 minuto y nos ayuda a que otros negocios nos encuentren.</p>
+    <div style="text-align:center;margin:24px 0">
+      <a href="${reviewUrl}" style="display:inline-block;padding:14px 36px;background:#fb923c;color:white;text-decoration:none;border-radius:8px;font-weight:bold;font-size:14px">
+        ⭐ Dejar reseña en Google
+      </a>
+    </div>
+    <p style="font-size:13px;color:#666"><strong>¿Algo no funcionó como esperabas?</strong> Antes de dejar una reseña, contame primero — respondo a este email y vemos cómo arreglarlo.</p>
+    <p style="font-size:12px;color:#999;margin-top:20px">Gracias por confiar en nosotros.<br>Equipo Automatic IA Lab</p>
+  `)
+
+  await transporter.sendMail({
+    from: FROM,
+    to,
+    replyTo: 'automaticialab@gmail.com',
+    subject: `Una pregunta corta sobre ${details.productUsed} — Automatic IA Lab`,
+    html,
+  })
+}
+
 export async function sendAdminProvisioningAlert(details: {
   product: string
   plan: string
