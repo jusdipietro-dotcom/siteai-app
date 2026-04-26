@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createHmac, timingSafeEqual } from 'crypto'
 import { prisma } from '@/lib/prisma'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
-import { sendPaymentConfirmationEmail, sendSubscriptionCancelledEmail } from '@/lib/email'
+import { sendPaymentConfirmationEmail, sendSubscriptionCancelledEmail, sendAdminProvisioningAlert } from '@/lib/email'
 
 const ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN!
 const MP_WEBHOOK_SECRET = process.env.MP_WEBHOOK_SECRET
@@ -295,7 +295,7 @@ export async function POST(req: NextRequest) {
 
           console.log(`[MP Webhook] LinkedIn ${linkedinSubId} → active (plan: ${linkedinPlan})`)
 
-          // Send payment confirmation email
+          // Send payment confirmation email + admin alert (LinkedIn requires manual provisioning)
           try {
             const subForEmail = await prisma.linkedInSubscription.findUnique({
               where: { id: linkedinSubId },
@@ -306,6 +306,20 @@ export async function POST(req: NextRequest) {
                 type: 'linkedin',
                 plan: linkedinPlan,
               })
+
+              await sendAdminProvisioningAlert({
+                product: 'LinkedIn Optimizer',
+                plan: linkedinPlan,
+                subscriptionId: linkedinSubId,
+                userEmail: subForEmail.user.email,
+                notificationEmail: subForEmail.notificationEmail,
+                payerEmail: subForEmail.payerEmail,
+                extraInfo: {
+                  'LinkedIn name': subForEmail.linkedinName ?? 'no especificado',
+                  Industria: subForEmail.industry ?? '',
+                  Audiencia: subForEmail.audience ?? '',
+                },
+              }).catch((e) => console.error('[MP Webhook] LinkedIn admin alert failed:', e))
             }
           } catch (emailErr) {
             console.error('[MP Webhook] Failed to send linkedin payment email:', emailErr)
@@ -739,6 +753,20 @@ export async function POST(req: NextRequest) {
                 type: 'turnos',
                 plan: turnosPlan,
               })
+
+              // Turnos requires manual workflow cloning per tenant → alert admin
+              await sendAdminProvisioningAlert({
+                product: 'Turnos Online',
+                plan: turnosPlan,
+                subscriptionId: turnosSubId,
+                userEmail: subForEmail.user.email,
+                notificationEmail: subForEmail.notificationEmail,
+                payerEmail: subForEmail.payerEmail,
+                extraInfo: {
+                  'Slug': subForEmail.slug ?? 'no asignado',
+                  'Workflow n8n ID': subForEmail.n8nWorkflowId ?? 'pendiente clonar',
+                },
+              }).catch((e) => console.error('[MP Webhook] Turnos admin alert failed:', e))
             }
           } catch (emailErr) {
             console.error('[MP Webhook] Failed to send turnos payment email:', emailErr)
@@ -1057,6 +1085,94 @@ export async function POST(req: NextRequest) {
               }
             } catch (emailErr) {
               console.error('[MP Webhook] Failed to send suite cancellation email:', emailErr)
+            }
+          }
+        }
+
+        return NextResponse.json({ received: true })
+      }
+
+      // ─── LexPost subscription: "lexpost:subscriptionId:plan" ───
+      if (parts[0] === 'lexpost') {
+        if (parts.length < 3 || !parts[1] || !parts[2]) {
+          console.warn('[MP Webhook] Invalid lexpost external_reference:', external_reference)
+          return NextResponse.json({ received: true })
+        }
+        const lexpostSubId = parts[1]
+        const lexpostPlan = parts[2]
+
+        if (status === 'authorized' && lexpostSubId) {
+          const { count } = await prisma.lexPostSubscription.updateMany({
+            where: { id: lexpostSubId, status: { in: ['pending_payment', 'trial'] } },
+            data: { status: 'active', preapprovalId, provisionedAt: new Date() },
+          })
+
+          if (count === 0) {
+            console.log(`[MP Webhook] LexPost ${lexpostSubId} already processed — skipping`)
+            return NextResponse.json({ received: true })
+          }
+
+          const currentSub = await prisma.lexPostSubscription.findUnique({ where: { id: lexpostSubId } })
+          if (currentSub?.couponId) {
+            await prisma.coupon.update({
+              where: { id: currentSub.couponId },
+              data: { usedCount: { increment: 1 } },
+            })
+          }
+
+          console.log(`[MP Webhook] LexPost ${lexpostSubId} → active (plan: ${lexpostPlan})`)
+
+          try {
+            const subForEmail = await prisma.lexPostSubscription.findUnique({
+              where: { id: lexpostSubId },
+              include: { user: { select: { email: true } } },
+            })
+            if (subForEmail?.user.email) {
+              await sendPaymentConfirmationEmail(subForEmail.user.email, {
+                type: 'lexpost',
+                plan: lexpostPlan,
+              })
+
+              // LexPost requires manual provisioning (no n8n workflow yet) → alert admin
+              await sendAdminProvisioningAlert({
+                product: 'LexPost',
+                plan: lexpostPlan,
+                subscriptionId: lexpostSubId,
+                userEmail: subForEmail.user.email,
+                notificationEmail: subForEmail.notificationEmail,
+                payerEmail: subForEmail.payerEmail,
+                extraInfo: {
+                  'IG username': subForEmail.igUsername ?? 'no especificado',
+                  'IG accounts': subForEmail.igAccountCount,
+                  'Publicaciones limit': subForEmail.publicationsLimit,
+                },
+              }).catch((e) => console.error('[MP Webhook] LexPost admin alert failed:', e))
+            }
+          } catch (emailErr) {
+            console.error('[MP Webhook] Failed to send lexpost payment email:', emailErr)
+          }
+        }
+
+        if ((status === 'cancelled' || status === 'paused') && lexpostSubId) {
+          const { count: lpCount } = await prisma.lexPostSubscription.updateMany({
+            where: { id: lexpostSubId, status: { in: ['active', 'provisioning', 'pending_payment', 'trial'] } },
+            data: { status: 'suspended' },
+          })
+          if (lpCount > 0) {
+            console.log(`[MP Webhook] LexPost ${lexpostSubId} suspended (${status})`)
+            try {
+              const subForEmail = await prisma.lexPostSubscription.findUnique({
+                where: { id: lexpostSubId },
+                include: { user: { select: { email: true } } },
+              })
+              if (subForEmail?.user.email) {
+                await sendSubscriptionCancelledEmail(subForEmail.user.email, {
+                  type: 'lexpost',
+                  plan: lexpostPlan,
+                })
+              }
+            } catch (emailErr) {
+              console.error('[MP Webhook] Failed to send lexpost cancellation email:', emailErr)
             }
           }
         }
