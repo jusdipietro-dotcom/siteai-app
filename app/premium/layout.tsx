@@ -5,7 +5,7 @@ import { BreadcrumbSchema } from '@/components/seo/BreadcrumbSchema'
 export const metadata: Metadata = {
   title: 'Implementacion Premium | Sistemas a medida | Automatic IA Lab',
   description:
-    'Implementacion asistida de sistemas completos: Pipeline IG multi-agente, Avatar IA Influencer, ERP Indumentaria con Tiendanube y Suite Juridica White-Label. Desde $1.200.000 ARS.',
+    'Implementacion asistida de sistemas completos: Pipeline IG multi-agente, Avatar IA Influencer, ERP Indumentaria con Tiendanube y Suite Juridica White-Label. Desde USD 3.500.',
   keywords: [
     'implementacion premium argentina',
     'sistema a medida',
@@ -45,8 +45,8 @@ const jsonLd = {
         {
           '@type': 'Offer',
           name: 'Canal de Noticias multi-agente',
-          price: '1200000',
-          priceCurrency: 'ARS',
+          price: '3500',
+          priceCurrency: 'USD',
           priceValidUntil: '2027-12-31',
           availability: 'https://schema.org/InStock',
           description: 'Pipeline n8n con investigador + redactor + imagen IA + publicacion IG + WhatsApp.',
@@ -54,8 +54,8 @@ const jsonLd = {
         {
           '@type': 'Offer',
           name: 'Avatar IA Influencer',
-          price: '1800000',
-          priceCurrency: 'ARS',
+          price: '5000',
+          priceCurrency: 'USD',
           priceValidUntil: '2027-12-31',
           availability: 'https://schema.org/InStock',
           description: 'Avatar IA + bot Telegram + ComfyUI + reels + overlay productos reales.',
@@ -63,8 +63,8 @@ const jsonLd = {
         {
           '@type': 'Offer',
           name: 'ERP para Indumentaria',
-          price: '2400000',
-          priceCurrency: 'ARS',
+          price: '7000',
+          priceCurrency: 'USD',
           priceValidUntil: '2027-12-31',
           availability: 'https://schema.org/InStock',
           description: 'Stock multi-sucursal + Tiendanube sync + ARCA + dashboard ventas.',
@@ -72,8 +72,8 @@ const jsonLd = {
         {
           '@type': 'Offer',
           name: 'Suite Juridica White-Label',
-          price: '3500000',
-          priceCurrency: 'ARS',
+          price: '10000',
+          priceCurrency: 'USD',
           priceValidUntil: '2027-12-31',
           availability: 'https://schema.org/InStock',
           description: 'SaaS multi-tenant para revender a estudios juridicos bajo tu marca.',

@@ -18,24 +18,23 @@ const productos = [
     icon: Bell,
     name: 'Monitoreo Judicial automático',
     desc: 'Notificaciones del PJN y SCBA en menos de 2 horas. Conectamos con tus credenciales y revisamos tus causas cada noche. Si hay novedad, te llega un email con el detalle.',
-    priceFrom: 19000,
-    href: '/register?next=monitoreo',
+    cta: 'Pedir cotización',
+    href: '/contacto',
     color: 'from-blue-600 to-cyan-600',
   },
   {
     icon: FileText,
     name: 'Dashboard de Causas MEV',
-    desc: 'Panel unificado con todas tus causas activas, partes, movimientos y estado procesal. Sincronización automática cada 2-24 hs según plan.',
-    priceFrom: 10000,
-    href: '/register?next=causas',
+    desc: 'Panel unificado con todas tus causas activas, partes, movimientos y estado procesal. Sincronización automática personalizada según volumen.',
+    cta: 'Pedir cotización',
+    href: '/contacto',
     color: 'from-emerald-600 to-teal-600',
   },
   {
     icon: Brain,
     name: 'JurisArgentina (Jurisprudencia con IA)',
     desc: 'Base de 410.000+ fallos indexados con búsqueda semántica IA. Encontrá precedentes en segundos, no en horas. SAIJ, JUBA y CSJN integrados.',
-    priceFrom: 0,
-    priceLabel: 'Gratis',
+    cta: 'Acceder gratis',
     href: 'https://juris.automaticialab.com',
     external: true,
     color: 'from-violet-600 to-purple-600',
@@ -44,7 +43,7 @@ const productos = [
     icon: MessageCircle,
     name: 'Secretaria virtual con IA',
     desc: 'Bot de WhatsApp que atiende consultas iniciales 24/7, agenda turnos, transcribe audios y deriva casos según urgencia. Como tener una secretaria que nunca duerme.',
-    priceFrom: 25000,
+    cta: 'Pedir cotización',
     href: '/contacto',
     color: 'from-pink-600 to-rose-600',
   },
@@ -52,24 +51,24 @@ const productos = [
     icon: Receipt,
     name: 'Facturación electrónica ARCA',
     desc: 'Emití Facturas A, B, C, Notas de Crédito y Débito directo desde el panel. Conexión nativa con ARCA (ex AFIP). Compatible Responsable Inscripto y Monotributista.',
-    priceFrom: 15000,
-    href: '/register?next=facturacion',
+    cta: 'Pedir cotización',
+    href: '/contacto',
     color: 'from-orange-600 to-red-600',
   },
   {
     icon: Calendar,
     name: 'Turnos Online',
     desc: 'Página pública con tu disponibilidad. Tus clientes reservan, te llega notificación. Integrado con Google Calendar.',
-    priceFrom: 12000,
-    href: '/register?next=turnos',
+    cta: 'Pedir cotización',
+    href: '/contacto',
     color: 'from-indigo-600 to-blue-600',
   },
   {
     icon: Instagram,
     name: 'LexPost (publicaciones IG)',
     desc: 'Publicaciones automáticas en Instagram con contenido legal: jurisprudencia, novedades, tips. Mantenete activo en redes sin perder horas.',
-    priceFrom: 15000,
-    href: '/register?next=lexpost',
+    cta: 'Pedir cotización',
+    href: '/contacto',
     color: 'from-fuchsia-600 to-pink-600',
   },
 ]
@@ -93,19 +92,19 @@ const stats = [
 const usecases = [
   {
     title: 'Estudio unipersonal',
-    desc: 'Un solo abogado con 20-50 causas activas. Plan recomendado: Suite Jurídica Abogado ($39.000/mes con 30% off).',
+    desc: 'Un solo abogado con 20-50 causas activas. Implementación típica: monitoreo + facturación ARCA + turnos. Diagnóstico USD 300-500, implementación USD 1.500-2.500.',
   },
   {
     title: 'Estudio mediano (2-5 abogados)',
-    desc: '50-200 causas, varios usuarios, necesidad de coordinación. Plan recomendado: Suite Jurídica Profesional ($69.000/mes).',
+    desc: '50-200 causas, varios usuarios, necesidad de coordinación. Implementación típica: suite completa con multi-usuario. Diagnóstico USD 500-700, implementación USD 3.000-5.000.',
   },
   {
     title: 'Estudio grande / cooperativa',
-    desc: '200+ causas, múltiples usuarios, requisitos de auditoría. Plan recomendado: Suite Jurídica Estudio ($149.000/mes).',
+    desc: '200+ causas, múltiples usuarios, requisitos de auditoría. Implementación típica: suite completa + multi-usuario + integraciones a medida. Diagnóstico USD 700, implementación USD 4.000-8.000.',
   },
   {
     title: 'Abogado independiente recién recibido',
-    desc: '5-15 causas, presupuesto ajustado. Plan recomendado: solo Monitoreo Básico ($19.000/mes) + JurisArgentina (gratis).',
+    desc: '5-15 causas, presupuesto ajustado. Recomendado: empezar con JurisArgentina (gratis) + monitoreo básico custom. Diagnóstico USD 300, implementación USD 1.000-1.500.',
   },
 ]
 
@@ -124,7 +123,7 @@ const faqs = [
   },
   {
     q: '¿Cómo se cobra? ¿Hay permanencia?',
-    a: 'Suscripción mensual via MercadoPago (preapproval recurrente). Sin permanencia, sin contratos, sin penalidad por baja. Cancelas cuando quieras desde tu panel y la baja se efectiviza al final del período pago.',
+    a: 'Cobramos en USD por estabilidad pero aceptamos pago en pesos al MEP/CCL del día. Modelo en 3 pasos: diagnóstico (USD 300-700, one-shot) + implementación (USD 1.500-5.000, descuenta diagnóstico) + mantenimiento mensual opcional (USD 200-500/mes, sin permanencia).',
   },
   {
     q: '¿La facturación electrónica cumple con AFIP/ARCA?',
@@ -132,7 +131,7 @@ const faqs = [
   },
   {
     q: '¿Cuánto tarda en activarse?',
-    a: 'Productos automáticos (monitoreo, causas, turnos): activación inmediata tras el pago. Suite Jurídica completa: 24-48 hs porque requiere setup de credenciales PJN/SCBA + ARCA. Te contactamos para coordinar.',
+    a: 'Diagnóstico técnico: 5-10 días (relevamiento + arquitectura + documento). Implementación: 15-45 días según alcance. Para estudios chicos (monitoreo + facturación + turnos), unos 15-20 días desde el OK al setup.',
   },
   {
     q: '¿Funciona en cualquier provincia?',
@@ -192,9 +191,9 @@ export default function AutomatizacionAbogadosPage() {
                   Ver los 7 productos <ArrowRight className="w-4 h-4" />
                 </Button>
               </Link>
-              <Link href="/register?next=suite-juridica">
+              <Link href="/contacto">
                 <Button variant="outline" size="lg" className="gap-2 border-white/40 text-white hover:bg-white/10 font-medium">
-                  Empezar Suite Jurídica <ChevronDown className="w-4 h-4" />
+                  Solicitar diagnóstico <ChevronDown className="w-4 h-4" />
                 </Button>
               </Link>
             </motion.div>
@@ -223,7 +222,7 @@ export default function AutomatizacionAbogadosPage() {
               7 productos para tu estudio jurídico
             </h2>
             <p className="text-surface-500">
-              Activá los que necesites o llevá la <Link href="#suite" className="text-blue-700 font-semibold hover:underline">Suite Jurídica completa</Link> con descuento.
+              Cada implementación se adapta a tu volumen y procesos. Ver <Link href="#modelo" className="text-blue-700 font-semibold hover:underline">cómo trabajamos</Link>.
             </p>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -245,25 +244,13 @@ export default function AutomatizacionAbogadosPage() {
                     </div>
                     <h3 className="font-bold text-surface-900 mb-2">{p.name}</h3>
                     <p className="text-sm text-surface-500 leading-relaxed mb-4 flex-1">{p.desc}</p>
-                    <div className="mb-4">
-                      {p.priceLabel ? (
-                        <p className="text-2xl font-extrabold text-surface-900">{p.priceLabel}</p>
-                      ) : (
-                        <>
-                          <span className="text-xs text-surface-400">Desde</span>
-                          <p className="text-2xl font-extrabold text-surface-900">
-                            ${p.priceFrom.toLocaleString('es-AR')}<span className="text-sm text-surface-400 font-normal">/mes</span>
-                          </p>
-                        </>
-                      )}
-                    </div>
                     {p.external ? (
-                      <a href={p.href} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-sm font-semibold text-blue-700 hover:gap-2.5 transition-all">
-                        Acceder a JurisArgentina <ArrowRight className="w-4 h-4" />
+                      <a href={p.href} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-sm font-semibold text-blue-700 hover:gap-2.5 transition-all mt-2">
+                        {p.cta} <ArrowRight className="w-4 h-4" />
                       </a>
                     ) : (
-                      <Link href={p.href} className="inline-flex items-center gap-1.5 text-sm font-semibold text-blue-700 hover:gap-2.5 transition-all">
-                        Activar producto <ArrowRight className="w-4 h-4" />
+                      <Link href={p.href} className="inline-flex items-center gap-1.5 text-sm font-semibold text-blue-700 hover:gap-2.5 transition-all mt-2">
+                        {p.cta} <ArrowRight className="w-4 h-4" />
                       </Link>
                     )}
                   </div>
@@ -275,56 +262,59 @@ export default function AutomatizacionAbogadosPage() {
       </section>
 
       {/* Suite Juridica destacada */}
-      <section id="suite" className="py-20 bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-700 text-white">
+      <section id="modelo" className="py-20 bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-700 text-white">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <p className="text-white/80 font-semibold text-sm uppercase tracking-wider mb-3">Combo recomendado</p>
-            <h2 className="text-3xl sm:text-4xl font-extrabold mb-4">Suite Jurídica completa</h2>
+            <p className="text-white/80 font-semibold text-sm uppercase tracking-wider mb-3">Cómo trabajamos</p>
+            <h2 className="text-3xl sm:text-4xl font-extrabold mb-4">Implementación a medida en 3 pasos</h2>
             <p className="text-white/85 text-lg max-w-xl mx-auto">
-              Todos los productos esenciales en un único plan, con hasta 38% de descuento sobre la suma individual.
+              No vendemos planes pre-armados. Empezamos con un diagnóstico técnico y armamos la
+              implementación según tu volumen y procesos reales.
             </p>
           </div>
           <div className="grid sm:grid-cols-3 gap-6">
             <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
-              <p className="text-white/70 text-sm uppercase tracking-wider mb-2">Plan Abogado</p>
-              <p className="text-3xl font-extrabold mb-1">$39.000<span className="text-base font-normal opacity-70">/mes</span></p>
-              <p className="text-sm text-white/60 line-through mb-4">$56.000/mes</p>
+              <p className="text-white/70 text-sm uppercase tracking-wider mb-2">Paso 1 · Diagnóstico</p>
+              <p className="text-3xl font-extrabold mb-1">USD 300<span className="text-base font-normal opacity-70"> — 700</span></p>
+              <p className="text-sm text-white/60 mb-4">5 a 10 días · pago único</p>
               <ul className="space-y-1.5 mb-6 text-sm">
-                {suiteFeatures.slice(0, 4).map((f) => (
-                  <li key={f} className="flex items-start gap-2"><Check className="w-4 h-4 mt-0.5 shrink-0 opacity-80" />{f}</li>
-                ))}
+                <li className="flex items-start gap-2"><Check className="w-4 h-4 mt-0.5 shrink-0 opacity-80" />Reunión inicial 2-3 hs</li>
+                <li className="flex items-start gap-2"><Check className="w-4 h-4 mt-0.5 shrink-0 opacity-80" />Auditoría de procesos del estudio</li>
+                <li className="flex items-start gap-2"><Check className="w-4 h-4 mt-0.5 shrink-0 opacity-80" />Arquitectura propuesta</li>
+                <li className="flex items-start gap-2"><Check className="w-4 h-4 mt-0.5 shrink-0 opacity-80" />Documento técnico (15-30 págs)</li>
               </ul>
-              <Link href="/register?next=suite-juridica&plan=abogado">
-                <Button variant="secondary" className="w-full bg-white text-blue-700 hover:bg-white/90 font-bold">Empezar</Button>
+              <Link href="/contacto">
+                <Button variant="secondary" className="w-full bg-white text-blue-700 hover:bg-white/90 font-bold">Solicitar diagnóstico</Button>
               </Link>
             </div>
             <div className="bg-white text-surface-900 rounded-2xl p-6 ring-4 ring-white/30 transform sm:scale-105 shadow-2xl">
               <div className="inline-block bg-blue-600 text-white text-xs font-bold uppercase px-3 py-1 rounded-full mb-2">Más elegido</div>
-              <p className="text-surface-500 text-sm uppercase tracking-wider mb-2">Plan Profesional</p>
-              <p className="text-3xl font-extrabold mb-1">$69.000<span className="text-base font-normal text-surface-400">/mes</span></p>
-              <p className="text-sm text-surface-400 line-through mb-4">$112.000/mes</p>
+              <p className="text-surface-500 text-sm uppercase tracking-wider mb-2">Paso 2 · Implementación</p>
+              <p className="text-3xl font-extrabold mb-1">USD 1.500<span className="text-base font-normal text-surface-400"> — 5.000</span></p>
+              <p className="text-sm text-surface-400 mb-4">15 a 45 días · pago único · descuenta diagnóstico</p>
               <ul className="space-y-1.5 mb-6 text-sm">
                 {suiteFeatures.map((f) => (
                   <li key={f} className="flex items-start gap-2"><Check className="w-4 h-4 mt-0.5 shrink-0 text-blue-600" />{f}</li>
                 ))}
+                <li className="flex items-start gap-2"><Check className="w-4 h-4 mt-0.5 shrink-0 text-blue-600" />Capacitación del equipo</li>
               </ul>
-              <Link href="/register?next=suite-juridica&plan=profesional">
-                <Button variant="gradient" className="w-full font-bold">Empezar Profesional</Button>
+              <Link href="/contacto">
+                <Button variant="gradient" className="w-full font-bold">Hablemos del proyecto</Button>
               </Link>
             </div>
             <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
-              <p className="text-white/70 text-sm uppercase tracking-wider mb-2">Plan Estudio</p>
-              <p className="text-3xl font-extrabold mb-1">$149.000<span className="text-base font-normal opacity-70">/mes</span></p>
-              <p className="text-sm text-white/60 line-through mb-4">$230.000/mes</p>
+              <p className="text-white/70 text-sm uppercase tracking-wider mb-2">Paso 3 · Mantenimiento</p>
+              <p className="text-3xl font-extrabold mb-1">USD 200<span className="text-base font-normal opacity-70"> — 500/mes</span></p>
+              <p className="text-sm text-white/60 mb-4">Recurrente · sin permanencia · opcional</p>
               <ul className="space-y-1.5 mb-6 text-sm">
-                {suiteFeatures.map((f) => (
-                  <li key={f} className="flex items-start gap-2"><Check className="w-4 h-4 mt-0.5 shrink-0 opacity-80" />{f}</li>
-                ))}
-                <li className="flex items-start gap-2"><Check className="w-4 h-4 mt-0.5 shrink-0 opacity-80" />Multi-usuario (5 cuentas)</li>
-                <li className="flex items-start gap-2"><Check className="w-4 h-4 mt-0.5 shrink-0 opacity-80" />Soporte dedicado</li>
+                <li className="flex items-start gap-2"><Check className="w-4 h-4 mt-0.5 shrink-0 opacity-80" />Soporte WhatsApp + email</li>
+                <li className="flex items-start gap-2"><Check className="w-4 h-4 mt-0.5 shrink-0 opacity-80" />Actualizaciones automáticas</li>
+                <li className="flex items-start gap-2"><Check className="w-4 h-4 mt-0.5 shrink-0 opacity-80" />Hasta 4hs de mejoras / mes</li>
+                <li className="flex items-start gap-2"><Check className="w-4 h-4 mt-0.5 shrink-0 opacity-80" />Monitoreo proactivo</li>
+                <li className="flex items-start gap-2"><Check className="w-4 h-4 mt-0.5 shrink-0 opacity-80" />Reportes mensuales</li>
               </ul>
-              <Link href="/register?next=suite-juridica&plan=estudio">
-                <Button variant="secondary" className="w-full bg-white text-blue-700 hover:bg-white/90 font-bold">Empezar</Button>
+              <Link href="/contacto">
+                <Button variant="secondary" className="w-full bg-white text-blue-700 hover:bg-white/90 font-bold">Más info</Button>
               </Link>
             </div>
           </div>
@@ -435,9 +425,9 @@ export default function AutomatizacionAbogadosPage() {
             7 productos integrados, una sola plataforma, sin permanencia.
           </p>
           <div className="flex flex-wrap justify-center gap-4">
-            <Link href="/register?next=suite-juridica">
+            <Link href="/contacto">
               <Button variant="secondary" size="lg" className="gap-2 bg-white text-blue-700 hover:bg-white/90 font-bold text-base px-8">
-                Empezar Suite Jurídica <ArrowRight className="w-4 h-4" />
+                Solicitar diagnóstico <ArrowRight className="w-4 h-4" />
               </Button>
             </Link>
             <a href={WA_LINK} target="_blank" rel="noreferrer">
