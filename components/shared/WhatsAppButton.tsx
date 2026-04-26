@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { MessageCircle, X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
-const WHATSAPP_NUMBER = '541171311465'
+const WHATSAPP_NUMBER = '5491171311465'
 const DEFAULT_MESSAGE = 'Hola! Me interesa crear un sitio web con Automatic IA Lab. ¿Pueden darme más info?'
 
 export function WhatsAppButton() {

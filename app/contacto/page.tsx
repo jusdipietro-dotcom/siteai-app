@@ -29,8 +29,8 @@ const channels = [
     icon: MessageCircle,
     title: 'WhatsApp',
     desc: 'Chatea con nosotros directamente. Ideal para consultas rapidas.',
-    action: '+54 9 11 0000-0000',
-    href: 'https://wa.me/5491100000000?text=Hola%2C%20tengo%20una%20consulta%20sobre%20Automatic%20IA%20Lab',
+    action: '+54 9 11 7131-1465',
+    href: 'https://wa.me/5491171311465?text=Hola%2C%20tengo%20una%20consulta%20sobre%20Automatic%20IA%20Lab',
     cta: 'Abrir WhatsApp',
   },
 ]
