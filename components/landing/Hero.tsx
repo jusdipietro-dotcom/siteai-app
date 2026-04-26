@@ -1,7 +1,7 @@
 'use client'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { ArrowRight, Sparkles, Zap, Star, Bot, Globe, Scale, Target, MessageSquare, Send } from 'lucide-react'
+import { ArrowRight, Sparkles, Brain, Megaphone, Layout, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 const fadeUp = {
@@ -13,48 +13,34 @@ const fadeUp = {
   }),
 }
 
-const products = [
+const pillars = [
   {
-    icon: Globe,
-    label: 'Sitios Web con IA',
-    desc: 'Tu web en 60 segundos',
-    color: 'from-brand-500 to-cyan-500',
-    href: '#productos',
-  },
-  {
-    icon: Scale,
-    label: 'Monitoreo Judicial',
-    desc: 'Alertas PJN y SCBA',
+    icon: Brain,
+    label: 'Inteligencia Artificial',
+    desc: 'Consultoría e implementación',
     color: 'from-violet-500 to-purple-600',
-    href: '#productos',
+    href: '/servicios/inteligencia-artificial',
   },
   {
-    icon: Target,
-    label: 'Prospeccion B2B',
-    desc: 'Leads + emails con IA',
+    icon: Megaphone,
+    label: 'Marketing Digital',
+    desc: 'Meta + Google Ads, contenido',
     color: 'from-orange-500 to-red-600',
-    href: '#productos',
+    href: '/servicios/marketing-digital',
   },
   {
-    icon: MessageSquare,
-    label: 'Resenas Google',
-    desc: 'Respuestas automaticas',
-    color: 'from-amber-500 to-orange-500',
-    href: '#productos',
+    icon: Layout,
+    label: 'Diseño Web',
+    desc: 'Sitios a medida, sin templates',
+    color: 'from-blue-500 to-cyan-500',
+    href: '/servicios/diseno-web',
   },
   {
-    icon: Send,
-    label: 'Email Marketing',
-    desc: 'Campañas sin Mailchimp',
-    color: 'from-pink-500 to-rose-600',
-    href: '#productos',
-  },
-  {
-    icon: Bot,
-    label: '+6 productos mas',
-    desc: 'LinkedIn, Crypto, Turnos...',
+    icon: Search,
+    label: 'Posicionamiento SEO',
+    desc: 'Aparece primero en Google',
     color: 'from-emerald-500 to-teal-600',
-    href: '#productos',
+    href: '/servicios/seo',
   },
 ]
 
@@ -79,7 +65,7 @@ export function Hero() {
           className="inline-flex items-center gap-2 bg-brand-600/15 border border-brand-500/30 rounded-full px-4 py-2 text-sm font-medium text-brand-300 mb-8"
         >
           <Sparkles className="w-3.5 h-3.5" />
-          Plataforma de automatización inteligente
+          Agencia digital · Buenos Aires, Argentina
           <ArrowRight className="w-3.5 h-3.5" />
         </motion.div>
 
@@ -91,9 +77,9 @@ export function Hero() {
           custom={1}
           className="text-5xl sm:text-6xl lg:text-7xl font-extrabold text-white leading-[1.05] tracking-tight mb-6 max-w-5xl mx-auto"
         >
-          Automatizá tu negocio
+          Crecé tu negocio con
           <span className="block bg-clip-text text-transparent bg-gradient-to-r from-brand-400 via-violet-400 to-cyan-400">
-            con inteligencia artificial
+            IA, marketing, diseño y SEO
           </span>
         </motion.h1>
 
@@ -105,24 +91,24 @@ export function Hero() {
           custom={2}
           className="text-lg sm:text-xl text-surface-400 max-w-2xl mx-auto mb-12 leading-relaxed"
         >
-          Sitios web, monitoreo judicial, prospeccion B2B, email marketing,
-          resenas de Google, LinkedIn, trading y mas. 11 productos listos para
-          automatizar tu negocio. Sin codigo, sin complicaciones.
+          Somos una agencia argentina especializada en cuatro pilares: inteligencia artificial aplicada,
+          marketing digital, diseño web a medida y posicionamiento SEO. Cada proyecto se cotiza y se
+          implementa de manera personalizada para tu negocio.
         </motion.p>
 
-        {/* Product cards */}
+        {/* Pillar cards */}
         <motion.div
           variants={fadeUp}
           initial="hidden"
           animate="visible"
           custom={3}
-          className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-w-3xl mx-auto mb-12"
+          className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-4xl mx-auto mb-12"
         >
-          {products.map((p) => {
+          {pillars.map((p) => {
             const Icon = p.icon
             return (
               <Link key={p.label} href={p.href}>
-                <div className="group bg-surface-800/50 backdrop-blur border border-surface-700 rounded-2xl p-5 hover:border-brand-500/50 hover:bg-surface-800 transition-all duration-200 cursor-pointer">
+                <div className="group bg-surface-800/50 backdrop-blur border border-surface-700 rounded-2xl p-5 hover:border-brand-500/50 hover:bg-surface-800 transition-all duration-200 cursor-pointer h-full">
                   <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${p.color} flex items-center justify-center mb-3 mx-auto`}>
                     <Icon className="w-5 h-5 text-white" />
                   </div>
@@ -142,21 +128,20 @@ export function Hero() {
           custom={4}
           className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12"
         >
-          <Link href="/register">
+          <Link href="/contacto">
             <Button size="xl" variant="gradient" className="gap-2 w-full sm:w-auto shadow-brand">
-              <Zap className="w-5 h-5" />
-              Empezar gratis
+              Pedir cotización
               <ArrowRight className="w-4 h-4" />
             </Button>
           </Link>
-          <Link href="#productos">
+          <Link href="#servicios">
             <Button size="xl" variant="outline" className="gap-2 w-full sm:w-auto border-surface-700 text-surface-300 hover:bg-surface-800 hover:text-white hover:border-surface-600">
-              Ver productos
+              Ver nuestros servicios
             </Button>
           </Link>
         </motion.div>
 
-        {/* Social proof */}
+        {/* Trust signals */}
         <motion.div
           variants={fadeUp}
           initial="hidden"
@@ -164,16 +149,11 @@ export function Hero() {
           custom={5}
           className="flex flex-col sm:flex-row items-center justify-center gap-6 text-sm text-surface-500"
         >
-          <div className="flex items-center gap-1.5">
-            {[...Array(5)].map((_, i) => (
-              <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
-            ))}
-            <span className="ml-1 text-surface-400 font-medium">4.9/5</span>
-          </div>
+          <span>Reuniones por video gratis</span>
           <span className="hidden sm:block text-surface-700">·</span>
-          <span>+500 negocios automatizados</span>
+          <span>Cotización en 24 horas</span>
           <span className="hidden sm:block text-surface-700">·</span>
-          <span>Sin tarjeta de crédito</span>
+          <span>Soporte directo por WhatsApp</span>
         </motion.div>
       </div>
     </section>

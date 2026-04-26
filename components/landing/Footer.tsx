@@ -1,43 +1,26 @@
 import Link from 'next/link'
 
 const links: Record<string, { label: string; href: string }[]> = {
-  Productos: [
-    { label: 'Sitios Web con IA', href: '/#producto-sitios-web' },
-    { label: 'Monitoreo Judicial', href: '/#producto-monitoreo-judicial' },
-    { label: 'Prospeccion B2B', href: '/#producto-prospeccion' },
-    { label: 'Captacion de Leads', href: '/#producto-captacion-leads' },
-    { label: 'Resenas Google IA', href: '/#producto-resenas-google' },
-    { label: 'LinkedIn Optimizer', href: '/#producto-linkedin-optimizer' },
-    { label: 'Email Marketing', href: '/#producto-email-marketing' },
-    { label: 'Senales Crypto', href: '/#producto-senales-crypto' },
-    { label: 'Redes Sociales', href: '/#producto-redes-sociales' },
-    { label: 'Turnos Online', href: '/#producto-turnos-online' },
-    { label: 'Automatizaciones', href: '/#producto-automatizaciones' },
-  ],
-  'Servicios a medida': [
-    { label: 'Diseno Web', href: '/servicios/diseno-web' },
+  Servicios: [
+    { label: 'Inteligencia Artificial', href: '/servicios/inteligencia-artificial' },
+    { label: 'Marketing Digital', href: '/servicios/marketing-digital' },
+    { label: 'Diseño Web', href: '/servicios/diseno-web' },
     { label: 'Posicionamiento SEO', href: '/servicios/seo' },
-    { label: 'Chatbot IA a medida', href: '/contacto' },
-    { label: 'Workflows a medida', href: '/contacto' },
   ],
-  'Premium': [
-    { label: 'Para Abogados', href: '/automatizacion-para-abogados' },
-    { label: 'Canal de Noticias', href: '/premium#productos' },
-    { label: 'Avatar IA Influencer', href: '/premium#productos' },
-    { label: 'ERP Indumentaria', href: '/premium#productos' },
-    { label: 'Suite Juridica WL', href: '/premium#productos' },
+  Verticales: [
+    { label: 'Para abogados', href: '/automatizacion-para-abogados' },
+    { label: 'Casos premium', href: '/premium' },
+    { label: 'Workflows a medida', href: '/contacto' },
+    { label: 'Chatbot IA a medida', href: '/contacto' },
   ],
   Recursos: [
-    { label: 'Blog', href: '/blog' },
     { label: 'Testimonios', href: '/testimonios' },
-    { label: 'Preguntas frecuentes', href: '/#faq' },
-    { label: 'Precios', href: '/#pricing' },
-    { label: 'Plan Gratuito', href: '/gratis' },
+    { label: 'Blog', href: '/blog' },
     { label: 'Sobre nosotros', href: '/about' },
     { label: 'Contacto', href: '/contacto' },
   ],
   Legal: [
-    { label: 'Terminos de uso', href: '/terms' },
+    { label: 'Términos de uso', href: '/terms' },
     { label: 'Privacidad', href: '/privacy' },
   ],
 }
@@ -46,7 +29,7 @@ export function Footer() {
   return (
     <footer className="bg-surface-950 border-t border-surface-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-10 mb-12">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-10 mb-12">
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
             <div className="flex items-center gap-2 mb-4">

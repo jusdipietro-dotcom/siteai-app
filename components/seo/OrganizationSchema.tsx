@@ -9,7 +9,7 @@ export function OrganizationSchema() {
     '@id': 'https://automaticialab.com/#organization',
     name: 'Automatic IA Lab',
     legalName: 'Automatic IA Lab',
-    alternateName: 'Automatic IA Lab — Automatización con IA',
+    alternateName: 'Automatic IA Lab — Agencia digital de IA',
     url: 'https://automaticialab.com',
     logo: {
       '@type': 'ImageObject',
@@ -41,7 +41,7 @@ export function OrganizationSchema() {
     serviceArea: {
       '@type': 'GeoCircle',
       geoMidpoint: { '@type': 'GeoCoordinates', latitude: -34.6037, longitude: -58.3816 },
-      geoRadius: '5000000', // 5000km — covers all of Argentina + LATAM neighbors
+      geoRadius: '5000000',
     },
     openingHoursSpecification: {
       '@type': 'OpeningHoursSpecification',
@@ -52,7 +52,6 @@ export function OrganizationSchema() {
     sameAs: [
       'https://www.instagram.com/automaticialab',
       'https://github.com/jusdipietro-dotcom',
-      // Google Business Profile (links the website to the verified GBP)
       'https://www.google.com/maps?cid=05938724930941089681',
     ],
     contactPoint: {
@@ -61,88 +60,68 @@ export function OrganizationSchema() {
       contactType: 'customer service',
       areaServed: 'AR',
       availableLanguage: ['Spanish', 'es-AR'],
-      contactOption: 'TollFree',
     },
     description:
-      'Agencia y plataforma de automatización con IA en Argentina. Sitios web con IA, monitoreo judicial automático (PJN/SCBA), captación de leads B2B, email marketing, reseñas Google, LinkedIn y automatizaciones a medida para PyMEs y estudios jurídicos.',
+      'Agencia digital argentina especializada en cuatro pilares: inteligencia artificial aplicada, marketing digital (Meta + Google Ads), diseño web a medida y posicionamiento SEO. Cada proyecto se cotiza con un diagnóstico técnico inicial y se implementa de forma personalizada.',
     knowsAbout: [
-      'Automatización con IA',
-      'Inteligencia artificial generativa',
-      'Software para abogados',
-      'Monitoreo judicial PJN SCBA',
-      'Email marketing automatizado',
-      'Captación de leads B2B',
-      'Generación de sitios web con IA',
-      'Workflow automation n8n',
-      'Reseñas Google Business',
+      'Inteligencia artificial aplicada',
+      'Marketing digital y performance',
+      'Meta Ads y Google Ads',
+      'Diseño web a medida',
+      'SEO y posicionamiento',
+      'Automatización de procesos con n8n',
+      'Chatbots con IA',
+      'Integraciones con sistemas',
     ],
-    slogan: 'Automatizá tu negocio con inteligencia artificial',
+    slogan: 'Crecé tu negocio con IA, marketing, diseño y SEO',
+    // Catálogo de servicios con precios en USD (los 4 pilares + procesos del modelo).
+    hasOfferCatalog: {
+      '@type': 'OfferCatalog',
+      name: 'Servicios de agencia digital',
+      itemListElement: [
+        {
+          '@type': 'Offer',
+          name: 'Diagnóstico inicial',
+          description: 'Reunión técnica + auditoría + arquitectura propuesta + documento (15-30 páginas).',
+          price: '300',
+          priceCurrency: 'USD',
+          priceSpecification: {
+            '@type': 'PriceSpecification',
+            minPrice: '300',
+            maxPrice: '700',
+            priceCurrency: 'USD',
+          },
+        },
+        {
+          '@type': 'Offer',
+          name: 'Implementación de proyecto',
+          description: 'Desarrollo + integraciones + testing + capacitación. Descuento del diagnóstico aplicado.',
+          price: '1500',
+          priceCurrency: 'USD',
+          priceSpecification: {
+            '@type': 'PriceSpecification',
+            minPrice: '1500',
+            maxPrice: '5000',
+            priceCurrency: 'USD',
+          },
+        },
+        {
+          '@type': 'Offer',
+          name: 'Mantenimiento mensual',
+          description: 'Soporte técnico + actualizaciones + mejoras (hasta 4hs/mes). Sin permanencia.',
+          price: '200',
+          priceCurrency: 'USD',
+          priceSpecification: {
+            '@type': 'PriceSpecification',
+            minPrice: '200',
+            maxPrice: '500',
+            priceCurrency: 'USD',
+            unitText: 'monthly',
+          },
+        },
+      ],
+    },
   }
 
-  const softwareApplicationSchema = {
-    '@context': 'https://schema.org',
-    '@type': 'SoftwareApplication',
-    name: 'Automatic IA Lab',
-    applicationCategory: 'WebApplication',
-    offers: [
-      {
-        '@type': 'Offer',
-        name: 'Sitio Web — Plan Free',
-        price: '0',
-        priceCurrency: 'ARS',
-        description: 'Sitio web profesional generado con IA, plan gratuito',
-      },
-      {
-        '@type': 'Offer',
-        name: 'Sitio Web — Plan Essential',
-        price: '12000',
-        priceCurrency: 'ARS',
-        description: 'Sitio web con dominio propio y funcionalidades avanzadas',
-      },
-      {
-        '@type': 'Offer',
-        name: 'Sitio Web — Plan Professional',
-        price: '29000',
-        priceCurrency: 'ARS',
-        description: 'Sitio web profesional con todas las funcionalidades',
-      },
-      {
-        '@type': 'Offer',
-        name: 'Monitoreo Judicial — Básico',
-        price: '19000',
-        priceCurrency: 'ARS',
-        description: 'Monitoreo automático de notificaciones judiciales PJN/SCBA, 1 CUIT',
-      },
-      {
-        '@type': 'Offer',
-        name: 'Monitoreo Judicial — Profesional',
-        price: '35000',
-        priceCurrency: 'ARS',
-        description: 'Monitoreo judicial para hasta 3 CUITs con soporte prioritario',
-      },
-      {
-        '@type': 'Offer',
-        name: 'Monitoreo Judicial — Estudio',
-        price: '75000',
-        priceCurrency: 'ARS',
-        description: 'Monitoreo judicial para estudios jurídicos, hasta 8 CUITs',
-      },
-      {
-        '@type': 'Offer',
-        name: 'Captación de Leads IA',
-        price: '18000',
-        priceCurrency: 'ARS',
-        description: 'Sistema automatizado de captación de leads con emails verificados para negocios de toda Argentina, 24/7',
-      },
-    ],
-    operatingSystem: 'Web',
-    description: 'Plataforma de automatización con IA: generador de sitios web, monitoreo judicial automático y automatizaciones personalizadas.',
-  }
-
-  return (
-    <>
-      <JsonLd data={organizationSchema} />
-      <JsonLd data={softwareApplicationSchema} />
-    </>
-  )
+  return <JsonLd data={organizationSchema} />
 }
