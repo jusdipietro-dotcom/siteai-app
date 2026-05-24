@@ -23,7 +23,7 @@ export const metadata: Metadata = {
     template: '%s · Automatic IA Lab',
   },
   description:
-    'Agencia digital argentina especializada en IA, marketing, diseño web y SEO. Diagnóstico técnico desde USD 300 e implementación a medida.',
+    'Agencia digital argentina especializada en IA, marketing, diseño web y SEO. Trabajamos a medida: contanos tu proyecto y coordinamos una reunión sin compromiso por WhatsApp.',
   icons: {
     icon: '/favicon.ico',
     shortcut: '/favicon.ico',
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
     siteName: 'Automatic IA Lab',
     title: 'Automatic IA Lab — Agencia de IA, Marketing, Diseño Web y SEO',
     description:
-      'Agencia digital argentina especializada en IA, marketing, diseño web y SEO. Diagnóstico técnico desde USD 300 e implementación a medida.',
+      'Agencia digital argentina especializada en IA, marketing, diseño web y SEO. Trabajamos a medida: contanos tu proyecto y coordinamos una reunión sin compromiso por WhatsApp.',
     url: 'https://automaticialab.com',
     images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'Automatic IA Lab — Agencia digital' }],
   },
@@ -51,7 +51,7 @@ export const metadata: Metadata = {
     creator: '@automaticialab',
     title: 'Automatic IA Lab — Agencia de IA, Marketing, Diseño Web y SEO',
     description:
-      'Agencia digital argentina especializada en IA, marketing, diseño web y SEO. Diagnóstico técnico desde USD 300 e implementación a medida.',
+      'Agencia digital argentina especializada en IA, marketing, diseño web y SEO. Trabajamos a medida: contanos tu proyecto y coordinamos una reunión sin compromiso por WhatsApp.',
     images: ['/og-image.png'],
   },
 }
