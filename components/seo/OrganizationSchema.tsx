@@ -73,50 +73,42 @@ export function OrganizationSchema() {
       'Chatbots con IA',
       'Integraciones con sistemas',
     ],
-    slogan: 'Crecé tu negocio con IA, marketing, diseño y SEO',
-    // Catálogo de servicios con precios en USD (los 4 pilares + procesos del modelo).
+    slogan: 'Hacé crecer tu negocio con IA, marketing, diseño y SEO',
+    // Catálogo de servicios (los 4 pilares). Sin precios: cotización a medida vía WhatsApp.
     hasOfferCatalog: {
       '@type': 'OfferCatalog',
       name: 'Servicios de agencia digital',
       itemListElement: [
         {
           '@type': 'Offer',
-          name: 'Diagnóstico inicial',
-          description: 'Reunión técnica + auditoría + arquitectura propuesta + documento (15-30 páginas).',
-          price: '300',
-          priceCurrency: 'USD',
-          priceSpecification: {
-            '@type': 'PriceSpecification',
-            minPrice: '300',
-            maxPrice: '700',
-            priceCurrency: 'USD',
+          itemOffered: {
+            '@type': 'Service',
+            name: 'Inteligencia Artificial aplicada',
+            description: 'Implementación de modelos de lenguaje (GPT, Claude, Gemini), agentes autónomos, chatbots y automatizaciones inteligentes para tu operación.',
           },
         },
         {
           '@type': 'Offer',
-          name: 'Implementación de proyecto',
-          description: 'Desarrollo + integraciones + testing + capacitación. Descuento del diagnóstico aplicado.',
-          price: '1500',
-          priceCurrency: 'USD',
-          priceSpecification: {
-            '@type': 'PriceSpecification',
-            minPrice: '1500',
-            maxPrice: '5000',
-            priceCurrency: 'USD',
+          itemOffered: {
+            '@type': 'Service',
+            name: 'Marketing Digital',
+            description: 'Estrategia y gestión de campañas en Meta Ads, Google Ads y TikTok, más contenido orgánico y embudos de conversión.',
           },
         },
         {
           '@type': 'Offer',
-          name: 'Mantenimiento mensual',
-          description: 'Soporte técnico + actualizaciones + mejoras (hasta 4hs/mes). Sin permanencia.',
-          price: '200',
-          priceCurrency: 'USD',
-          priceSpecification: {
-            '@type': 'PriceSpecification',
-            minPrice: '200',
-            maxPrice: '500',
-            priceCurrency: 'USD',
-            unitText: 'monthly',
+          itemOffered: {
+            '@type': 'Service',
+            name: 'Diseño Web a medida',
+            description: 'Sitios web profesionales, landing pages y e-commerce en Next.js + Tailwind, sin templates genéricos.',
+          },
+        },
+        {
+          '@type': 'Offer',
+          itemOffered: {
+            '@type': 'Service',
+            name: 'Posicionamiento SEO',
+            description: 'Auditoría técnica, SEO local con Google Business, optimización on-page y estrategia de contenido para aparecer primero en Google.',
           },
         },
       ],
