@@ -36,7 +36,7 @@ const nextConfig = {
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "img-src 'self' data: https: blob:",
               "font-src 'self' https://fonts.gstatic.com",
-              "connect-src 'self' https://www.google-analytics.com https://vitals.vercel-insights.com",
+              "connect-src 'self' https://www.google-analytics.com https://vitals.vercel-insights.com https://api.automaticialab.com",
               "frame-ancestors 'none'",
             ].join('; '),
           },
