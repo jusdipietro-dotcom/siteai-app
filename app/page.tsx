@@ -1,15 +1,14 @@
-import { Navbar } from '@/components/layout/Navbar'
-import { Hero } from '@/components/landing/Hero'
-import { CapabilitiesSection } from '@/components/landing/CapabilitiesSection'
-import { ProductsSection } from '@/components/landing/ProductsSection'
-import { ProcesoSection } from '@/components/landing/ProcesoSection'
-import { BusinessTypes } from '@/components/landing/BusinessTypes'
-import { Testimonials } from '@/components/landing/Testimonials'
-import { FaqSection } from '@/components/landing/FaqSection'
-import { CtaSection } from '@/components/landing/CtaSection'
-import { Footer } from '@/components/landing/Footer'
+import { LandingNavbar } from '@/components/landing/LandingNavbar'
+import { LandingHero } from '@/components/landing/LandingHero'
+import { LandingServices } from '@/components/landing/LandingServices'
+import { LandingSolutions } from '@/components/landing/LandingSolutions'
+import { LandingVerticals } from '@/components/landing/LandingVerticals'
+import { LandingProcess } from '@/components/landing/LandingProcess'
+import { LandingWhyUs } from '@/components/landing/LandingWhyUs'
+import { LandingFaq } from '@/components/landing/LandingFaq'
+import { LandingCta } from '@/components/landing/LandingCta'
+import { LandingFooter } from '@/components/landing/LandingFooter'
 import { OrganizationSchema } from '@/components/seo/OrganizationSchema'
-import { FaqSchema } from '@/components/seo/FaqSchema'
 import { WebSiteSchema } from '@/components/seo/WebSiteSchema'
 
 export default function LandingPage() {
@@ -17,18 +16,17 @@ export default function LandingPage() {
     <>
       <WebSiteSchema />
       <OrganizationSchema />
-      <FaqSchema />
       <main className="min-h-screen bg-white">
-        <Navbar />
-        <Hero />
-        <CapabilitiesSection />
-        <ProductsSection />
-        <ProcesoSection />
-        <BusinessTypes />
-        <Testimonials />
-        <FaqSection />
-        <CtaSection />
-        <Footer />
+        <LandingNavbar />
+        <LandingHero />
+        <LandingServices />
+        <LandingSolutions />
+        <LandingVerticals />
+        <LandingProcess />
+        <LandingWhyUs />
+        <LandingFaq />
+        <LandingCta />
+        <LandingFooter />
       </main>
     </>
   )
