@@ -1,6 +1,7 @@
 import { Navbar } from '@/components/layout/Navbar'
 import { Hero } from '@/components/landing/Hero'
 import { CapabilitiesSection } from '@/components/landing/CapabilitiesSection'
+import { ProductsSection } from '@/components/landing/ProductsSection'
 import { ProcesoSection } from '@/components/landing/ProcesoSection'
 import { BusinessTypes } from '@/components/landing/BusinessTypes'
 import { Testimonials } from '@/components/landing/Testimonials'
@@ -21,6 +22,7 @@ export default function LandingPage() {
         <Navbar />
         <Hero />
         <CapabilitiesSection />
+        <ProductsSection />
         <ProcesoSection />
         <BusinessTypes />
         <Testimonials />

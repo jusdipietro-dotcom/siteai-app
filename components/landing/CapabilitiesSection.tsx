@@ -75,7 +75,7 @@ const services = [
 const useCases = [
   { icon: Scale, label: 'Estudios jurídicos', href: '/automatizacion-para-abogados' },
   { icon: Globe, label: 'Sitios web a medida', href: '/servicios/diseno-web' },
-  { icon: Bell, label: 'Alertas judiciales PJN/SCBA', href: '/automatizacion-para-abogados' },
+  { icon: Bell, label: 'Alertas judiciales PJN/SCBA', href: '/alertajudicial' },
   { icon: Bot, label: 'Bots WhatsApp con IA', href: '/contacto' },
   { icon: MessageSquare, label: 'Auto-responder reseñas Google', href: '/contacto' },
   { icon: Target, label: 'Prospección B2B con IA', href: '/contacto' },
