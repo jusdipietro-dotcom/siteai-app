@@ -1,15 +1,45 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { timingSafeEqual } from 'crypto'
 import { prisma } from '@/lib/prisma'
 import { requireAdmin } from '@/lib/admin'
 
 /**
- * POST: Expire all trials that have passed their trialEndsAt date.
- * Can be called by a cron job or manually from admin.
- * Also accessible via the Dockerfile CMD as a periodic task.
+ * Constant-time comparison of the cron shared secret.
+ * Returns false when CRON_SECRET is unset, so the endpoint never becomes
+ * unauthenticated by an environment misconfiguration.
  */
-export async function POST() {
-  const session = await requireAdmin()
-  if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 403 })
+function hasValidCronSecret(req: NextRequest): boolean {
+  const expected = process.env.CRON_SECRET
+  if (!expected) return false
+
+  const provided = req.headers.get('x-cron-secret')
+  if (!provided) return false
+
+  const a = Buffer.from(provided)
+  const b = Buffer.from(expected)
+  if (a.length !== b.length) return false
+  return timingSafeEqual(a, b)
+}
+
+/** Either an admin session or a valid cron secret authorizes this endpoint. */
+async function isAuthorized(req: NextRequest): Promise<boolean> {
+  if (hasValidCronSecret(req)) return true
+  return (await requireAdmin()) !== null
+}
+
+/**
+ * POST: Expire all trials that have passed their trialEndsAt date.
+ * Callable by an admin session, or by a scheduler sending the x-cron-secret
+ * header (CRON_SECRET env var).
+ *
+ * This is a housekeeping job, not the access gate: read paths already downgrade
+ * an expired trial via effectiveSubscriptionStatus(), so access does not depend
+ * on this job ever running.
+ */
+export async function POST(req: NextRequest) {
+  if (!(await isAuthorized(req))) {
+    return NextResponse.json({ error: 'No autorizado' }, { status: 403 })
+  }
 
   const now = new Date()
   const models = [
@@ -49,10 +79,7 @@ export async function POST() {
   return NextResponse.json({ expired: total, details: results })
 }
 
-// Also allow GET for easy cron/health check
-export async function GET() {
-  const session = await requireAdmin()
-  if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 403 })
-
-  return POST()
+// Also allow GET for easy cron/health check (same authorization as POST)
+export async function GET(req: NextRequest) {
+  return POST(req)
 }

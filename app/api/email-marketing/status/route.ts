@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getPlanConfig, EMAIL_MARKETING_PLANS_LIST } from '@/lib/email-marketing-plans'
+import { effectiveSubscriptionStatus } from '@/lib/trial'
 
 export async function GET() {
   const session = await getServerSession(authOptions)
@@ -10,7 +11,7 @@ export async function GET() {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   }
 
-  const subscriptions = await prisma.emailMarketingSubscription.findMany({
+  const rows = await prisma.emailMarketingSubscription.findMany({
     where: { userId: session.user.id },
     orderBy: { createdAt: 'desc' },
     select: {
@@ -30,6 +31,9 @@ export async function GET() {
       coupon: { select: { code: true, discount: true } },
     },
   })
+
+  // Expired trials are downgraded before any usage/limit math runs.
+  const subscriptions = rows.map(effectiveSubscriptionStatus)
 
   // Calcular uso actual sobre suscripciones activas
   const activeSubs = subscriptions.filter(s => ['active', 'provisioning', 'awaiting_contacts'].includes(s.status))

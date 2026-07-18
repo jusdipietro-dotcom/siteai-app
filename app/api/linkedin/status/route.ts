@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { effectiveSubscriptionStatus } from '@/lib/trial'
 
 export async function GET() {
   try {
@@ -32,7 +33,7 @@ export async function GET() {
       },
     })
 
-    return NextResponse.json({ subscriptions })
+    return NextResponse.json({ subscriptions: subscriptions.map(effectiveSubscriptionStatus) })
   } catch (err) {
     console.error('[LinkedIn Status] Error:', err)
     return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 })

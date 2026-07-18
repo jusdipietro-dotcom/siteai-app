@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { effectiveSubscriptionStatus } from '@/lib/trial'
 
 export async function GET() {
   try {
@@ -17,7 +18,7 @@ export async function GET() {
     })
 
     return NextResponse.json({
-      subscriptions: subscriptions.map(s => ({
+      subscriptions: subscriptions.map(effectiveSubscriptionStatus).map(s => ({
         id: s.id,
         status: s.status,
         plan: s.plan,
@@ -25,6 +26,7 @@ export async function GET() {
         facturacionSubId: s.facturacionSubId,
         causasSubId: s.causasSubId,
         turnosSubId: s.turnosSubId,
+        trialEndsAt: s.trialEndsAt,
         provisionedAt: s.provisionedAt,
         createdAt: s.createdAt,
         coupon: s.coupon,

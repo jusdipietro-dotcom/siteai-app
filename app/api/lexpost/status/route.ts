@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { effectiveSubscriptionStatus } from '@/lib/trial'
 
 export async function GET() {
   try {
@@ -34,7 +35,9 @@ export async function GET() {
     const isFree = (session.user as { isFreeAccount?: boolean }).isFreeAccount === true
 
     return NextResponse.json({
-      subscription: subscription ? { ...subscription, freeAccount: isFree } : null,
+      subscription: subscription
+        ? { ...effectiveSubscriptionStatus(subscription), freeAccount: isFree }
+        : null,
     })
   } catch (err) {
     console.error('[LexPost Status] Error:', err)
