@@ -37,6 +37,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'projectId requerido' }, { status: 400 })
     }
 
+    // The project must belong to the session user. Without this check anyone
+    // could open a preapproval pointing at someone else's project, and the
+    // plan-limit count below would be scoped against the wrong project.
+    const project = await prisma.project.findFirst({
+      where: { id: projectId, userId: session.user.id },
+      select: { id: true },
+    })
+    if (!project) {
+      return NextResponse.json({ error: 'Proyecto no encontrado' }, { status: 404 })
+    }
+
     // Límite de proyectos activos: Essential=1, Professional=3
     const paidCount = await prisma.project.count({
       where: { userId: session.user.id, hasPaid: true, id: { not: projectId } },
