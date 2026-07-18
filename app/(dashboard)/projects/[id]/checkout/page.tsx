@@ -74,7 +74,7 @@ function CheckoutContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const id = params.id as string
-  const { projects, setProjectPlan } = useProjectStore()
+  const { projects, refreshProject } = useProjectStore()
   const project = projects.find((p) => p.id === id)
 
   const billingParam = searchParams.get('billing')
@@ -121,6 +121,20 @@ function CheckoutContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  /**
+   * Re-reads the project from the server until the MercadoPago webhook has
+   * marked it as paid. The webhook lands asynchronously, so a few retries
+   * cover the gap. Returns whether the server confirmed the payment.
+   */
+  const pollUntilPaid = async (attempts = 5, delayMs = 1500) => {
+    for (let i = 0; i < attempts; i++) {
+      const fresh = await refreshProject(id)
+      if (fresh?.hasPaid) return true
+      if (i < attempts - 1) await new Promise((r) => setTimeout(r, delayMs))
+    }
+    return false
+  }
+
   const verifyPayment = async (
     preapprovalId: string | null,
     paymentId: string | null,
@@ -141,7 +155,9 @@ function CheckoutContent() {
         const [, planFromRef] = (data.external_reference ?? '').split(':')
         const activePlan = (planFromRef as Plan) || selectedPlan
         setSelectedPlan(activePlan)
-        setProjectPlan(id, activePlan)
+        // The webhook is what actually marks the project as paid. Poll the
+        // server instead of asserting it from the client.
+        await pollUntilPaid()
         setStep('success')
         toast.success('¡Suscripción activada correctamente!')
       } else if (data.status === 'pending') {

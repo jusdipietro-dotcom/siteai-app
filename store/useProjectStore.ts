@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { Project, ProjectStatus, SectionConfig, Plan } from '@/types'
+import type { Project, ProjectStatus, SectionConfig } from '@/types'
 import { generateId } from '@/lib/utils'
 
 interface ProjectStore {
@@ -7,12 +7,12 @@ interface ProjectStore {
   isLoaded: boolean
   fetchProjects: () => Promise<void>
   reloadProjects: () => Promise<void>
+  refreshProject: (id: string) => Promise<Project | undefined>
   addProject: (project: Project) => Promise<Project>
   updateProject: (id: string, updates: Partial<Project>) => void
   deleteProject: (id: string) => Promise<void>
   duplicateProject: (id: string) => Promise<Project>
   setProjectStatus: (id: string, status: ProjectStatus) => void
-  setProjectPlan: (id: string, plan: Plan) => void
   updateSections: (id: string, sections: SectionConfig[]) => void
   toggleSection: (projectId: string, sectionId: string) => void
   reorderSections: (projectId: string, sections: SectionConfig[]) => void
@@ -21,6 +21,9 @@ interface ProjectStore {
   removeMediaFromProject: (projectId: string, mediaId: string) => void
 }
 
+// Billing state (plan / hasPaid / preapprovalId / views / publishedUrl) is never
+// sent from here: the server owns it and the API strips it from request bodies.
+// Read it back with refreshProject() / reloadProjects() instead of computing it.
 function syncUpdate(id: string, updates: Record<string, unknown>) {
   fetch(`/api/projects/${id}`, {
     method: 'PUT',
@@ -53,6 +56,21 @@ export const useProjectStore = create<ProjectStore>()((set, get) => ({
       set({ projects, isLoaded: true })
     } catch (err) {
       console.error('[ProjectStore] reloadProjects error:', err)
+    }
+  },
+
+  refreshProject: async (id) => {
+    try {
+      const res = await fetch(`/api/projects/${id}`, { cache: 'no-store' })
+      if (!res.ok) return undefined
+      const fresh: Project = await res.json()
+      set((state) => ({
+        projects: state.projects.map((p) => (p.id === id ? fresh : p)),
+      }))
+      return fresh
+    } catch (err) {
+      console.error('[ProjectStore] refreshProject error:', err)
+      return undefined
     }
   },
 
@@ -117,16 +135,6 @@ export const useProjectStore = create<ProjectStore>()((set, get) => ({
       ),
     }))
     syncUpdate(id, { status })
-  },
-
-  setProjectPlan: (id, plan) => {
-    const hasPaid = plan !== 'free'
-    set((state) => ({
-      projects: state.projects.map((p) =>
-        p.id === id ? { ...p, plan, hasPaid, updatedAt: new Date().toISOString() } : p
-      ),
-    }))
-    syncUpdate(id, { plan, hasPaid })
   },
 
   updateSections: (id, sections) => {

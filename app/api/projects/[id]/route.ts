@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { serializeProject, deserializeProject } from '@/lib/projectSerializer'
+import { serializeProjectFromClient, deserializeProject } from '@/lib/projectSerializer'
 
 async function getOwnedProject(projectId: string, userId: string) {
   return prisma.project.findFirst({ where: { id: projectId, userId } })
@@ -26,9 +26,11 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   if (!existing) return NextResponse.json({ error: 'Proyecto no encontrado' }, { status: 404 })
 
   const body = await req.json()
+  // Billing fields (plan / hasPaid / preapprovalId / views / publishedUrl) are
+  // stripped here — only the MercadoPago webhook may write them.
   const updated = await prisma.project.update({
     where: { id: params.id },
-    data: serializeProject(body),
+    data: serializeProjectFromClient(body),
   })
 
   return NextResponse.json(deserializeProject(updated))

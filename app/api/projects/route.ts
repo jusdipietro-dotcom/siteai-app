@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { serializeProject, deserializeProject } from '@/lib/projectSerializer'
+import { serializeProjectFromClient, deserializeProject } from '@/lib/projectSerializer'
 
 export async function GET() {
   const session = await getServerSession(authOptions)
@@ -26,7 +26,9 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json()
 
-  const serialized = serializeProject(body)
+  // Billing fields are stripped: a new project always starts on the schema
+  // defaults (plan "free", hasPaid false, views 0).
+  const serialized = serializeProjectFromClient(body)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const row = await (prisma.project.create as any)({
     data: { ...serialized, userId: session.user.id },
