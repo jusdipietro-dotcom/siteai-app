@@ -10,10 +10,11 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   }
 
+  // Only identifiers are read from the URL. The subscription status is always
+  // resolved against the MercadoPago API — never taken from query params, which
+  // the user fully controls.
   const preapprovalId = req.nextUrl.searchParams.get('preapproval_id')
   const paymentId = req.nextUrl.searchParams.get('payment_id')
-  const status = req.nextUrl.searchParams.get('status')
-  const externalReference = req.nextUrl.searchParams.get('external_reference')
 
   // ── Caso 1: retorno desde preapproval (suscripción real) ──────────────────
   if (preapprovalId) {
@@ -41,16 +42,7 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // ── Caso 2: retorno con external_reference + status en URL (fallback) ──────
-  if (status && externalReference) {
-    return NextResponse.json({
-      status: status === 'approved' ? 'authorized' : status,
-      external_reference: externalReference,
-      payment_id: paymentId,
-    })
-  }
-
-  // ── Caso 3: retorno con payment_id (Checkout Pro legacy) ──────────────────
+  // ── Caso 2: retorno con payment_id (Checkout Pro legacy) ──────────────────
   if (paymentId) {
     try {
       const res = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {

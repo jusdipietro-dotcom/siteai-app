@@ -100,7 +100,11 @@ function CheckoutContent() {
 
   // Detectar retorno desde MercadoPago
   // - Preapproval (suscripción real): agrega ?preapproval_id=XXX al back_url
-  // - Checkout Pro (legacy): agrega payment_id, status, external_reference
+  // - Checkout Pro (legacy): agrega payment_id
+  //
+  // This return screen is cosmetic: only the identifiers travel in the URL and
+  // the server re-checks them against MercadoPago. A URL status is trusted only
+  // to show a failure, never to grant access.
   useEffect(() => {
     const mpReturn = searchParams.get('mp_return')
     if (mpReturn !== 'true') return
@@ -108,7 +112,6 @@ function CheckoutContent() {
     const preapprovalId = searchParams.get('preapproval_id')
     const paymentId = searchParams.get('payment_id')
     const mpStatus = searchParams.get('status')
-    const externalReference = searchParams.get('external_reference')
 
     if (mpStatus === 'failure' || mpStatus === 'null') {
       toast.error('El pago no se completó. Podés intentar de nuevo.')
@@ -117,47 +120,40 @@ function CheckoutContent() {
     }
 
     setStep('verifying')
-    verifyPayment(preapprovalId, paymentId, mpStatus, externalReference)
+    verifyPayment(preapprovalId, paymentId)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   /**
    * Re-reads the project from the server until the MercadoPago webhook has
    * marked it as paid. The webhook lands asynchronously, so a few retries
-   * cover the gap. Returns whether the server confirmed the payment.
+   * cover the gap. Returns the plan the server reports, if any.
    */
   const pollUntilPaid = async (attempts = 5, delayMs = 1500) => {
     for (let i = 0; i < attempts; i++) {
       const fresh = await refreshProject(id)
-      if (fresh?.hasPaid) return true
+      if (fresh?.hasPaid) return fresh.plan
       if (i < attempts - 1) await new Promise((r) => setTimeout(r, delayMs))
     }
-    return false
+    return null
   }
 
-  const verifyPayment = async (
-    preapprovalId: string | null,
-    paymentId: string | null,
-    mpStatus: string | null,
-    externalReference: string | null
-  ) => {
+  const verifyPayment = async (preapprovalId: string | null, paymentId: string | null) => {
     setProcessing(true)
     try {
       const params = new URLSearchParams()
       if (preapprovalId) params.set('preapproval_id', preapprovalId)
       if (paymentId) params.set('payment_id', paymentId)
-      if (mpStatus) params.set('status', mpStatus)
-      if (externalReference) params.set('external_reference', externalReference)
       const res = await fetch(`/api/mp/check-subscription?${params}`)
       const data = await res.json()
 
       if (data.status === 'authorized') {
-        const [, planFromRef] = (data.external_reference ?? '').split(':')
-        const activePlan = (planFromRef as Plan) || selectedPlan
-        setSelectedPlan(activePlan)
         // The webhook is what actually marks the project as paid. Poll the
-        // server instead of asserting it from the client.
-        await pollUntilPaid()
+        // server instead of deriving the plan from the URL.
+        const serverPlan = await pollUntilPaid()
+        if (serverPlan && PLAN_META.some((p) => p.id === serverPlan)) {
+          setSelectedPlan(serverPlan)
+        }
         setStep('success')
         toast.success('¡Suscripción activada correctamente!')
       } else if (data.status === 'pending') {
