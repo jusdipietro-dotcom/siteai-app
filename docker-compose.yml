@@ -1,0 +1,123 @@
+# business-site-generator — despliegue en VPS.
+#
+# Uso:
+#   1. Crear un .env junto a este archivo (ver docs/deploy/ENVIRONMENT.md).
+#      El .env NO se commitea: contiene secretos.
+#   2. RECONCILIAR la base antes del primer arranque con `migrate deploy`.
+#      Ver docs/deploy/prisma-migration-reconciliation.md — obligatorio si la
+#      base ya venía siendo gestionada con `db push`.
+#   3. docker compose build && docker compose up -d
+#
+# Las NEXT_PUBLIC_* van en `build.args`, no en `environment`: se inlinean en el
+# bundle durante el build. Cambiarlas exige `docker compose build --no-cache app`.
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_DB: ${POSTGRES_DB:-business_site_generator}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      # `migrate deploy` corre en el arranque de `app`: si Postgres todavía no
+      # acepta conexiones, el contenedor muere. Por eso app depende de este check.
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+    networks: [internal]
+    # Sin `ports:` a propósito — la base no se publica al host. Para inspeccionar:
+    #   docker compose exec db psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # Los :- replican los defaults del Dockerfile y del código. Sin ellos,
+        # una var ausente en .env se pasaría como string vacío y pisaría el default.
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-https://automaticialab.com}
+        NEXT_PUBLIC_SITES_DOMAIN: ${NEXT_PUBLIC_SITES_DOMAIN:-sites.automaticialab.com}
+        NEXT_PUBLIC_SITES_SUBDOMAIN_BASE: ${NEXT_PUBLIC_SITES_SUBDOMAIN_BASE:-sitios.automaticialab.com}
+        NEXT_PUBLIC_FLASK_URL: ${NEXT_PUBLIC_FLASK_URL:-https://facturacion.automaticialab.com}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # --- Requeridas: sin estas el arranque aborta (instrumentation.ts) --------
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:?NEXTAUTH_SECRET is required}
+      MP_ACCESS_TOKEN: ${MP_ACCESS_TOKEN:?MP_ACCESS_TOKEN is required}
+      MP_WEBHOOK_SECRET: ${MP_WEBHOOK_SECRET:?MP_WEBHOOK_SECRET is required}
+      CREDENTIALS_ENCRYPTION_KEY: ${CREDENTIALS_ENCRYPTION_KEY:?CREDENTIALS_ENCRYPTION_KEY is required}
+
+      # --- Fuertemente recomendadas -------------------------------------------
+      DIRECT_URL: ${DIRECT_URL:-}
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-}
+      APP_URL: ${APP_URL:-}
+      ADMIN_EMAILS: ${ADMIN_EMAILS:-}
+      CRON_SECRET: ${CRON_SECRET:-}
+
+      # --- Email (SMTP) --------------------------------------------------------
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+
+      # --- OAuth opcional ------------------------------------------------------
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+
+      # --- Provisioning: n8n ---------------------------------------------------
+      N8N_API_URL: ${N8N_API_URL:-}
+      N8N_API_KEY: ${N8N_API_KEY:-}
+      N8N_WEBHOOK_URL: ${N8N_WEBHOOK_URL:-}
+      N8N_PROVISIONING_WEBHOOK: ${N8N_PROVISIONING_WEBHOOK:-}
+      N8N_REVIEWS_PROVISIONING_WEBHOOK: ${N8N_REVIEWS_PROVISIONING_WEBHOOK:-}
+      N8N_REVIEWS_DEPROVISION_WEBHOOK: ${N8N_REVIEWS_DEPROVISION_WEBHOOK:-}
+      N8N_LEADS_PROVISIONING_WEBHOOK: ${N8N_LEADS_PROVISIONING_WEBHOOK:-}
+      N8N_LEADS_DEPROVISION_WEBHOOK: ${N8N_LEADS_DEPROVISION_WEBHOOK:-}
+      N8N_EMAIL_MARKETING_PROVISIONING_WEBHOOK: ${N8N_EMAIL_MARKETING_PROVISIONING_WEBHOOK:-}
+      N8N_PROSPECCION_PROVISIONING_WEBHOOK: ${N8N_PROSPECCION_PROVISIONING_WEBHOOK:-}
+
+      # --- Provisioning: servicios externos ------------------------------------
+      SCRAPER_API_KEY: ${SCRAPER_API_KEY:-}
+      CAUSAS_SCRAPER_URL: ${CAUSAS_SCRAPER_URL:-}
+      CAUSAS_SCRAPER_API_KEY: ${CAUSAS_SCRAPER_API_KEY:-}
+      FLASK_BACKEND_URL: ${FLASK_BACKEND_URL:-}
+      FLASK_PROVISION_SECRET: ${FLASK_PROVISION_SECRET:-}
+      TURNOS_PROVISION_SECRET: ${TURNOS_PROVISION_SECRET:-}
+      LEADS_PROVISION_SECRET: ${LEADS_PROVISION_SECRET:-}
+      PROSPECCION_PROVISION_SECRET: ${PROSPECCION_PROVISION_SECRET:-}
+
+    volumes:
+      # Los uploads se escriben en el filesystem del contenedor. Sin este volumen
+      # se pierden en cada redeploy.
+      - uploads:/app/public/uploads
+
+    ports:
+      # Solo loopback: el TLS y el ruteo por hostname los termina Traefik/EasyPanel
+      # en el host. Ver docs/deploy/traefik-wildcard-tls.md.
+      # En un VPS sin reverse proxy, cambiar a "80:3000" y quitar el bind a 127.0.0.1.
+      - "127.0.0.1:3000:3000"
+
+    networks: [internal, web]
+
+volumes:
+  pgdata:
+  uploads:
+
+networks:
+  internal:
+    driver: bridge
+  web:
+    # Red compartida con el reverse proxy. Si Traefik ya corre en otra stack
+    # (EasyPanel), declararla externa y usar el nombre real de esa red:
+    #   web:
+    #     external: true
+    #     name: easypanel_default
+    driver: bridge
