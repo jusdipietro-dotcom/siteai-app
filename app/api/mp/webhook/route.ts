@@ -958,6 +958,87 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ received: true })
       }
 
+      // ─── LexPost subscription: "lexpost:subscriptionId:plan" ───
+      if (parts[0] === 'lexpost') {
+        if (parts.length < 3 || !parts[1] || !parts[2]) {
+          console.warn('[MP Webhook] Invalid lexpost external_reference:', external_reference)
+          return NextResponse.json({ received: true })
+        }
+        const lexpostSubId = parts[1]
+        const lexpostPlan = parts[2]
+
+        if (status === 'authorized' && lexpostSubId) {
+          // Atomic idempotency: only update if still pending_payment or trial (trial-to-paid)
+          const { count } = await prisma.lexPostSubscription.updateMany({
+            where: { id: lexpostSubId, status: { in: ['pending_payment', 'trial'] } },
+            data: { status: 'provisioning', preapprovalId },
+          })
+
+          if (count === 0) {
+            console.log(`[MP Webhook] LexPost ${lexpostSubId} already processed — skipping`)
+            return NextResponse.json({ received: true })
+          }
+
+          // Increment coupon usage (safe: only reaches here once due to atomic update above)
+          const currentSub = await prisma.lexPostSubscription.findUnique({
+            where: { id: lexpostSubId },
+          })
+          if (currentSub?.couponId) {
+            await prisma.coupon.update({
+              where: { id: currentSub.couponId },
+              data: { usedCount: { increment: 1 } },
+            })
+          }
+
+          console.log(`[MP Webhook] LexPost ${lexpostSubId} → provisioning (plan: ${lexpostPlan})`)
+
+          // Send payment confirmation email
+          try {
+            const subForEmail = await prisma.lexPostSubscription.findUnique({
+              where: { id: lexpostSubId },
+              include: { user: { select: { email: true } } },
+            })
+            if (subForEmail?.user.email) {
+              await sendPaymentConfirmationEmail(subForEmail.user.email, {
+                type: 'lexpost',
+                plan: lexpostPlan,
+              })
+            }
+          } catch (emailErr) {
+            console.error('[MP Webhook] Failed to send lexpost payment email:', emailErr)
+          }
+        }
+
+        if ((status === 'cancelled' || status === 'paused') && lexpostSubId) {
+          const { count: lpCount } = await prisma.lexPostSubscription.updateMany({
+            where: { id: lexpostSubId, status: { in: ['active', 'provisioning', 'pending_payment', 'trial'] } },
+            data: { status: 'suspended' },
+          })
+          if (lpCount === 0) {
+            console.log(`[MP Webhook] LexPost ${lexpostSubId} already suspended/cancelled — skipping`)
+          } else {
+            console.log(`[MP Webhook] LexPost ${lexpostSubId} suspended (${status})`)
+
+            try {
+              const subForEmail = await prisma.lexPostSubscription.findUnique({
+                where: { id: lexpostSubId },
+                include: { user: { select: { email: true } } },
+              })
+              if (subForEmail?.user.email) {
+                await sendSubscriptionCancelledEmail(subForEmail.user.email, {
+                  type: 'lexpost',
+                  plan: lexpostPlan,
+                })
+              }
+            } catch (emailErr) {
+              console.error('[MP Webhook] Failed to send lexpost cancellation email:', emailErr)
+            }
+          }
+        }
+
+        return NextResponse.json({ received: true })
+      }
+
       // ─── Suite Juridica subscription: "suite:subscriptionId:plan" ───
       if (parts[0] === 'suite') {
         if (parts.length < 3 || !parts[1] || !parts[2]) {
