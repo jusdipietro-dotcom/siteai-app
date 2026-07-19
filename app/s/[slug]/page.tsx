@@ -21,7 +21,10 @@ export async function generateMetadata(
   { params }: { params: { slug: string } }
 ): Promise<Metadata> {
   const row = await prisma.project.findFirst({
-    where: { slug: params.slug, status: 'published' },
+    // `hasPaid` is required alongside `status`, not implied by it. Defense in
+    // depth: if any future code path ever flips `status` without going through
+    // the paid publish endpoint, an unpaid site still does not render.
+    where: { slug: params.slug, status: 'published', hasPaid: true },
     select: { name: true, businessData: true },
   })
   if (!row) return { title: 'Sitio no encontrado' }
@@ -45,7 +48,9 @@ export async function generateMetadata(
 
 export default async function PublicSitePage({ params }: { params: { slug: string } }) {
   const row = await prisma.project.findFirst({
-    where: { slug: params.slug, status: 'published' },
+    // Both conditions are load-bearing — see generateMetadata above.
+    // A published-but-unpaid project 404s exactly like a nonexistent one.
+    where: { slug: params.slug, status: 'published', hasPaid: true },
   })
 
   if (!row) notFound()

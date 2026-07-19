@@ -5,7 +5,9 @@ import { prisma } from '@/lib/prisma'
 import {
   serializeProjectFromClient,
   deserializeProject,
+  sanitizeLifecycleStatus,
   InvalidSubdomainError,
+  InvalidStatusError,
 } from '@/lib/projectSerializer'
 import { isSubdomainConflict } from '@/lib/prismaErrors'
 
@@ -37,8 +39,13 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   let data: Record<string, unknown>
   try {
     data = serializeProjectFromClient(body) as Record<string, unknown>
+    // `status` is not an ordinary writable field. Non-publish lifecycle values
+    // are accepted; `published` is rejected with a 400 pointing at the publish
+    // endpoint, which is where the payment check lives.
+    const status = sanitizeLifecycleStatus((body as Record<string, unknown>)?.status)
+    if (status !== undefined) data.status = status
   } catch (err) {
-    if (err instanceof InvalidSubdomainError) {
+    if (err instanceof InvalidSubdomainError || err instanceof InvalidStatusError) {
       return NextResponse.json({ error: err.message }, { status: 400 })
     }
     throw err

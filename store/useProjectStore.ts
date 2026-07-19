@@ -12,7 +12,9 @@ interface ProjectStore {
   updateProject: (id: string, updates: Partial<Project>) => void
   deleteProject: (id: string) => Promise<void>
   duplicateProject: (id: string) => Promise<Project>
-  setProjectStatus: (id: string, status: ProjectStatus) => void
+  setProjectStatus: (id: string, status: Exclude<ProjectStatus, 'published'>) => void
+  publishProject: (id: string) => Promise<Project>
+  unpublishProject: (id: string) => Promise<Project>
   updateSections: (id: string, sections: SectionConfig[]) => void
   toggleSection: (projectId: string, sectionId: string) => void
   reorderSections: (projectId: string, sections: SectionConfig[]) => void
@@ -128,6 +130,9 @@ export const useProjectStore = create<ProjectStore>()((set, get) => ({
     return get().addProject(copy)
   },
 
+  // Non-publish lifecycle transitions only. `published` is unreachable from
+  // here by design: it is a paid state and the server refuses to grant it
+  // through an ordinary field write. Use publishProject() instead.
   setProjectStatus: (id, status) => {
     set((state) => ({
       projects: state.projects.map((p) =>
@@ -135,6 +140,36 @@ export const useProjectStore = create<ProjectStore>()((set, get) => ({
       ),
     }))
     syncUpdate(id, { status })
+  },
+
+  // Publishing goes through a dedicated endpoint that verifies ownership AND
+  // payment server-side. Unlike the other mutations here this is not optimistic:
+  // it can legitimately fail with 402, and showing a site as live when it is not
+  // would be worse than waiting for the round trip.
+  publishProject: async (id) => {
+    const res = await fetch(`/api/projects/${id}/publish`, { method: 'POST' })
+    const body = await res.json().catch(() => ({}))
+    if (!res.ok) {
+      throw new Error(body?.error || 'No se pudo publicar el sitio')
+    }
+    const saved: Project = body
+    set((state) => ({
+      projects: state.projects.map((p) => (p.id === id ? saved : p)),
+    }))
+    return saved
+  },
+
+  unpublishProject: async (id) => {
+    const res = await fetch(`/api/projects/${id}/unpublish`, { method: 'POST' })
+    const body = await res.json().catch(() => ({}))
+    if (!res.ok) {
+      throw new Error(body?.error || 'No se pudo despublicar el sitio')
+    }
+    const saved: Project = body
+    set((state) => ({
+      projects: state.projects.map((p) => (p.id === id ? saved : p)),
+    }))
+    return saved
   },
 
   updateSections: (id, sections) => {

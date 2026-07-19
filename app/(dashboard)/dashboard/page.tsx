@@ -39,7 +39,7 @@ const stagger = {
 
 export default function DashboardPage() {
   const router = useRouter()
-  const { projects, isLoaded, deleteProject, duplicateProject, setProjectStatus } = useProjectStore()
+  const { projects, isLoaded, deleteProject, duplicateProject, publishProject } = useProjectStore()
   const { openCommandPalette } = useUIStore()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<ProjectStatus | 'all'>('all')
@@ -82,12 +82,19 @@ export default function DashboardPage() {
 
   const handlePublish = async (id: string, name: string) => {
     const project = projects.find((p) => p.id === id)
+    // Client-side shortcut to checkout — the server enforces the same rule.
     if (!project?.hasPaid) {
       router.push(`/projects/${id}/checkout`)
       return
     }
-    setProjectStatus(id, 'published')
-    toast.success(`"${name}" publicado`)
+    try {
+      await publishProject(id)
+      toast.success(`"${name}" publicado`)
+    } catch (err) {
+      toast.error(
+        err instanceof Error && err.message ? err.message : 'No se pudo publicar el sitio'
+      )
+    }
   }
 
   return (

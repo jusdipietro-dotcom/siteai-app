@@ -25,7 +25,7 @@ export default function PublishPage() {
   const params = useParams()
   const router = useRouter()
   const id = params.id as string
-  const { projects, setProjectStatus } = useProjectStore()
+  const { projects, publishProject } = useProjectStore()
   const project = projects.find((p) => p.id === id)
 
   const [publishing, setPublishing] = useState(false)
@@ -137,17 +137,17 @@ export default function PublishPage() {
   async function handlePublish() {
     setPublishing(true)
     try {
-      const res = await fetch(`/api/projects/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'published', publishedUrl: `/s/${project!.slug}` }),
-      })
-      if (!res.ok) throw new Error('Error al publicar')
-      setProjectStatus(id, 'published')
+      // The server re-checks ownership and payment and owns publishedUrl.
+      // The paywall screen above is UX; this call is what actually enforces it.
+      await publishProject(id)
       setPublished(true)
       setShowSuccess(true)
-    } catch {
-      toast.error('No se pudo publicar el sitio. Intentá de nuevo.')
+    } catch (err) {
+      toast.error(
+        err instanceof Error && err.message
+          ? err.message
+          : 'No se pudo publicar el sitio. Intentá de nuevo.'
+      )
     } finally {
       setPublishing(false)
     }

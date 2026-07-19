@@ -11,7 +11,8 @@ export async function GET(
   { params }: { params: { slug: string } }
 ) {
   const row = await prisma.project.findFirst({
-    where: { slug: params.slug, status: 'published' },
+    // Same gate as the page renderer: `status` alone is not proof of payment.
+    where: { slug: params.slug, status: 'published', hasPaid: true },
     select: { plan: true, businessData: true, updatedAt: true },
   })
 

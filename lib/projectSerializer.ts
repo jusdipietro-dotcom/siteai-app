@@ -1,4 +1,4 @@
-import type { Project } from '@/types'
+import type { Project, ProjectStatus } from '@/types'
 import { normalizeSubdomain, validateSubdomain } from '@/lib/subdomain'
 
 /**
@@ -9,6 +9,13 @@ import { normalizeSubdomain, validateSubdomain } from '@/lib/subdomain'
  * (the MercadoPago webhook, the publish pipeline, the view counter).
  * Never add a billing field here — that reopens the paywall bypass.
  *
+ * `status` is NOT here either, and that is the paywall. Publishing used to be an
+ * ordinary field write, so `PUT /api/projects/{id} {"status":"published"}` put a
+ * site live for free. Reaching `published` now requires
+ * `POST /api/projects/{id}/publish`, which checks payment server-side.
+ * Non-publish lifecycle transitions go through sanitizeLifecycleStatus() below,
+ * which routes opt into explicitly. Never add `status` back to this list.
+ *
  * `subdomain` IS client-writable, but never verbatim: it is normalized and
  * validated server-side on every write (see below). Whether a subdomain
  * actually resolves is a separate concern and is not enforced here.
@@ -16,7 +23,6 @@ import { normalizeSubdomain, validateSubdomain } from '@/lib/subdomain'
 const CLIENT_WRITABLE_FIELDS = [
   'name',
   'slug',
-  'status',
   'template',
   'businessData',
   'sections',
@@ -27,6 +33,49 @@ const CLIENT_WRITABLE_FIELDS = [
 ] as const
 
 type ClientWritableField = (typeof CLIENT_WRITABLE_FIELDS)[number]
+
+/**
+ * Lifecycle statuses a client may set directly. `published` is deliberately
+ * absent — it is the paid state and only the publish endpoint may grant it.
+ */
+const CLIENT_WRITABLE_STATUSES = ['draft', 'generating', 'ready', 'error'] as const
+
+/**
+ * Thrown when a client payload carries a status it may not set itself.
+ * Routes translate this into a 400.
+ */
+export class InvalidStatusError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'InvalidStatusError'
+  }
+}
+
+/**
+ * Validates an untrusted lifecycle status.
+ * Returns `undefined` when the payload carries no status (nothing to write).
+ * Throws for `published` and for anything unrecognized — an attempt to publish
+ * through an ordinary write must fail loudly, never be silently dropped, so a
+ * caller can never mistake a stripped field for a successful publish.
+ */
+export function sanitizeLifecycleStatus(raw: unknown): ProjectStatus | undefined {
+  if (raw === undefined) return undefined
+
+  if (raw === 'published') {
+    throw new InvalidStatusError(
+      'No se puede publicar por esta vía. Usá POST /api/projects/{id}/publish.'
+    )
+  }
+
+  if (
+    typeof raw !== 'string' ||
+    !(CLIENT_WRITABLE_STATUSES as readonly string[]).includes(raw)
+  ) {
+    throw new InvalidStatusError('Estado de proyecto inválido')
+  }
+
+  return raw as ProjectStatus
+}
 
 /**
  * Thrown when a client payload carries a subdomain that cannot be stored.
@@ -66,8 +115,12 @@ function sanitizeSubdomain(raw: unknown): string | null {
 /**
  * Serializes an untrusted client payload for storage.
  * Strips every field outside CLIENT_WRITABLE_FIELDS before it reaches Prisma,
- * so a crafted request body cannot flip `hasPaid`, escalate `plan`, or forge
- * `preapprovalId` / `views` / `publishedUrl`.
+ * so a crafted request body cannot flip `hasPaid`, escalate `plan`, forge
+ * `preapprovalId` / `views` / `publishedUrl`, or set `status` — including
+ * `published`, which is what the paywall protects.
+ *
+ * Callers that legitimately accept a lifecycle status must opt in explicitly by
+ * calling sanitizeLifecycleStatus() and merging the result themselves.
  *
  * @throws InvalidSubdomainError when `subdomain` is malformed or reserved.
  */

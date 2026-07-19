@@ -5,7 +5,9 @@ import { prisma } from '@/lib/prisma'
 import {
   serializeProjectFromClient,
   deserializeProject,
+  sanitizeLifecycleStatus,
   InvalidSubdomainError,
+  InvalidStatusError,
 } from '@/lib/projectSerializer'
 import { isSubdomainConflict } from '@/lib/prismaErrors'
 
@@ -32,12 +34,17 @@ export async function POST(req: NextRequest) {
   const body = await req.json()
 
   let serialized
+  let status: string | undefined
   try {
     // Billing fields are stripped: a new project always starts on the schema
     // defaults (plan "free", hasPaid false, views 0).
     serialized = serializeProjectFromClient(body)
+    // The wizard creates projects as "generating"; duplicates start as "draft".
+    // `published` is rejected here — a project can only reach it through the
+    // paid publish endpoint, never at creation time.
+    status = sanitizeLifecycleStatus((body as Record<string, unknown>)?.status)
   } catch (err) {
-    if (err instanceof InvalidSubdomainError) {
+    if (err instanceof InvalidSubdomainError || err instanceof InvalidStatusError) {
       return NextResponse.json({ error: err.message }, { status: 400 })
     }
     throw err
@@ -46,7 +53,11 @@ export async function POST(req: NextRequest) {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const row = await (prisma.project.create as any)({
-      data: { ...serialized, userId: session.user.id },
+      data: {
+        ...serialized,
+        ...(status !== undefined && { status }),
+        userId: session.user.id,
+      },
     })
     return NextResponse.json(deserializeProject(row), { status: 201 })
   } catch (err) {
