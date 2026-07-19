@@ -56,7 +56,7 @@ export async function sendPasswordResetEmail(to: string, resetUrl: string) {
 export async function sendPaymentConfirmationEmail(
   to: string,
   details: {
-    type: 'monitoring' | 'project' | 'reviews' | 'linkedin' | 'trading' | 'leads' | 'email-marketing' | 'prospeccion' | 'facturacion' | 'causas' | 'turnos' | 'suite-juridica'
+    type: 'monitoring' | 'project' | 'reviews' | 'linkedin' | 'trading' | 'leads' | 'email-marketing' | 'prospeccion' | 'facturacion' | 'causas' | 'turnos' | 'suite-juridica' | 'lexpost'
     plan: string
     amount?: string
   }
@@ -74,6 +74,7 @@ export async function sendPaymentConfirmationEmail(
     causas: 'Dashboard Causas MEV',
     turnos: 'Turnos Online',
     'suite-juridica': 'Suite Jurídica',
+    lexpost: 'LexPost Legal',
   }
   const dashboardUrls: Record<string, string> = {
     monitoring: `${APP_URL}/monitoreo`,
@@ -88,6 +89,7 @@ export async function sendPaymentConfirmationEmail(
     turnos: `${APP_URL}/turnos`,
     'email-marketing': `${APP_URL}/email-marketing`,
     'suite-juridica': `${APP_URL}/suite-juridica`,
+    lexpost: `${APP_URL}/lexpost`,
   }
   const productName = productNames[details.type] ?? 'Servicio'
   const dashboardUrl = dashboardUrls[details.type] ?? `${APP_URL}/dashboard`
@@ -128,7 +130,7 @@ export async function sendPaymentConfirmationEmail(
 
 export async function sendSubscriptionCancelledEmail(
   to: string,
-  details: { type: 'monitoring' | 'project' | 'reviews' | 'linkedin' | 'trading' | 'leads' | 'email-marketing' | 'prospeccion' | 'facturacion' | 'causas' | 'turnos' | 'suite-juridica'; plan: string }
+  details: { type: 'monitoring' | 'project' | 'reviews' | 'linkedin' | 'trading' | 'leads' | 'email-marketing' | 'prospeccion' | 'facturacion' | 'causas' | 'turnos' | 'suite-juridica' | 'lexpost'; plan: string }
 ) {
   const productNames: Record<string, string> = {
     monitoring: 'Monitoreo Judicial',
@@ -143,6 +145,7 @@ export async function sendSubscriptionCancelledEmail(
     causas: 'Dashboard Causas MEV',
     turnos: 'Turnos Online',
     'suite-juridica': 'Suite Jurídica',
+    lexpost: 'LexPost Legal',
   }
   const productName = productNames[details.type] ?? 'Servicio'
 
