@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 import { TURNOS_PLANS } from '@/lib/turnos-plans'
 import { isUserFreeAccount } from '@/lib/free-account'
-import { getTrialEndDate } from '@/lib/trial'
+import { getTrialEndDate, expireStaleTrials, hasUsedTrial } from '@/lib/trial'
 
 export async function POST(req: NextRequest) {
   try {
@@ -65,6 +65,11 @@ export async function POST(req: NextRequest) {
     }
 
     const result = await prisma.$transaction(async (tx) => {
+      // Make stored trial status truthful first, so 'trial' below can only mean
+      // a trial that is still running. Without this an expired trial counts
+      // against the plan limit and can lock the user out of paying.
+      await expireStaleTrials(tx.turnosSubscription, session.user.id)
+
       // Check existing active subscriptions against plan limit (maxProfesionales)
       const activeSubs = await tx.turnosSubscription.count({
         where: { userId: session.user.id, status: { in: ['active', 'provisioning', 'pending_config', 'trial'] } },
@@ -151,15 +156,15 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    // Trial: check if user already used trial for this service
-    const previousSub = await prisma.turnosSubscription.findFirst({
-      where: {
-        userId: session.user.id,
-        status: { in: ['cancelled', 'suspended', 'trial_expired'] },
-      },
-    })
+    // Separate question: has this user ever subscribed before? Any prior row
+    // means the trial is spent — they continue to payment instead.
+    const usedTrial = await hasUsedTrial(
+      prisma.turnosSubscription,
+      session.user.id,
+      subscription.id
+    )
     // First time → 3-day trial (no payment needed)
-    if (!previousSub) {
+    if (!usedTrial) {
       await prisma.turnosSubscription.update({
         where: { id: subscription.id },
         data: { status: 'trial', trialEndsAt: getTrialEndDate() },

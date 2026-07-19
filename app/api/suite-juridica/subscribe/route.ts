@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 import { SUITE_JURIDICA_PLANS } from '@/lib/suite-juridica-plans'
 import { isUserFreeAccount } from '@/lib/free-account'
-import { getTrialEndDate } from '@/lib/trial'
+import { getTrialEndDate, expireStaleTrials, hasUsedTrial } from '@/lib/trial'
 
 export async function POST(req: NextRequest) {
   try {
@@ -34,6 +34,11 @@ export async function POST(req: NextRequest) {
     }
 
     const result = await prisma.$transaction(async (tx) => {
+      // Make stored trial status truthful first, so 'trial' below can only mean
+      // a trial that is still running. Without this an expired trial blocks the
+      // user from subscribing at all — no access and no way to pay.
+      await expireStaleTrials(tx.suiteJuridicaSubscription, session.user.id)
+
       // Check existing active suite subscription
       const existing = await tx.suiteJuridicaSubscription.findFirst({
         where: { userId: session.user.id, status: { in: ['active', 'provisioning', 'trial'] } },
@@ -96,15 +101,15 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    // Trial: check if user already used trial for this service
-    const previousSub = await prisma.suiteJuridicaSubscription.findFirst({
-      where: {
-        userId: session.user.id,
-        status: { in: ['cancelled', 'suspended', 'trial_expired'] },
-      },
-    })
+    // Separate question: has this user ever subscribed before? Any prior row
+    // means the trial is spent — they continue to payment instead.
+    const usedTrial = await hasUsedTrial(
+      prisma.suiteJuridicaSubscription,
+      session.user.id,
+      subscription.id
+    )
     // First time → 3-day trial (no payment needed)
-    if (!previousSub) {
+    if (!usedTrial) {
       await prisma.suiteJuridicaSubscription.update({
         where: { id: subscription.id },
         data: { status: 'trial', trialEndsAt: getTrialEndDate() },

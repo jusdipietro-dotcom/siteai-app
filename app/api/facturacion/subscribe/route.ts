@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 import { FACTURACION_PLANS } from '@/lib/facturacion-plans'
 import { isUserFreeAccount } from '@/lib/free-account'
-import { getTrialEndDate } from '@/lib/trial'
+import { getTrialEndDate, expireStaleTrials, hasUsedTrial } from '@/lib/trial'
 import { provisionFacturacion } from '@/lib/facturacion-provision'
 
 export async function POST(req: NextRequest) {
@@ -54,6 +54,11 @@ export async function POST(req: NextRequest) {
 
     // Atomic transaction: check + cancel stale + validate coupon + create
     const result = await prisma.$transaction(async (tx) => {
+      // Make stored trial status truthful first, so 'trial' below can only mean
+      // a trial that is still running. Scoped to the user, not the CUIT: an
+      // expired trial is expired whichever CUIT it was opened for.
+      await expireStaleTrials(tx.facturacionSubscription, session.user.id)
+
       // Check existing active subscription for same CUIT
       const existing = await tx.facturacionSubscription.findFirst({
         where: {
@@ -139,15 +144,20 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    // Trial: check if user already used trial for this service
-    const previousSub = await prisma.facturacionSubscription.findFirst({
-      where: {
-        userId: session.user.id,
-        status: { in: ['cancelled', 'suspended', 'trial_expired'] },
-      },
-    })
+    // Separate question: has this user ever subscribed before? Any prior row
+    // means the trial is spent — they continue to payment instead.
+    // NOTE: this route grants its trial as 'provisioning', not 'trial' (below),
+    // so expireStaleTrials never reaches those rows. Pre-existing divergence,
+    // deliberately left alone: 'provisioning' is also the status of a PAID
+    // facturacion subscription (see the MP webhook), so expiring it by
+    // trialEndsAt would cancel live paying customers.
+    const usedTrial = await hasUsedTrial(
+      prisma.facturacionSubscription,
+      session.user.id,
+      subscription.id
+    )
     // First time → 3-day trial with Flask provisioning
-    if (!previousSub) {
+    if (!usedTrial) {
       await prisma.facturacionSubscription.update({
         where: { id: subscription.id },
         data: { status: 'provisioning', trialEndsAt: getTrialEndDate() },

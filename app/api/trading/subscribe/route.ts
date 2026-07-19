@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 import { isUserFreeAccount } from '@/lib/free-account'
-import { getTrialEndDate } from '@/lib/trial'
+import { getTrialEndDate, expireStaleTrials, hasUsedTrial } from '@/lib/trial'
 
 const TRADING_PLANS: Record<string, { monthly: number; title: string; maxPairs: number; reportes: boolean }> = {
   basico:      { monthly: 20000, title: 'Señales Crypto IA Básico',      maxPairs: 30, reportes: false },
@@ -50,6 +50,11 @@ export async function POST(req: NextRequest) {
       },
       data: { status: 'cancelled' },
     })
+
+    // Make stored trial status truthful first, so 'trial' below can only mean
+    // a trial that is still running. Without this an expired trial blocks the
+    // user from subscribing at all — no access and no way to pay.
+    await expireStaleTrials(prisma.tradingSubscription, session.user.id)
 
     // Check existing active subscription
     const existing = await prisma.tradingSubscription.findFirst({
@@ -112,15 +117,15 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    // Trial: check if user already used trial for this service
-    const previousSub = await prisma.tradingSubscription.findFirst({
-      where: {
-        userId: session.user.id,
-        status: { in: ['cancelled', 'suspended', 'trial_expired'] },
-      },
-    })
+    // Separate question: has this user ever subscribed before? Any prior row
+    // means the trial is spent — they continue to payment instead.
+    const usedTrial = await hasUsedTrial(
+      prisma.tradingSubscription,
+      session.user.id,
+      subscription.id
+    )
     // First time → 3-day trial (no payment needed)
-    if (!previousSub) {
+    if (!usedTrial) {
       await prisma.tradingSubscription.update({
         where: { id: subscription.id },
         data: { status: 'trial', trialEndsAt: getTrialEndDate() },

@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 import { isUserFreeAccount } from '@/lib/free-account'
-import { getTrialEndDate } from '@/lib/trial'
+import { getTrialEndDate, expireStaleTrials, hasUsedTrial } from '@/lib/trial'
 
 const LEXPOST_PLANS: Record<string, { monthly: number; title: string; limit: number; accounts: number }> = {
   basico:       { monthly: 15000, title: 'LexPost Basico',       limit: 10, accounts: 1 },
@@ -39,6 +39,11 @@ export async function POST(req: NextRequest) {
     }
 
     const result = await prisma.$transaction(async (tx) => {
+      // Make stored trial status truthful first, so 'trial' below can only mean
+      // a trial that is still running. Without this an expired trial blocks the
+      // user from subscribing at all — no access and no way to pay.
+      await expireStaleTrials(tx.lexPostSubscription, session.user.id)
+
       // Check existing active subscription
       const existing = await tx.lexPostSubscription.findFirst({
         where: {
@@ -112,14 +117,16 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    // Trial for first-time users
-    const previousSub = await prisma.lexPostSubscription.findFirst({
-      where: {
-        userId: session.user.id,
-        status: { in: ['cancelled', 'suspended'] },
-      },
-    })
-    if (!previousSub) {
+    // Trial for first-time users. Any prior row counts — this check previously
+    // looked only at ['cancelled','suspended'], so a user whose trial had
+    // expired ('trial_expired', or still literally 'trial') was handed a brand
+    // new trial on every attempt.
+    const usedTrial = await hasUsedTrial(
+      prisma.lexPostSubscription,
+      session.user.id,
+      subscription.id
+    )
+    if (!usedTrial) {
       await prisma.lexPostSubscription.update({
         where: { id: subscription.id },
         data: { status: 'trial', trialEndsAt: getTrialEndDate() },

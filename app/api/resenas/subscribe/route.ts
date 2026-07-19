@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 import { isUserFreeAccount } from '@/lib/free-account'
-import { getTrialEndDate } from '@/lib/trial'
+import { getTrialEndDate, expireStaleTrials, hasUsedTrial } from '@/lib/trial'
 
 const REVIEWS_PLANS: Record<string, { monthly: number; title: string; maxProfiles: number }> = {
   basico:    { monthly: 15000, title: 'Reseñas Google IA Básico',    maxProfiles: 1 },
@@ -58,6 +58,11 @@ export async function POST(req: NextRequest) {
     if (!['profesional', 'cercano', 'formal'].includes(responseTone ?? '')) {
       return NextResponse.json({ error: 'Tono de respuesta inválido' }, { status: 400 })
     }
+
+    // Make stored trial status truthful first, so every 'trial' below can only
+    // mean a trial that is still running. Without this an expired trial blocks
+    // the user from subscribing at all — no access and no way to pay.
+    await expireStaleTrials(prisma.reviewsSubscription, session.user.id)
 
     // Check existing active subscription for same business
     const existing = await prisma.reviewsSubscription.findFirst({
@@ -156,15 +161,15 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    // Trial: check if user already used trial for this service
-    const previousSub = await prisma.reviewsSubscription.findFirst({
-      where: {
-        userId: session.user.id,
-        status: { in: ['cancelled', 'suspended', 'trial_expired'] },
-      },
-    })
+    // Separate question: has this user ever subscribed before? Any prior row
+    // means the trial is spent — they continue to payment instead.
+    const usedTrial = await hasUsedTrial(
+      prisma.reviewsSubscription,
+      session.user.id,
+      subscription.id
+    )
     // First time → 3-day trial (no payment needed)
-    if (!previousSub) {
+    if (!usedTrial) {
       await prisma.reviewsSubscription.update({
         where: { id: subscription.id },
         data: { status: 'trial', trialEndsAt: getTrialEndDate() },

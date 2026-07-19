@@ -6,7 +6,7 @@ import { encryptCredentials } from '@/lib/encryption'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 import { CAUSAS_PLANS } from '@/lib/causas-plans'
 import { isUserFreeAccount } from '@/lib/free-account'
-import { getTrialEndDate } from '@/lib/trial'
+import { getTrialEndDate, expireStaleTrials, hasUsedTrial } from '@/lib/trial'
 
 export async function POST(req: NextRequest) {
   try {
@@ -53,7 +53,12 @@ export async function POST(req: NextRequest) {
 
     // Atomic transaction
     const result = await prisma.$transaction(async (tx) => {
-      // Check existing active subscription
+      // Make stored trial status truthful first, so 'trial' below can only mean
+      // a trial that is still running. Without this an expired trial blocks the
+      // user from subscribing at all — no access and no way to pay.
+      await expireStaleTrials(tx.causasSubscription, session.user.id)
+
+      // Does this user have a LIVE subscription? (Not: have they ever had one.)
       const existing = await tx.causasSubscription.findFirst({
         where: {
           userId: session.user.id,
@@ -138,15 +143,15 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    // Trial: check if user already used trial for this service
-    const previousSub = await prisma.causasSubscription.findFirst({
-      where: {
-        userId: session.user.id,
-        status: { in: ['cancelled', 'suspended', 'trial_expired'] },
-      },
-    })
+    // Separate question: has this user ever subscribed before? Any prior row
+    // means the trial is spent — they continue to payment instead.
+    const usedTrial = await hasUsedTrial(
+      prisma.causasSubscription,
+      session.user.id,
+      subscription.id
+    )
     // First time → 3-day trial (no payment needed)
-    if (!previousSub) {
+    if (!usedTrial) {
       await prisma.causasSubscription.update({
         where: { id: subscription.id },
         data: { status: 'trial', trialEndsAt: getTrialEndDate() },

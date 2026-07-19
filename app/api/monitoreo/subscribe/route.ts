@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { encryptPortalCredentials } from '@/lib/encryption'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 import { isUserFreeAccount } from '@/lib/free-account'
-import { getTrialEndDate } from '@/lib/trial'
+import { getTrialEndDate, expireStaleTrials, hasUsedTrial } from '@/lib/trial'
 
 const MONITORING_PLANS: Record<string, { monthly: number; title: string; maxCuils: number }> = {
   basico:       { monthly: 19000, title: 'Monitoreo Judicial Básico',       maxCuils: 1 },
@@ -70,6 +70,11 @@ export async function POST(req: NextRequest) {
 
     // Atomic transaction: check + cancel stale + validate coupon + create
     const result = await prisma.$transaction(async (tx) => {
+      // Make stored trial status truthful first, so every 'trial' below can
+      // only mean a trial that is still running. Scoped to the user, not the
+      // CUIL: an expired trial is expired whichever CUIL it was opened for.
+      await expireStaleTrials(tx.monitoringSubscription, session.user.id)
+
       // Check existing active subscription for same CUIT
       const existing = await tx.monitoringSubscription.findFirst({
         where: {
@@ -167,15 +172,15 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    // Trial: check if user already used trial for this service
-    const previousSub = await prisma.monitoringSubscription.findFirst({
-      where: {
-        userId: session.user.id,
-        status: { in: ['cancelled', 'suspended', 'trial_expired'] },
-      },
-    })
+    // Separate question: has this user ever subscribed before? Any prior row
+    // means the trial is spent — they continue to payment instead.
+    const usedTrial = await hasUsedTrial(
+      prisma.monitoringSubscription,
+      session.user.id,
+      subscription.id
+    )
     // First time → 3-day trial (no payment needed)
-    if (!previousSub) {
+    if (!usedTrial) {
       await prisma.monitoringSubscription.update({
         where: { id: subscription.id },
         data: { status: 'trial', trialEndsAt: getTrialEndDate() },

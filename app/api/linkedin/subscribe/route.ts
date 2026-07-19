@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 import { isUserFreeAccount } from '@/lib/free-account'
-import { getTrialEndDate } from '@/lib/trial'
+import { getTrialEndDate, expireStaleTrials, hasUsedTrial } from '@/lib/trial'
 
 const LINKEDIN_PLANS: Record<string, { monthly: number; title: string; maxProfiles: number; postsPerMonth: number }> = {
   basico:      { monthly: 12000, title: 'LinkedIn IA Basico',      maxProfiles: 1,  postsPerMonth: 20 },
@@ -45,6 +45,11 @@ export async function POST(req: NextRequest) {
     if (!payerEmail?.includes('@')) {
       return NextResponse.json({ error: 'Email de facturacion invalido' }, { status: 400 })
     }
+
+    // Make stored trial status truthful first, so 'trial' below can only mean
+    // a trial that is still running. Without this an expired trial counts
+    // against the profile limit and can lock the user out of paying.
+    await expireStaleTrials(prisma.linkedInSubscription, session.user.id)
 
     // Check existing active subscriptions
     const activeSubs = await prisma.linkedInSubscription.count({
@@ -119,15 +124,15 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    // Trial: check if user already used trial for this service
-    const previousSub = await prisma.linkedInSubscription.findFirst({
-      where: {
-        userId: session.user.id,
-        status: { in: ['cancelled', 'suspended', 'trial_expired'] },
-      },
-    })
+    // Separate question: has this user ever subscribed before? Any prior row
+    // means the trial is spent — they continue to payment instead.
+    const usedTrial = await hasUsedTrial(
+      prisma.linkedInSubscription,
+      session.user.id,
+      subscription.id
+    )
     // First time → 3-day trial (no payment needed)
-    if (!previousSub) {
+    if (!usedTrial) {
       await prisma.linkedInSubscription.update({
         where: { id: subscription.id },
         data: { status: 'trial', trialEndsAt: getTrialEndDate() },
