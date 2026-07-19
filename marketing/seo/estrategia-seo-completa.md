@@ -377,7 +377,7 @@ Se utilizan datos de búsqueda reales para Argentina (2026), combinando:
       "name": "¿Dónde se publica mi sitio?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Tu sitio se publica en GitHub Pages con una URL pública propia (example.github.io). Todos los planes incluyen certificado SSL. Puedes usar tu propio dominio personalizado en planes pagos."
+        "text": "Tu sitio se publica en nuestros servidores con una URL pública propia y certificado SSL incluido. Con un plan pago podés elegir tu propio subdominio."
       }
     },
     {

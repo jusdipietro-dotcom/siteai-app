@@ -17,6 +17,7 @@ import { colorPresets, typographyOptions } from '@/config/themes'
 import { businessTypes, toneOptions } from '@/data/mockBusinessTypes'
 import { mockTemplates } from '@/data/mockTemplates'
 import { generateId, slugify, cn } from '@/lib/utils'
+import { SITES_DOMAIN } from '@/lib/site-domain'
 import type { Project, SectionConfig, SectionType, ColorTheme } from '@/types'
 
 // ─── Step metadata ────────────────────────────────────────────────────────────
@@ -1334,7 +1335,7 @@ function Step10({ data, setField }: { data: any; setField: any }) {
               {data.seoTitle || `${data.name} — ${data.city || 'Buenos Aires'}`}
             </p>
             <p className="text-xs text-green-700 mt-0.5">
-              {slugify(data.name || 'mi-negocio')}.siteai.app
+              {SITES_DOMAIN}/{slugify(data.name || 'mi-negocio')}
             </p>
             <p className="text-xs text-surface-600 mt-1 line-clamp-2">
               {data.seoDescription || data.description || 'Sin descripción configurada.'}

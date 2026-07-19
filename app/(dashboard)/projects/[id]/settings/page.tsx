@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { useProjectStore } from '@/store/useProjectStore'
+import { publishedSiteUrl, SITES_DOMAIN } from '@/lib/site-domain'
 import { cn } from '@/lib/utils'
 
 // ─── Image upload helper ──────────────────────────────────────────────────────
@@ -107,7 +108,7 @@ function ImageUploadField({
 
 // ─── SEO Preview ──────────────────────────────────────────────────────────────
 
-function SeoPreview({ title, description, slug }: { title: string; description: string; slug: string }) {
+function SeoPreview({ title, description, url }: { title: string; description: string; url: string }) {
   return (
     <div className="bg-white border border-surface-200 rounded-xl p-4 space-y-1">
       <p className="text-xs text-surface-400 mb-2 font-medium">Vista previa en Google</p>
@@ -115,7 +116,7 @@ function SeoPreview({ title, description, slug }: { title: string; description: 
         {title || 'Título del sitio'}
       </p>
       <p className="text-[#006621] text-xs truncate">
-        https://siteai.app/{slug || 'mi-negocio'} ›
+        {url} ›
       </p>
       <p className="text-[#545454] text-sm line-clamp-2">
         {description || 'Descripción de tu negocio que aparecerá en los resultados de búsqueda.'}
@@ -283,11 +284,14 @@ export default function SettingsPage() {
                   placeholder="Mi Negocio"
                 />
               </div>
+              {/* This is the path slug, not the subdomain — it used to be
+                  labelled "Subdominio", which collided with the real subdomain
+                  field on the publish screen. */}
               <div className="space-y-1.5">
-                <Label>Subdominio</Label>
+                <Label>Dirección del sitio</Label>
                 <div className="flex items-center">
                   <span className="px-3 h-10 flex items-center bg-surface-50 border border-r-0 border-surface-200 rounded-l-xl text-sm text-surface-500">
-                    siteai.app/
+                    {SITES_DOMAIN}/
                   </span>
                   <Input
                     value={slug}
@@ -296,7 +300,10 @@ export default function SettingsPage() {
                     placeholder="mi-negocio"
                   />
                 </div>
-                <p className="text-xs text-surface-400">Solo letras minúsculas, números y guiones.</p>
+                <p className="text-xs text-surface-400">
+                  Solo letras minúsculas, números y guiones. El subdominio propio se elige en la
+                  pantalla de publicación.
+                </p>
               </div>
             </div>
 
@@ -372,7 +379,14 @@ export default function SettingsPage() {
                 <Switch checked={sitemapEnabled} onCheckedChange={setSitemapEnabled} />
               </div>
 
-              <SeoPreview title={seoTitle} description={seoDesc} slug={slug} />
+              <SeoPreview
+                title={seoTitle}
+                description={seoDesc}
+                url={publishedSiteUrl({
+                  slug: slug || 'mi-negocio',
+                  subdomain: project.subdomain ?? null,
+                })}
+              />
             </div>
           </TabsContent>
 

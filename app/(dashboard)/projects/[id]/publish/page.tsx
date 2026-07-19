@@ -272,28 +272,24 @@ export default function PublishPage() {
         <div className="bg-white rounded-2xl border border-surface-100 p-6 space-y-4">
           <h2 className="font-semibold text-surface-900">Listo para publicar</h2>
           <p className="text-sm text-surface-500">
-            Se generará el sitio completo y se publicará en GitHub Pages en menos de 2 minutos.
+            Al publicar, tu sitio queda online en{' '}
+            <span className="font-mono text-brand-600 break-all">{siteUrl}</span>. Después podés
+            seguir editándolo: los cambios se reflejan en el sitio publicado.
           </p>
 
           {publishing && (
-            <div className="space-y-3">
-              {['Generando contenido con IA...', 'Construyendo páginas HTML...', 'Publicando en GitHub Pages...'].map((step, i) => (
-                <motion.div
-                  key={step}
-                  initial={{ opacity: 0, x: -8 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.8 }}
-                  className="flex items-center gap-2 text-sm text-surface-600"
-                >
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
-                    className="w-4 h-4 border-2 border-brand-500 border-t-transparent rounded-full shrink-0"
-                  />
-                  {step}
-                </motion.div>
-              ))}
-            </div>
+            <motion.div
+              initial={{ opacity: 0, x: -8 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="flex items-center gap-2 text-sm text-surface-600"
+            >
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
+                className="w-4 h-4 border-2 border-brand-500 border-t-transparent rounded-full shrink-0"
+              />
+              Publicando tu sitio...
+            </motion.div>
           )}
 
           <Button

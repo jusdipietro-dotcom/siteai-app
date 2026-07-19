@@ -10,7 +10,7 @@ export const mockProjects: Project[] = [
     template: 'legal',
     plan: 'professional',
     thumbnail: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=600&h=400&fit=crop',
-    publishedUrl: 'https://jusdipietro-dotcom.github.io/estudio-juridico-di-pietro/',
+    publishedUrl: '/s/estudio-juridico-di-pietro',
     views: 1284,
     mediaIds: ['media-logo-1', 'media-hero-4', 'media-team-2', 'media-svc-1'],
     coverImageId: 'media-hero-4',

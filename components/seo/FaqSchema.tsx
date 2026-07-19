@@ -10,7 +10,7 @@ export function FaqSchema() {
         name: '¿Necesito saber programar?',
         acceptedAnswer: {
           '@type': 'Answer',
-          text: 'No, solo completás un formulario con la información de tu negocio y nuestra IA genera tu sitio web automáticamente.',
+          text: 'No, solo completás un formulario con la información de tu negocio y armamos tu sitio web automáticamente con plantillas profesionales.',
         },
       },
       {
@@ -26,15 +26,15 @@ export function FaqSchema() {
         name: '¿Dónde se publica?',
         acceptedAnswer: {
           '@type': 'Answer',
-          text: 'En GitHub Pages con URL propia. Tu sitio es completamente tuyo y está disponible en internet.',
+          text: 'En nuestros servidores, con una URL pública propia y certificado SSL incluido. Con un plan pago podés además elegir tu propio subdominio.',
         },
       },
       {
         '@type': 'Question',
-        name: '¿Puedo usar mi dominio?',
+        name: '¿Puedo elegir mi dirección?',
         acceptedAnswer: {
           '@type': 'Answer',
-          text: 'Sí, puedes usar tu dominio personalizado con configuración DNS. Te guiaremos en el proceso.',
+          text: 'Con un plan pago podés elegir tu propio subdominio. Los dominios propios todavía no están disponibles.',
         },
       },
       {
@@ -47,10 +47,10 @@ export function FaqSchema() {
       },
       {
         '@type': 'Question',
-        name: '¿La IA genera el contenido?',
+        name: '¿Quién escribe el contenido?',
         acceptedAnswer: {
           '@type': 'Answer',
-          text: 'Sí, la IA genera textos optimizados para SEO basados en la información que proporcionas de tu negocio.',
+          text: 'Los textos salen de la información que cargás sobre tu negocio y podés editarlos cuando quieras. Las imágenes sí se pueden generar con IA desde el editor.',
         },
       },
       {
@@ -58,7 +58,7 @@ export function FaqSchema() {
         name: '¿Qué pasa si cancelo?',
         acceptedAnswer: {
           '@type': 'Answer',
-          text: 'Tu sitio sigue publicado en el plan free. No pierdes tu sitio, solo pierdes acceso a funcionalidades premium.',
+          text: 'Tu proyecto y todo su contenido quedan guardados en tu cuenta y podés seguir editándolos. El sitio deja de estar online hasta que vuelvas a activar un plan.',
         },
       },
       {
