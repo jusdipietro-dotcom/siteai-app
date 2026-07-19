@@ -462,6 +462,20 @@ model Project {
   plan          String   @default("free")
   hasPaid       Boolean  @default(false)
   preapprovalId String?
+  // Billing lifecycle, deliberately separate from `status` (draft/published)
+  // and `hasPaid` (ever completed a payment). Keeping the three independent is
+  // what lets the dashboard tell "you never paid" from "you unpublished this"
+  // from "we suspended you for non-payment" — collapsing suspension into
+  // hasPaid=false would make a suspended site look like it never paid.
+  // One of: 'active' | 'grace' | 'suspended'.
+  billingStatus   String    @default("active")
+  // Deadline for recovering a failed recurring charge. While this is in the
+  // future the site stays live; once it passes the site is treated as
+  // suspended at read time, whether or not any job has run.
+  graceUntil      DateTime?
+  suspendedAt     DateTime?
+  // 'payment_failed' (grace elapsed) | 'cancelled' (deliberate user action).
+  suspendedReason String?
   template      String?
   thumbnail     String?
   publishedUrl  String?
@@ -474,6 +488,8 @@ model Project {
   updatedAt     DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([billingStatus, graceUntil])
 }
 
 model LexPostSubscription {

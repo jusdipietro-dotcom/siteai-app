@@ -21,8 +21,24 @@ import type { BusinessData } from '@/types'
  * `hasPaid` is required alongside `status`, not implied by it. Defense in
  * depth: if any future code path ever flips `status` without going through the
  * paid publish endpoint, an unpaid site still does not render.
+ *
+ * Billing suspension flows through here too rather than through a second check
+ * at each route — a parallel gate is how one addressing mode ends up serving a
+ * site the other one refuses. It is a function rather than a const because the
+ * grace branch is time-dependent: a project whose `graceUntil` has passed is
+ * excluded at READ time, so an elapsed grace period takes the site down even
+ * though nothing has rewritten the row. There is no scheduler to rely on.
  */
-const PUBLISHED_GATE = { status: 'published', hasPaid: true } as const
+function publishedGate(now: Date = new Date()) {
+  return {
+    status: 'published',
+    hasPaid: true,
+    OR: [
+      { billingStatus: 'active' },
+      { billingStatus: 'grace', graceUntil: { gt: now } },
+    ],
+  }
+}
 
 export function parseJSON<T>(val: unknown, fallback: T): T {
   if (typeof val !== 'string') return fallback
@@ -38,7 +54,7 @@ export async function findPublishedProjectBySlug(
   slug: string
 ): Promise<Project | null> {
   if (!slug) return null
-  return prisma.project.findFirst({ where: { slug, ...PUBLISHED_GATE } })
+  return prisma.project.findFirst({ where: { slug, ...publishedGate() } })
 }
 
 /**
@@ -55,7 +71,7 @@ export async function findPublishedProjectBySubdomain(
   const normalized = normalizeSubdomain(subdomain)
   if (!validateSubdomain(normalized).valid) return null
   return prisma.project.findFirst({
-    where: { subdomain: normalized, ...PUBLISHED_GATE },
+    where: { subdomain: normalized, ...publishedGate() },
   })
 }
 
