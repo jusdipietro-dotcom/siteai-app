@@ -3,6 +3,7 @@ import { createHmac, timingSafeEqual } from 'crypto'
 import { prisma } from '@/lib/prisma'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 import { sendPaymentConfirmationEmail, sendSubscriptionCancelledEmail } from '@/lib/email'
+import { getGraceEndDate, GRACE_PERIOD_MS } from '@/lib/project-billing'
 
 const ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN!
 const MP_WEBHOOK_SECRET = process.env.MP_WEBHOOK_SECRET
@@ -1149,9 +1150,19 @@ export async function POST(req: NextRequest) {
       const [projectId, plan] = parts
 
       if (status === 'authorized' && projectId) {
+        // Authorization also clears any billing hold: a subscription that MP
+        // reports as authorized is paying, whatever we recorded earlier.
         await prisma.project.updateMany({
           where: { id: projectId },
-          data: { hasPaid: true, plan: plan ?? 'essential', preapprovalId },
+          data: {
+            hasPaid: true,
+            plan: plan ?? 'essential',
+            preapprovalId,
+            billingStatus: 'active',
+            graceUntil: null,
+            suspendedAt: null,
+            suspendedReason: null,
+          },
         })
         console.log(`[MP Webhook] Project ${projectId} activated — plan: ${plan}`)
 
@@ -1173,11 +1184,122 @@ export async function POST(req: NextRequest) {
       }
 
       if ((status === 'cancelled' || status === 'paused') && projectId) {
-        await prisma.project.updateMany({
-          where: { id: projectId },
-          data: { hasPaid: false },
+        // Suspend immediately — no grace. Grace exists to absorb a card that
+        // failed by accident; cancelling is deliberate, so there is nothing to
+        // recover from.
+        //
+        // `hasPaid` deliberately stays true. It records that this project ever
+        // completed a payment, which is what lets the dashboard say "your
+        // subscription was cancelled" instead of the flatly wrong "you never
+        // paid". The publish gate is closed by billingStatus, not by lying
+        // about payment history.
+        const { count } = await prisma.project.updateMany({
+          where: { id: projectId, billingStatus: { not: 'suspended' } },
+          data: {
+            billingStatus: 'suspended',
+            suspendedAt: new Date(),
+            suspendedReason: 'cancelled',
+            graceUntil: null,
+          },
         })
-        console.log(`[MP Webhook] Project ${projectId} deactivated (${status})`)
+        if (count === 0) {
+          console.log(`[MP Webhook] Project ${projectId} already suspended — skipping (${status})`)
+        } else {
+          console.log(`[MP Webhook] Project ${projectId} suspended (${status})`)
+        }
+      }
+    }
+
+    // ─── Recurring charge results (site generator) ───
+    //
+    // 'preapproval' only reports the SUBSCRIPTION's state. The month-to-month
+    // charges arrive as 'payment' / 'subscription_authorized_payment', and
+    // were previously dropped on the floor — so a subscription whose card
+    // started failing stayed 'active' forever and the site was never suspended.
+    //
+    // Scope is the Project model on purpose. Resolution is by preapprovalId
+    // (and external_reference as a fallback); a payment belonging to any of the
+    // other products simply matches no Project and falls through untouched.
+    if (
+      (body.type === 'payment' || body.type === 'subscription_authorized_payment') &&
+      body.data?.id
+    ) {
+      const isRecurring = body.type === 'subscription_authorized_payment'
+      const detailUrl = isRecurring
+        ? `https://api.mercadopago.com/authorized_payments/${body.data.id}`
+        : `https://api.mercadopago.com/v1/payments/${body.data.id}`
+
+      // Re-fetch from the API instead of trusting the notification body, the
+      // same as the preapproval branch: the notification is only a nudge.
+      const payRes = await fetch(detailUrl, {
+        headers: { Authorization: `Bearer ${ACCESS_TOKEN}` },
+        cache: 'no-store',
+      })
+      if (!payRes.ok) {
+        console.warn(`[MP Webhook] Could not fetch ${body.type} ${body.data.id}: ${payRes.status}`)
+        return NextResponse.json({ received: true })
+      }
+      const detail = await payRes.json()
+
+      // An authorized_payment wraps the actual charge; the charge's own status
+      // is the one that says whether money moved.
+      const payStatus: string | undefined = isRecurring
+        ? (detail.payment?.status ?? detail.status)
+        : detail.status
+      const preapprovalRef: string | undefined = isRecurring
+        ? detail.preapproval_id
+        : (detail.metadata?.preapproval_id ?? undefined)
+      const externalRef: string = detail.external_reference ?? ''
+
+      console.log(
+        `[MP Webhook] ${body.type}=${body.data.id} | status=${payStatus} | preapproval=${preapprovalRef} | ref=${externalRef}`
+      )
+
+      const project = preapprovalRef
+        ? await prisma.project.findFirst({ where: { preapprovalId: preapprovalRef } })
+        : externalRef
+          ? await prisma.project.findUnique({ where: { id: externalRef.split(':')[0] } })
+          : null
+
+      if (!project) {
+        console.log('[MP Webhook] No project matches this payment — ignoring')
+        return NextResponse.json({ received: true })
+      }
+
+      const FAILED = ['rejected', 'cancelled', 'charged_back']
+
+      if (payStatus === 'approved') {
+        // Recovery. Restores billing state only — no content is touched, so a
+        // site that comes back is the same site it was before.
+        const { count } = await prisma.project.updateMany({
+          where: { id: project.id, billingStatus: { in: ['grace', 'suspended'] } },
+          data: {
+            billingStatus: 'active',
+            graceUntil: null,
+            suspendedAt: null,
+            suspendedReason: null,
+          },
+        })
+        if (count > 0) {
+          console.log(`[MP Webhook] Project ${project.id} recovered — payment approved`)
+        }
+      } else if (payStatus && FAILED.includes(payStatus)) {
+        // Enter grace: the site STAYS LIVE until graceUntil. Guarding on
+        // 'active' is what makes MP's retries idempotent — a second failed
+        // charge must not slide the deadline forward and grant a fresh 7 days.
+        const { count } = await prisma.project.updateMany({
+          where: { id: project.id, billingStatus: 'active' },
+          data: { billingStatus: 'grace', graceUntil: getGraceEndDate() },
+        })
+        if (count === 0) {
+          console.log(
+            `[MP Webhook] Project ${project.id} already in grace/suspended — deadline unchanged`
+          )
+        } else {
+          console.log(
+            `[MP Webhook] Project ${project.id} → grace (payment ${payStatus}), ${GRACE_PERIOD_MS / 86400000}d to recover`
+          )
+        }
       }
     }
 
