@@ -14,6 +14,22 @@ COPY . .
 # Genera el Prisma client para Linux (rhel-openssl-3.0.x ya está en binaryTargets)
 RUN npx prisma generate
 
+# Las NEXT_PUBLIC_* se inlinean en el bundle DURANTE el build: definirlas como
+# variables de entorno del contenedor en runtime NO tiene ningún efecto. Por eso
+# entran como build args. Cambiar cualquiera de estas exige rebuild de la imagen.
+# Los defaults replican EXACTAMENTE los fallbacks del código (lib/site-domain.ts,
+# lib/email.ts). No dejarlos vacíos: NEXT_PUBLIC_APP_URL se lee con `??`, así que
+# un string vacío ganaría sobre el fallback del código y rompería las back_urls
+# de MercadoPago.
+ARG NEXT_PUBLIC_APP_URL=https://automaticialab.com
+ARG NEXT_PUBLIC_SITES_DOMAIN=sites.automaticialab.com
+ARG NEXT_PUBLIC_SITES_SUBDOMAIN_BASE=sitios.automaticialab.com
+ARG NEXT_PUBLIC_FLASK_URL=https://facturacion.automaticialab.com
+ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
+ENV NEXT_PUBLIC_SITES_DOMAIN=$NEXT_PUBLIC_SITES_DOMAIN
+ENV NEXT_PUBLIC_SITES_SUBDOMAIN_BASE=$NEXT_PUBLIC_SITES_SUBDOMAIN_BASE
+ENV NEXT_PUBLIC_FLASK_URL=$NEXT_PUBLIC_FLASK_URL
+
 # Build de Next.js (no corre migraciones — se hace en runtime).
 # BUILD_STANDALONE activa `output: 'standalone'` en next.config.js, que emite
 # .next/standalone/server.js con solo las dependencias realmente usadas.
