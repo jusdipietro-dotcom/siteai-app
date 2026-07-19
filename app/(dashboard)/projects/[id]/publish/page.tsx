@@ -11,6 +11,8 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { SubdomainPicker } from '@/components/dashboard/SubdomainPicker'
+import { publishedSiteUrl } from '@/lib/site-domain'
 import { useProjectStore } from '@/store/useProjectStore'
 
 const CHECKLIST = [
@@ -25,7 +27,7 @@ export default function PublishPage() {
   const params = useParams()
   const router = useRouter()
   const id = params.id as string
-  const { projects, publishProject } = useProjectStore()
+  const { projects, publishProject, setSubdomain } = useProjectStore()
   const project = projects.find((p) => p.id === id)
 
   const [publishing, setPublishing] = useState(false)
@@ -130,9 +132,14 @@ export default function PublishPage() {
     )
   }
 
-  const siteUrl = `https://sites.automaticialab.com/${project.slug}`
+  // Single source of truth for the public URL. It flips between the path host
+  // and the subdomain host on its own, so nothing here hardcodes a domain.
+  const siteUrl = publishedSiteUrl({ slug: project.slug, subdomain: project.subdomain ?? null })
   const checks = CHECKLIST.map((item) => ({ ...item, passed: item.check(project) }))
   const allPassed = checks.every((c) => c.passed)
+  // The server freezes the subdomain of a published project (409 on change).
+  // Reflect that in the UI so nobody discovers the rule by hitting the error.
+  const subdomainLocked = published && !!project.subdomain
 
   async function handlePublish() {
     setPublishing(true)
@@ -217,11 +224,34 @@ export default function PublishPage() {
           )}
         </div>
 
-        {/* Custom domain (mock) */}
+        {/* Dirección del sitio */}
+        <div className="bg-white rounded-2xl border border-surface-100 p-6 space-y-4">
+          <div>
+            <h2 className="font-semibold text-surface-900">Dirección del sitio</h2>
+            <p className="text-xs text-surface-400 mt-0.5">
+              Con tu plan podés elegir un subdominio propio. Si no elegís ninguno, el sitio queda
+              en la dirección por ruta.
+            </p>
+          </div>
+          <SubdomainPicker
+            slug={project.slug}
+            current={project.subdomain ?? null}
+            locked={subdomainLocked}
+            onSave={(subdomain) => setSubdomain(id, subdomain)}
+          />
+          {!subdomainLocked && (
+            <p className="text-xs text-surface-400">
+              Elegilo antes de publicar: una vez publicado el sitio, el subdominio queda fijo hasta
+              que lo despubliques.
+            </p>
+          )}
+        </div>
+
+        {/* Custom domain — not implemented yet, deliberately disabled */}
         <div className="bg-white rounded-2xl border border-surface-100 p-6 space-y-4">
           <div>
             <h2 className="font-semibold text-surface-900">Dominio personalizado</h2>
-            <p className="text-xs text-surface-400 mt-0.5">Requiere plan Professional. Por ahora se usará el subdominio gratuito.</p>
+            <p className="text-xs text-surface-400 mt-0.5">Todavía no está disponible. Por ahora tu sitio usa la dirección de arriba.</p>
           </div>
           <div className="space-y-1.5">
             <Label>Tu dominio</Label>
@@ -235,10 +265,6 @@ export default function PublishPage() {
               />
               <Button variant="outline" disabled>Conectar</Button>
             </div>
-          </div>
-          <div className="bg-surface-50 rounded-xl p-3 text-sm text-surface-600">
-            <span className="font-medium">Subdominio gratuito:</span>{' '}
-            <span className="font-mono text-brand-600">{project.slug}.siteai.app</span>
           </div>
         </div>
 

@@ -8,6 +8,7 @@ import {
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { formatRelativeDate } from '@/lib/utils'
+import { publishedSiteUrl } from '@/lib/site-domain'
 import type { Project, ProjectStatus } from '@/types'
 
 const statusConfig: Record<ProjectStatus, { label: string; variant: 'draft' | 'generating' | 'ready' | 'published' | 'error'; dot: string }> = {
@@ -26,6 +27,11 @@ interface ProjectCardProps {
 
 export function ProjectCard({ project, onDelete, onDuplicate }: ProjectCardProps) {
   const status = statusConfig[project.status]
+  // `project.publishedUrl` is a relative path (`/s/{slug}`), so opening it
+  // directly landed on the dashboard host instead of the published site.
+  // publishedSiteUrl() builds the absolute URL for whichever addressing mode
+  // this project uses — path or subdomain.
+  const siteUrl = publishedSiteUrl({ slug: project.slug, subdomain: project.subdomain ?? null })
 
   return (
     <div className="group bg-white border border-surface-100 rounded-2xl overflow-hidden shadow-soft hover:shadow-card hover:-translate-y-0.5 transition-all duration-200">
@@ -95,7 +101,7 @@ export function ProjectCard({ project, onDelete, onDuplicate }: ProjectCardProps
                 <Copy className="w-4 h-4" /> Duplicar
               </DropdownMenuItem>
               {project.publishedUrl && (
-                <DropdownMenuItem onClick={() => window.open(project.publishedUrl, '_blank')}>
+                <DropdownMenuItem onClick={() => window.open(siteUrl, '_blank')}>
                   <ExternalLink className="w-4 h-4" /> Ver sitio
                 </DropdownMenuItem>
               )}

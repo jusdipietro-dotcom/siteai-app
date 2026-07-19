@@ -13,6 +13,7 @@ interface ProjectStore {
   deleteProject: (id: string) => Promise<void>
   duplicateProject: (id: string) => Promise<Project>
   setProjectStatus: (id: string, status: Exclude<ProjectStatus, 'published'>) => void
+  setSubdomain: (id: string, subdomain: string | null) => Promise<Project>
   publishProject: (id: string) => Promise<Project>
   unpublishProject: (id: string) => Promise<Project>
   updateSections: (id: string, sections: SectionConfig[]) => void
@@ -140,6 +141,33 @@ export const useProjectStore = create<ProjectStore>()((set, get) => ({
       ),
     }))
     syncUpdate(id, { status })
+  },
+
+  // Deliberately NOT routed through updateProject(): syncUpdate() is
+  // fire-and-forget and swallows the response, so a 409 (subdomain taken, or
+  // frozen because the project is published) would be logged to the console and
+  // the UI would keep showing a subdomain the server refused to store.
+  // This awaits the write and rethrows with the HTTP status attached so callers
+  // can tell "someone claimed it first" from "the request failed".
+  setSubdomain: async (id, subdomain) => {
+    const res = await fetch(`/api/projects/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ subdomain }),
+    })
+    const body = await res.json().catch(() => ({}))
+    if (!res.ok) {
+      const error = new Error(
+        body?.error || 'No se pudo guardar el subdominio'
+      ) as Error & { status?: number }
+      error.status = res.status
+      throw error
+    }
+    const saved: Project = body
+    set((state) => ({
+      projects: state.projects.map((p) => (p.id === id ? saved : p)),
+    }))
+    return saved
   },
 
   // Publishing goes through a dedicated endpoint that verifies ownership AND

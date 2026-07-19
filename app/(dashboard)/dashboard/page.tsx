@@ -17,6 +17,7 @@ import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
 import { useProjectStore } from '@/store/useProjectStore'
 import { useUIStore } from '@/store/useUIStore'
 import { formatRelativeDate, formatNumber } from '@/lib/utils'
+import { publishedSiteUrl } from '@/lib/site-domain'
 import type { ProjectStatus } from '@/types'
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
@@ -285,6 +286,10 @@ function ProjectCard({ project, onEdit, onPreview, onDuplicate, onDelete, onPubl
   onSettings: () => void
 }) {
   const colorHex = project.businessData.branding.primaryColor
+  // `project.publishedUrl` is a relative path (`/s/{slug}`); window.open() on it
+  // opened the dashboard host, not the site. publishedSiteUrl() resolves the
+  // absolute URL for both addressing modes (path and subdomain).
+  const siteUrl = publishedSiteUrl({ slug: project.slug, subdomain: project.subdomain ?? null })
 
   return (
     <div className="group bg-white rounded-2xl border border-surface-100 overflow-hidden hover:shadow-card hover:-translate-y-0.5 transition-all duration-200">
@@ -343,7 +348,7 @@ function ProjectCard({ project, onEdit, onPreview, onDuplicate, onDelete, onPubl
               <DropdownMenuSeparator />
               <DropdownMenuItem icon={<Copy className="h-3.5 w-3.5" />} onClick={onDuplicate}>Duplicar</DropdownMenuItem>
               {project.publishedUrl && (
-                <DropdownMenuItem icon={<ExternalLink className="h-3.5 w-3.5" />} onClick={() => window.open(project.publishedUrl)}>
+                <DropdownMenuItem icon={<ExternalLink className="h-3.5 w-3.5" />} onClick={() => window.open(siteUrl, '_blank')}>
                   Ver sitio
                 </DropdownMenuItem>
               )}
@@ -367,7 +372,7 @@ function ProjectCard({ project, onEdit, onPreview, onDuplicate, onDelete, onPubl
                 Publicar
               </Button>
             ) : project.status === 'published' ? (
-              <Button size="xs" variant="outline" onClick={() => window.open(project.publishedUrl)} rightIcon={<ArrowUpRight className="h-3 w-3" />}>
+              <Button size="xs" variant="outline" onClick={() => window.open(siteUrl, '_blank')} rightIcon={<ArrowUpRight className="h-3 w-3" />}>
                 Ver sitio
               </Button>
             ) : (
