@@ -358,6 +358,8 @@ function ProjectCard({ project, onEdit, onPreview, onDuplicate, onDelete, onPubl
           </DropdownMenu>
         </div>
 
+        <BillingNotice project={project} />
+
         {/* Meta */}
         <div className="flex items-center gap-3 mt-3 pt-3 border-t border-surface-50">
           <span className="flex items-center gap-1 text-xs text-surface-400">
@@ -383,6 +385,47 @@ function ProjectCard({ project, onEdit, onPreview, onDuplicate, onDelete, onPubl
           </div>
         </div>
       </div>
+    </div>
+  )
+}
+
+// ── Billing notice ────────────────────────────────────────────────────────────
+/**
+ * Tells the owner why their site is down, or that it is about to go down.
+ *
+ * Without this the suspension is silent: the site stops resolving and the
+ * dashboard still shows a cheerful "published" badge. `billingStatus` arrives
+ * already resolved for expiry from deserializeProject(), so an elapsed grace
+ * period shows as suspended here without any job having run.
+ */
+function BillingNotice({ project }: { project: any }) {
+  const billing = project.billingStatus ?? 'active'
+  if (billing === 'active') return null
+
+  if (billing === 'grace') {
+    const days = project.graceUntil
+      ? Math.max(0, Math.ceil((new Date(project.graceUntil).getTime() - Date.now()) / 86400000))
+      : 0
+    return (
+      <div className="mt-3 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2">
+        <p className="text-xs font-semibold text-amber-900">Problema con el pago</p>
+        <p className="text-xs text-amber-700 mt-0.5">
+          Tu sitio sigue online {days > 0 ? `${days} día${days === 1 ? '' : 's'} más` : 'por poco tiempo'}.
+          Actualizá tu medio de pago para no perderlo.
+        </p>
+      </div>
+    )
+  }
+
+  const cancelled = project.suspendedReason === 'cancelled'
+  return (
+    <div className="mt-3 rounded-lg bg-red-50 border border-red-200 px-3 py-2">
+      <p className="text-xs font-semibold text-red-900">
+        {cancelled ? 'Suscripción cancelada' : 'Sitio suspendido por falta de pago'}
+      </p>
+      <p className="text-xs text-red-700 mt-0.5">
+        Tu sitio no está online. Tu contenido está intacto: se reactiva apenas se registre el pago.
+      </p>
     </div>
   )
 }

@@ -1,5 +1,6 @@
 import type { Project, ProjectStatus } from '@/types'
 import { normalizeSubdomain, validateSubdomain } from '@/lib/subdomain'
+import { effectiveBillingStatus } from '@/lib/project-billing'
 
 /**
  * Fields a client request is allowed to write on a Project.
@@ -168,7 +169,12 @@ export function serializeProject(p: Partial<Project> & { userId?: string }) {
   }
 }
 
-// Deserializes a DB row back into a Project object
+// Deserializes a DB row back into a Project object.
+//
+// Billing state is resolved through effectiveBillingStatus() here rather than
+// copied verbatim, so every consumer of this function sees an elapsed grace
+// period as 'suspended' even though the row still says 'grace'. That is the
+// read-time enforcement: nothing depends on a job having run.
 export function deserializeProject(row: any): Project {
   return {
     id: row.id,
@@ -178,6 +184,9 @@ export function deserializeProject(row: any): Project {
     status: row.status,
     plan: row.plan,
     hasPaid: row.hasPaid,
+    billingStatus: effectiveBillingStatus(row),
+    graceUntil: row.graceUntil ? new Date(row.graceUntil).toISOString() : null,
+    suspendedReason: row.suspendedReason ?? null,
     template: row.template ?? '',
     thumbnail: row.thumbnail ?? undefined,
     publishedUrl: row.publishedUrl ?? undefined,

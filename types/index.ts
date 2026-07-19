@@ -116,6 +116,18 @@ export interface Project {
   status: ProjectStatus
   plan: Plan
   hasPaid?: boolean
+  /**
+   * Billing lifecycle. Server-owned and read-only for clients — it is
+   * deliberately absent from CLIENT_WRITABLE_FIELDS, since a client that could
+   * write 'active' here could un-suspend its own site.
+   *
+   * Already resolved for expiry on read: an elapsed grace period arrives as
+   * 'suspended', never as a stale 'grace'.
+   */
+  billingStatus?: 'active' | 'grace' | 'suspended'
+  /** ISO deadline to recover a failed payment while the site stays live. */
+  graceUntil?: string | null
+  suspendedReason?: 'payment_failed' | 'cancelled' | null
   template: string
   sections: SectionConfig[]
   businessData: BusinessData
