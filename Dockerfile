@@ -14,8 +14,11 @@ COPY . .
 # Genera el Prisma client para Linux (rhel-openssl-3.0.x ya está en binaryTargets)
 RUN npx prisma generate
 
-# Build de Next.js (no corre migraciones — se hace en runtime)
+# Build de Next.js (no corre migraciones — se hace en runtime).
+# BUILD_STANDALONE activa `output: 'standalone'` en next.config.js, que emite
+# .next/standalone/server.js con solo las dependencias realmente usadas.
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV BUILD_STANDALONE=true
 RUN npx next build
 
 # ─── Stage 3: Runtime ─────────────────────────────────────────────────────────
@@ -31,21 +34,25 @@ RUN apk add --no-cache openssl
 RUN addgroup --system --gid 1001 nodejs && \
     adduser  --system --uid 1001 nextjs
 
-# Solo dependencias de producción
-COPY package.json package-lock.json ./
-COPY prisma ./prisma
-RUN npm ci --omit=dev && npm install sharp
+# Bundle standalone: server.js + node_modules ya tree-shakeados por Next.
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+# Assets que Next NO incluye en el standalone y hay que copiar a mano.
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 
-# Copiar el Prisma client compilado para Linux desde el builder
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+# Prisma: el schema + las migraciones son necesarios para `migrate deploy`,
+# y el CLI no viaja en el bundle standalone (Next solo traza el runtime).
+COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/prisma ./node_modules/prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
 
-# Copiar el build de Next.js y config
-COPY --from=builder /app/next.config.js ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next
-COPY --from=builder /app/prisma ./prisma
+# sharp: optimización de imágenes de Next en producción. Se copia desde el
+# builder (misma base alpine) en vez de `npm install` — un install dentro de
+# /app borraría como "extraneous" los node_modules trazados del standalone.
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/sharp ./node_modules/sharp
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@img ./node_modules/@img
 
-# Copiar archivos estáticos públicos (logo, imágenes, etc.)
-COPY --from=builder /app/public ./public
 RUN mkdir -p public/uploads && chown -R nextjs:nodejs public/uploads
 
 USER nextjs
@@ -53,5 +60,14 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-# Migra la DB y arranca el server
-CMD ["sh", "-c", "node_modules/.bin/prisma db push --accept-data-loss; node_modules/.bin/next start -p 3000 -H 0.0.0.0"]
+# Aplica SOLO las migraciones versionadas y arranca el server standalone.
+#
+# `migrate deploy` (no `db push --accept-data-loss`): nunca dropea columnas ni
+# tablas, aplica el historial de prisma/migrations en orden y falla si detecta
+# drift. El `&&` es deliberado — si la migración falla el contenedor NO levanta,
+# en vez de servir tráfico contra un schema inconsistente.
+#
+# ⚠️ Una DB que ya tiene registrados los nombres VIEJOS de las migraciones
+# renombradas en 46ea8b5 debe reconciliarse ANTES del primer deploy con este
+# CMD. Ver docs/deploy/prisma-migration-reconciliation.md
+CMD ["sh", "-c", "node_modules/prisma/build/index.js migrate deploy && node server.js"]
