@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getToken } from 'next-auth/jwt'
+import { extractSiteSubdomain, isSitesPathHost } from '@/lib/site-domain'
 
 // Rutas que requieren autenticación
 const PROTECTED_PATHS = [
@@ -26,19 +27,47 @@ const PROTECTED_PATHS = [
   '/admin',
 ]
 
+const STATIC_FILE_RE = /\.(png|jpg|jpeg|gif|svg|ico|webp|woff|woff2|ttf|otf|css|js|json|txt|pdf)$/
+
+/** Paths the site-host rewrites must leave untouched. */
+function isFrameworkPath(pathname: string): boolean {
+  return (
+    pathname.startsWith('/_next') ||
+    pathname.startsWith('/api') ||
+    pathname === '/favicon.ico' ||
+    pathname === '/robots.txt'
+  )
+}
+
 export async function middleware(req: NextRequest) {
   const hostname = req.headers.get('host') ?? ''
   const { pathname } = req.nextUrl
 
-  // ── Subdomain routing: sites.automaticialab.com/{slug} → /s/{slug} ─────────
-  if (hostname === 'sites.automaticialab.com' || hostname.startsWith('sites.automaticialab')) {
+  // ── Site routing by subdomain: {sub}.sitios.automaticialab.com → /sub/{sub} ─
+  //
+  // Host parsing only. The project lookup happens in the route this rewrites
+  // to, because middleware runs on the Edge runtime and Prisma does not work
+  // there. `extractSiteSubdomain` already normalizes and validates the label,
+  // so a malformed or reserved host falls through to the app untouched.
+  //
+  // Checked before the path-host branch: the bases differ (sitios vs sites) so
+  // they cannot both match, but order makes the precedence explicit.
+  const siteSubdomain = extractSiteSubdomain(hostname)
+  if (siteSubdomain) {
+    if (isFrameworkPath(pathname) || (pathname !== '/' && STATIC_FILE_RE.test(pathname))) {
+      return NextResponse.next()
+    }
+
+    // "/" → /sub/{sub}; "/sitemap.xml" → /sub/{sub}/sitemap.xml
+    const url = req.nextUrl.clone()
+    url.pathname = pathname === '/' ? `/sub/${siteSubdomain}` : `/sub/${siteSubdomain}${pathname}`
+    return NextResponse.rewrite(url)
+  }
+
+  // ── Site routing by path: sites.automaticialab.com/{slug} → /s/{slug} ──────
+  if (isSitesPathHost(hostname)) {
     // Dejar pasar internals de Next.js y API routes sin modificar
-    if (
-      pathname.startsWith('/_next') ||
-      pathname.startsWith('/api') ||
-      pathname === '/favicon.ico' ||
-      pathname === '/'
-    ) {
+    if (isFrameworkPath(pathname) || pathname === '/') {
       return NextResponse.next()
     }
 
@@ -48,7 +77,7 @@ export async function middleware(req: NextRequest) {
     const slug = segments[0]
     if (slug) {
       // Archivos estáticos en la raíz (sin slug) pasan sin rewrite
-      if (segments.length === 1 && /\.(png|jpg|jpeg|gif|svg|ico|webp|woff|woff2|ttf|otf|css|js|json|txt|pdf)$/.test(slug)) {
+      if (segments.length === 1 && STATIC_FILE_RE.test(slug)) {
         return NextResponse.next()
       }
       const url = req.nextUrl.clone()
