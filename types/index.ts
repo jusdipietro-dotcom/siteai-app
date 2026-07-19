@@ -111,6 +111,8 @@ export interface Project {
   id: string
   name: string
   slug: string
+  /** Custom subdomain, always lowercase. null clears it. */
+  subdomain?: string | null
   status: ProjectStatus
   plan: Plan
   hasPaid?: boolean

@@ -453,6 +453,11 @@ model Project {
   userId        String
   name          String
   slug          String
+  // Custom subdomain for {subdomain}.sitios.automaticialab.com.
+  // Always stored lowercase (see lib/subdomain.ts): the unique index is
+  // case-sensitive, so normalization is what stops "Foo" and "foo" coexisting.
+  // Nullable and plan-agnostic on purpose — free projects keep the path URL.
+  subdomain     String?  @unique
   status        String   @default("draft")
   plan          String   @default("free")
   hasPaid       Boolean  @default(false)
