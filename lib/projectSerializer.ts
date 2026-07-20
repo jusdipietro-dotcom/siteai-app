@@ -1,6 +1,7 @@
 import type { Project, ProjectStatus } from '@/types'
 import { normalizeSubdomain, validateSubdomain } from '@/lib/subdomain'
 import { effectiveBillingStatus } from '@/lib/project-billing'
+import { parseJSON } from '@/lib/published-site'
 
 /**
  * Fields a client request is allowed to write on a Project.
@@ -175,6 +176,12 @@ export function serializeProject(p: Partial<Project> & { userId?: string }) {
 // copied verbatim, so every consumer of this function sees an elapsed grace
 // period as 'suspended' even though the row still says 'grace'. That is the
 // read-time enforcement: nothing depends on a job having run.
+//
+// The JSON columns go through parseJSON() — the same tolerant parser the public
+// renderer uses — instead of a bare JSON.parse(). GET /api/projects maps this
+// over every row the user owns, so a single corrupt row used to 500 the entire
+// project list and lock the user out of the dashboard. A corrupt column now
+// degrades to an empty value and is logged, which is recoverable in the editor.
 export function deserializeProject(row: any): Project {
   return {
     id: row.id,
@@ -192,9 +199,9 @@ export function deserializeProject(row: any): Project {
     publishedUrl: row.publishedUrl ?? undefined,
     views: row.views ?? 0,
     coverImageId: row.coverImageId ?? undefined,
-    businessData: JSON.parse(row.businessData),
-    sections: JSON.parse(row.sections),
-    mediaIds: JSON.parse(row.mediaIds),
+    businessData: parseJSON(row.businessData, {} as Project['businessData'], `project ${row.id}.businessData`),
+    sections: parseJSON(row.sections, [] as Project['sections'], `project ${row.id}.sections`),
+    mediaIds: parseJSON(row.mediaIds, [] as Project['mediaIds'], `project ${row.id}.mediaIds`),
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   }

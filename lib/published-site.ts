@@ -40,11 +40,28 @@ function publishedGate(now: Date = new Date()) {
   }
 }
 
-export function parseJSON<T>(val: unknown, fallback: T): T {
-  if (typeof val !== 'string') return fallback
+/**
+ * Parses a JSON column, falling back instead of throwing.
+ *
+ * A single unparseable row must never take down a whole list: callers map this
+ * over every project a user owns, so a throw here would turn one corrupt row
+ * into a 500 for the entire response. `context` is optional and only used to
+ * log which column of which row fell back, so corruption is visible in the
+ * logs rather than silently papered over.
+ */
+export function parseJSON<T>(val: unknown, fallback: T, context?: string): T {
+  if (typeof val !== 'string') {
+    if (context && val != null) {
+      console.warn(`[parseJSON] ${context}: expected string, got ${typeof val} — using fallback`)
+    }
+    return fallback
+  }
   try {
     return JSON.parse(val) as T
-  } catch {
+  } catch (err) {
+    if (context) {
+      console.error(`[parseJSON] ${context}: corrupt JSON — using fallback`, err)
+    }
     return fallback
   }
 }
