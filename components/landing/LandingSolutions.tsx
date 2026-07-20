@@ -18,6 +18,7 @@ import {
   LucideIcon,
   ArrowRight,
 } from 'lucide-react'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { waLink } from '@/lib/whatsapp'
 
@@ -32,6 +33,16 @@ type Solution = {
   gradient: string
   bgGlow: string
   waMsg: string
+  /**
+   * Optional self-service alternative. Only "sitios web" has one today: the
+   * same need can be covered either by us (WhatsApp) or by the customer using
+   * the site generator. When present, the card offers both paths.
+   */
+  selfServe?: {
+    href: string
+    label: string
+    note: string
+  }
 }
 
 const solutions: Solution[] = [
@@ -51,6 +62,11 @@ const solutions: Solution[] = [
     gradient: 'from-brand-500 to-cyan-500',
     bgGlow: 'bg-brand-500/10',
     waMsg: 'Hola! Me interesa el desarrollo de un sitio web profesional. Quiero recibir mas informacion.',
+    selfServe: {
+      href: '/servicios/creador-de-sitios',
+      label: 'Armarlo yo mismo con IA',
+      note: 'Gratis hasta publicarlo',
+    },
   },
   {
     id: 'jurisprudencia',
@@ -335,13 +351,39 @@ export function LandingSolutions() {
                   ))}
                 </ul>
 
-                <a href={waLink(s.waMsg)} target="_blank" rel="noopener noreferrer" className="mt-auto">
-                  <Button variant="outline" className="w-full gap-1.5 text-sm">
-                    <MessageCircle className="w-4 h-4" />
-                    Consultar por WhatsApp
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </Button>
-                </a>
+                <div className="mt-auto">
+                  {s.selfServe && (
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-surface-400 mb-2">
+                      Dos formas de tenerlo
+                    </p>
+                  )}
+
+                  {s.selfServe && (
+                    <p className="text-xs text-surface-500 mb-1.5">Que lo hagamos nosotros:</p>
+                  )}
+                  <a href={waLink(s.waMsg)} target="_blank" rel="noopener noreferrer">
+                    <Button variant="outline" className="w-full gap-1.5 text-sm">
+                      <MessageCircle className="w-4 h-4" />
+                      Consultar por WhatsApp
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </Button>
+                  </a>
+
+                  {s.selfServe && (
+                    <>
+                      <p className="text-xs text-surface-500 mt-3 mb-1.5">O hacerlo vos mismo:</p>
+                      <Link href={s.selfServe.href}>
+                        <Button variant="gradient" className="w-full gap-1.5 text-sm">
+                          {s.selfServe.label}
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </Button>
+                      </Link>
+                      <p className="text-[11px] text-surface-400 text-center mt-1.5">
+                        {s.selfServe.note}
+                      </p>
+                    </>
+                  )}
+                </div>
               </motion.div>
             )
           })}
