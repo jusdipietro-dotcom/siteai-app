@@ -48,6 +48,32 @@ function verifyMPSignature(req: NextRequest, body: Record<string, unknown>): boo
   return timingSafeEqual(hmacBuf, v1Buf)
 }
 
+/**
+ * Answer for a MercadoPago resource we could not read.
+ *
+ * MP retries a notification only while we keep answering non-2xx, so the status
+ * we return here decides whether a lost event is recovered or lost for good.
+ *
+ * 404 is the single exception: it means the resource does not exist under our
+ * credentials — another account's notification, or one already deleted. No
+ * number of retries will make it readable, so we acknowledge it and move on.
+ * That keeps "this notification is not for us" from retrying forever, while
+ * everything else ("we could not reach MP": 401, 429, 5xx, timeouts) retries.
+ */
+function mpReadFailure(kind: string, id: unknown, httpStatus: number) {
+  if (httpStatus === 404) {
+    console.warn(`[MP Webhook] ${kind} ${id} not found (404) — not ours, acknowledging`)
+    return NextResponse.json({ received: true })
+  }
+  console.error(
+    `[MP Webhook] Could not fetch ${kind} ${id}: MP returned ${httpStatus} — answering 502 so MP retries`
+  )
+  return NextResponse.json(
+    { error: 'Upstream MercadoPago read failed', kind, status: httpStatus },
+    { status: 502 }
+  )
+}
+
 export async function POST(req: NextRequest) {
   try {
     // Rate limit: 30 webhooks per minute per IP (MP sends retries)
@@ -71,6 +97,17 @@ export async function POST(req: NextRequest) {
         headers: { Authorization: `Bearer ${ACCESS_TOKEN}` },
         cache: 'no-store',
       })
+
+      // A failed read must NOT be answered 200. On a 401/429/5xx the parsed body
+      // is an error object: external_reference comes back undefined, no product
+      // branch matches, and the handler used to fall all the way through to
+      // `{ received: true }`. MP treats that as delivered and never retries, so a
+      // cancellation lost to a transient MP outage left the site published and
+      // unbilled forever. Answering 5xx puts the notification back in MP's retry
+      // queue. See mpReadFailure() for why 404 is the one status we do not retry.
+      if (!res.ok) {
+        return mpReadFailure('preapproval', body.data.id, res.status)
+      }
 
       const preapproval = await res.json()
       const { status, external_reference, id: preapprovalId } = preapproval
@@ -1290,9 +1327,12 @@ export async function POST(req: NextRequest) {
         headers: { Authorization: `Bearer ${ACCESS_TOKEN}` },
         cache: 'no-store',
       })
+      // Same rule as the preapproval branch: a charge we could not read is not a
+      // charge we can say anything about. Acknowledging it dropped failed
+      // payments silently, so a card that started failing during an MP blip
+      // never moved the project into grace.
       if (!payRes.ok) {
-        console.warn(`[MP Webhook] Could not fetch ${body.type} ${body.data.id}: ${payRes.status}`)
-        return NextResponse.json({ received: true })
+        return mpReadFailure(body.type, body.data.id, payRes.status)
       }
       const detail = await payRes.json()
 
