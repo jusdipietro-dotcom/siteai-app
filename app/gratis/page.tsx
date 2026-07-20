@@ -7,7 +7,7 @@ import { WEBSITE_PLANS, formatARS } from '@/lib/website-plans'
 
 export const metadata: Metadata = {
   title: 'Armá tu Sitio Web Gratis',
-  description: 'Arma el sitio web de tu negocio y velo terminado sin pagar nada ni cargar tarjeta. Publicarlo online requiere una suscripcion, desde ARS $12.000 por mes.',
+  description: 'Arma el sitio web de tu negocio y velo terminado sin pagar nada ni cargar tarjeta. Publicarlo online requiere una suscripcion mensual.',
   keywords: [
     'crear sitio web gratis',
     'sitio web gratis Argentina',

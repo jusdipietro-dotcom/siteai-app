@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { SubdomainPicker } from '@/components/dashboard/SubdomainPicker'
+import { WEBSITE_PLANS, formatARS } from '@/lib/website-plans'
 import { publishedSiteUrl } from '@/lib/site-domain'
 import { useProjectStore } from '@/store/useProjectStore'
 
@@ -96,7 +97,7 @@ export default function PublishPage() {
                   <p className="font-bold text-surface-900">Essential</p>
                   <p className="text-xs text-surface-500">Publicación + SSL + soporte</p>
                 </div>
-                <span className="text-2xl font-extrabold text-surface-900">ARS $12.000<span className="text-sm font-normal text-surface-400">/mes</span></span>
+                <span className="text-2xl font-extrabold text-surface-900">{formatARS(WEBSITE_PLANS.essential.monthly)}<span className="text-sm font-normal text-surface-400">/mes</span></span>
               </div>
               <div className="h-px bg-surface-100" />
               <div className="flex items-center justify-between">
@@ -106,7 +107,7 @@ export default function PublishPage() {
                   </p>
                   <p className="text-xs text-surface-500">Hasta 3 proyectos + SEO avanzado + Google Analytics</p>
                 </div>
-                <span className="text-2xl font-extrabold text-surface-900">ARS $29.000<span className="text-sm font-normal text-surface-400">/mes</span></span>
+                <span className="text-2xl font-extrabold text-surface-900">{formatARS(WEBSITE_PLANS.professional.monthly)}<span className="text-sm font-normal text-surface-400">/mes</span></span>
               </div>
             </div>
 
