@@ -133,6 +133,22 @@ export default function AdminFreeAccountsClient() {
         </div>
       </div>
 
+      {/* Scope warning. isFreeAccount is a User-level flag with no expiry, so
+          it is a much broader grant than gifting a single site — spelling that
+          out here is the difference between comping one project and comping
+          the customer's entire account forever. */}
+      <div className="flex gap-3 bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-6">
+        <Info className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+        <div className="text-sm text-amber-900">
+          <p className="font-semibold mb-0.5">Esto libera TODOS los productos, para siempre</p>
+          <p className="text-amber-800">
+            Una cuenta gratuita da acceso sin cargo a los 12 productos de suscripción, sin fecha
+            de vencimiento, hasta que la revoques a mano. Si sólo querés regalar un sitio web,
+            usá <span className="font-medium">Admin → Sitios → Regalar</span>.
+          </p>
+        </div>
+      </div>
+
       {showForm && (
         <div className="bg-gray-50 border rounded-xl p-5 mb-6">
           <h3 className="font-semibold text-gray-900 mb-3">Nueva cuenta gratuita</h3>

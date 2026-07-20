@@ -116,6 +116,24 @@ export default function AdminCouponsClient() {
         </Button>
       </div>
 
+      {/* Scope warning. The Coupon model relates only to the 12 subscription
+          products — there is no relation to Project, and the website checkout
+          (app/api/mp/create-subscription) never reads a coupon code. Without
+          this note it is easy to create a coupon for a site sale and only find
+          out at checkout that it does nothing. */}
+      <div className="flex gap-3 bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-6">
+        <Info className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+        <div className="text-sm text-amber-900">
+          <p className="font-semibold mb-0.5">Los cupones NO aplican al generador de sitios web</p>
+          <p className="text-amber-800">
+            Sólo funcionan en los 12 productos de suscripción (Monitoreo, Reseñas, LinkedIn,
+            Trading, Leads, Email Marketing, Prospección, Facturación, Causas, Turnos,
+            Suite Jurídica y LexPost). Para regalar un sitio web usá{' '}
+            <span className="font-medium">Admin → Sitios → Regalar</span>.
+          </p>
+        </div>
+      </div>
+
       {/* Create form */}
       {showForm && (
         <div className="bg-white rounded-2xl border border-surface-100 p-6 mb-6">
