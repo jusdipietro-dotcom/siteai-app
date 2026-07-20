@@ -502,6 +502,17 @@ model Project {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([billingStatus, graceUntil])
+  // Every `payment` notification runs findFirst({ where: { preapprovalId } })
+  // against this table, for all 13 products — so without this index every
+  // payment event anyone makes seq-scans Project. Every other subscription
+  // model already carries the same index.
+  @@index([preapprovalId])
+  // The owner lookup behind every project route ("list my projects", and the
+  // ownership check on each mutation).
+  @@index([userId])
+  // Public page views resolve the site by slug (lib/published-site.ts), so this
+  // is on the read path of every visit to a published site.
+  @@index([slug])
 }
 
 model LexPostSubscription {
