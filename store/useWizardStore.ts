@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { persist, createJSONStorage } from 'zustand/middleware'
 import type { WizardData, SectionType, ColorTheme } from '@/types'
 
 const initialData: WizardData = {
@@ -54,7 +55,9 @@ interface WizardStore {
   isStepValid: (step: number) => boolean
 }
 
-export const useWizardStore = create<WizardStore>((set, get) => ({
+export const useWizardStore = create<WizardStore>()(
+  persist(
+    (set, get) => ({
   step: 1,
   data: { ...initialData },
 
@@ -96,6 +99,21 @@ export const useWizardStore = create<WizardStore>((set, get) => ({
   },
 
   reset: () => set({ step: 1, data: { ...initialData } }),
-}))
+    }),
+    {
+      // Persist to sessionStorage so a mid-wizard refresh keeps the user's work,
+      // but the draft dies with the tab rather than lingering across sessions.
+      name: 'wizard-draft',
+      storage: createJSONStorage(() =>
+        typeof window !== 'undefined' ? window.sessionStorage : undefined as unknown as Storage
+      ),
+      partialize: (s) => ({ step: s.step, data: s.data }),
+      // Rehydration is triggered manually from the wizard page after mount, so
+      // the server render and the first client render both start from defaults
+      // (no hydration mismatch); the saved draft is restored in a mount effect.
+      skipHydration: true,
+    }
+  )
+)
 
 export const TOTAL_WIZARD_STEPS = TOTAL_STEPS

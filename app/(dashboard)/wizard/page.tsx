@@ -10,6 +10,7 @@ import {
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
 import { useWizardStore, TOTAL_WIZARD_STEPS } from '@/store/useWizardStore'
 import { useProjectStore } from '@/store/useProjectStore'
 import { useMediaStore } from '@/store/useMediaStore'
@@ -1384,10 +1385,42 @@ export default function WizardPage() {
   const { step, data, nextStep, prevStep, setField, toggleSection, setColorTheme, isStepValid, reset } = useWizardStore()
   const { addProject } = useProjectStore()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [hydrated, setHydrated] = useState(false)
+  const [confirmExit, setConfirmExit] = useState(false)
 
-  // Reset wizard on fresh mount so stale state from a previous incomplete session
-  // doesn't cause old images / wrong fields to appear
-  useEffect(() => { reset() }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  // Restore any sessionStorage draft AFTER mount. The store uses skipHydration,
+  // so server render and first client render both start from defaults (no
+  // hydration mismatch); the saved draft is pulled in here. This replaces the
+  // old unconditional reset(), which wiped 10 steps of work on every refresh.
+  useEffect(() => {
+    useWizardStore.persist.rehydrate()
+    setHydrated(true)
+  }, [])
+
+  // Whether the user has actually entered anything worth confirming before we
+  // discard it on exit.
+  const isDirty =
+    step > 1 ||
+    !!data.businessType ||
+    data.name.trim() !== '' ||
+    data.description.trim() !== '' ||
+    data.services.length > 0 ||
+    data.team.length > 0
+
+  const handleExit = () => {
+    if (isDirty) {
+      setConfirmExit(true)
+      return
+    }
+    reset()
+    router.push('/dashboard')
+  }
+
+  const confirmDiscard = () => {
+    reset()
+    setConfirmExit(false)
+    router.push('/dashboard')
+  }
 
   const progress = (step / TOTAL_WIZARD_STEPS) * 100
   const valid = isStepValid(step)
@@ -1513,21 +1546,31 @@ export default function WizardPage() {
     <Step10 key={10} {...stepProps} />,
   ]
 
+  // Hold render until the draft is restored, so the user never sees a flash of
+  // step 1 before their saved progress loads.
+  if (!hydrated) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-surface-50">
+        <div className="w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
+  }
+
   return (
-    <div className="min-h-screen flex flex-col bg-surface-50">
+    // h-screen (not min-h-screen) bounds the flex column to the viewport so the
+    // step content scrolls internally and the navigation footer stays on screen.
+    <div className="h-screen flex flex-col bg-surface-50">
       {/* Header */}
       <div className="bg-white border-b border-surface-200 px-4 py-3 flex-shrink-0">
         <div className="max-w-2xl mx-auto flex items-center gap-3">
-          <Link href="/dashboard">
-            <button
-              type="button"
-              title="Salir del wizard"
-              onClick={reset}
-              className="h-8 w-8 rounded-xl text-surface-400 hover:bg-surface-100 hover:text-surface-700 transition-colors flex items-center justify-center flex-shrink-0"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </Link>
+          <button
+            type="button"
+            title="Salir del asistente"
+            onClick={handleExit}
+            className="h-8 w-8 rounded-xl text-surface-400 hover:bg-surface-100 hover:text-surface-700 transition-colors flex items-center justify-center flex-shrink-0"
+          >
+            <X className="h-5 w-5" />
+          </button>
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between mb-1.5">
               <span className="text-xs sm:text-sm font-medium text-surface-700 truncate min-w-0 mr-2">
@@ -1543,7 +1586,9 @@ export default function WizardPage() {
 
       {/* Step indicators */}
       <div className="bg-white border-b border-surface-100 px-6 py-3 overflow-x-auto scrollbar-hide flex-shrink-0">
-        <div className="max-w-2xl mx-auto flex items-center gap-1 min-w-max">
+        {/* No mx-auto: a min-w-max row centered inside an overflow-x container
+            pushes its left edge off-screen, causing horizontal body overflow. */}
+        <div className="max-w-2xl flex items-center gap-1 min-w-max">
           {STEPS.map((s, i) => (
             <div key={s.label} className="flex items-center gap-1 shrink-0">
               <div className={cn(
@@ -1590,8 +1635,9 @@ export default function WizardPage() {
         </div>
       </div>
 
-      {/* Navigation footer */}
-      <div className="bg-white border-t border-surface-200 px-4 py-3 flex-shrink-0">
+      {/* Navigation footer — sticky to the bottom of the viewport so the primary
+          action stays reachable even if the step content is tall on mobile. */}
+      <div className="bg-white border-t border-surface-200 px-4 py-3 flex-shrink-0 sticky bottom-0 z-10">
         <div className="max-w-2xl mx-auto flex items-center justify-between gap-3">
           <Button
             type="button"
@@ -1603,7 +1649,11 @@ export default function WizardPage() {
             Anterior
           </Button>
 
-          <div className="flex items-center gap-1.5">
+          {/* Center progress dots are redundant with the top step bar and the
+              "Paso X/10" label; hide them on mobile where Anterior + Siguiente
+              already fill the row (showing them pushed Siguiente ~26px off the
+              right edge at 375px). */}
+          <div className="hidden sm:flex items-center gap-1.5">
             {STEPS.map((_, i) => (
               <div
                 key={i}
@@ -1639,6 +1689,18 @@ export default function WizardPage() {
           )}
         </div>
       </div>
+
+      {/* Discard-on-exit confirmation */}
+      <ConfirmDialog
+        open={confirmExit}
+        onOpenChange={setConfirmExit}
+        variant="destructive"
+        title="¿Salir del asistente?"
+        description="Vas a perder los datos que cargaste en este asistente. Esta acción no se puede deshacer."
+        confirmLabel="Salir y descartar"
+        cancelLabel="Seguir editando"
+        onConfirm={confirmDiscard}
+      />
     </div>
   )
 }

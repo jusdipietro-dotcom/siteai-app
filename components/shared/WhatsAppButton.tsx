@@ -1,14 +1,27 @@
 'use client'
 
 import { useState } from 'react'
+import { usePathname } from 'next/navigation'
 import { MessageCircle, X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 const WHATSAPP_NUMBER = '5491171311465'
 const DEFAULT_MESSAGE = 'Hola! Me interesa crear un sitio web con Automatic IA Lab. ¿Pueden darme más info?'
 
+// Full-screen builder flows own their bottom edge (a pinned navigation footer),
+// so this floating CTA both overlaps the primary action on mobile and is out of
+// place there — it's a marketing contact prompt, not a builder control. Mirrors
+// the dashboard layout's hideMobileBar rule.
+function isHiddenRoute(pathname: string | null): boolean {
+  if (!pathname) return false
+  return pathname === '/wizard' || pathname.includes('/editor') || pathname.includes('/preview')
+}
+
 export function WhatsAppButton() {
+  const pathname = usePathname()
   const [showTooltip, setShowTooltip] = useState(false)
+
+  if (isHiddenRoute(pathname)) return null
 
   const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(DEFAULT_MESSAGE)}`
 
