@@ -64,7 +64,7 @@ const solutions: Solution[] = [
     waMsg: 'Hola! Me interesa el desarrollo de un sitio web profesional. Quiero recibir mas informacion.',
     selfServe: {
       href: '/servicios/creador-de-sitios',
-      label: 'Armarlo yo mismo con IA',
+      label: 'Armarlo yo mismo',
       note: 'Gratis hasta publicarlo',
     },
   },
