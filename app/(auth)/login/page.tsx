@@ -11,6 +11,7 @@ import { Eye, EyeOff, Mail, Lock, ArrowRight, Chrome } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { resolveNextRoute } from '@/lib/next-routes'
 
 const loginSchema = z.object({
   email: z.string().email('Email inválido').min(1, 'El email es requerido'),
@@ -24,8 +25,7 @@ function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const next = searchParams.get('next')
-  const NEXT_ROUTES: Record<string, string> = { monitoreo: '/monitoreo', linkedin: '/linkedin', resenas: '/resenas', crypto: '/crypto', 'creador-de-sitios': '/wizard' }
-  const redirectTo = (next && NEXT_ROUTES[next]) ?? '/dashboard'
+  const redirectTo = resolveNextRoute(next, '/dashboard')
   const [showPassword, setShowPassword] = useState(false)
 
   const {

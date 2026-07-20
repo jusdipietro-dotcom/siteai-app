@@ -11,6 +11,7 @@ import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Chrome, CheckCircle2 } from 
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { resolveNextRoute } from '@/lib/next-routes'
 
 const registerSchema = z.object({
   name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
@@ -36,8 +37,7 @@ function RegisterForm() {
   const searchParams = useSearchParams()
   const plan = searchParams.get('plan') ?? 'free'
   const next = searchParams.get('next')
-  const NEXT_ROUTES: Record<string, string> = { monitoreo: '/monitoreo', linkedin: '/linkedin', resenas: '/resenas', crypto: '/crypto', leads: '/leads', prospeccion: '/prospeccion', 'suite-juridica': '/suite-juridica', facturacion: '/facturacion', causas: '/causas', turnos: '/turnos', 'creador-de-sitios': '/wizard' }
-  const redirectTo = (next && NEXT_ROUTES[next]) ?? '/wizard'
+  const redirectTo = resolveNextRoute(next, '/wizard')
   const [showPassword, setShowPassword] = useState(false)
   const [passwordValue, setPasswordValue] = useState('')
 
