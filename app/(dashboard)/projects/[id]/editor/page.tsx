@@ -699,8 +699,8 @@ function RightPanel({ section, project, onClose, onUpdate, mediaFiles, addFile }
                       <Star
                         className="h-4 w-4"
                         style={{
-                          fill: star <= (t.rating ?? 5) ? '#f59e0b' : 'transparent',
-                          color: star <= (t.rating ?? 5) ? '#f59e0b' : '#d1d5db',
+                          fill: star <= (t.rating ?? 0) ? '#f59e0b' : 'transparent',
+                          color: star <= (t.rating ?? 0) ? '#f59e0b' : '#d1d5db',
                         }}
                       />
                     </button>
@@ -1164,7 +1164,7 @@ function PreviewSection({ section, bd, name, color, galleryImages, device }: { s
       return (
         <div className="px-8 py-16 text-center" style={{ background: `linear-gradient(135deg, ${color}18, ${color}08)` }}>
           <h2 className="text-2xl font-extrabold text-surface-900 mb-3">{bd.tagline || '¿Listo para empezar?'}</h2>
-          <p className="text-sm text-surface-500 mb-6 max-w-md mx-auto">{bd.description || 'Contactanos hoy y llevá tu negocio al siguiente nivel.'}</p>
+          {bd.description && <p className="text-sm text-surface-500 mb-6 max-w-md mx-auto">{bd.description}</p>}
           <div className="flex items-center justify-center gap-3">
             <div className="h-10 px-6 rounded-xl text-sm font-semibold text-white flex items-center" style={{ backgroundColor: color }}>Contactar ahora</div>
             <div className="h-10 px-6 rounded-xl text-sm font-semibold text-surface-700 flex items-center border border-surface-200">Saber más</div>
@@ -1172,11 +1172,12 @@ function PreviewSection({ section, bd, name, color, galleryImages, device }: { s
         </div>
       )
     case 'stats':
+      if (!bd.stats?.length) return null
       return (
         <div className="px-8 py-12" style={{ backgroundColor: color }}>
           <div className={cn('grid gap-6 text-center text-white', isMobile ? 'grid-cols-2' : 'grid-cols-4')}>
-            {[['500+','Clientes'],['10+','Años'],['98%','Satisfacción'],['24/7','Soporte']].map(([v, l]) => (
-              <div key={l}><p className="text-3xl font-extrabold">{v}</p><p className="text-sm opacity-75 mt-1">{l}</p></div>
+            {bd.stats.map((s: any) => (
+              <div key={s.id}><p className="text-3xl font-extrabold">{s.number}</p><p className="text-sm opacity-75 mt-1">{s.label}</p></div>
             ))}
           </div>
         </div>

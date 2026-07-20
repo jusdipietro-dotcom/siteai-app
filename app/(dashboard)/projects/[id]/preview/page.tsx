@@ -60,11 +60,15 @@ function SiteFullPreview({ project, device, color }: { project: any; device: Dev
                 {bd.heroImage && <img src={bd.heroImage} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.25 }} />}
                 <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, rgba(0,0,0,0.3), rgba(0,0,0,0.1))' }} />
                 <div style={{ position: 'relative', padding: `4rem ${px}`, color: '#fff', maxWidth: '700px' }}>
-                  <div style={{ display: 'inline-block', background: 'rgba(255,255,255,0.2)', padding: '0.375rem 1rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: '600', marginBottom: '1rem' }}>
-                    ✦ {bd.businessType}
-                  </div>
+                  {bd.businessType && (
+                    <div style={{ display: 'inline-block', background: 'rgba(255,255,255,0.2)', padding: '0.375rem 1rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: '600', marginBottom: '1rem' }}>
+                      ✦ {bd.businessType}
+                    </div>
+                  )}
                   <h1 style={{ fontSize: isMobile ? '2rem' : '3.5rem', fontWeight: '800', lineHeight: 1.05, marginBottom: '1rem' }}>{bd.name}</h1>
-                  <p style={{ fontSize: '1.1rem', opacity: 0.9, marginBottom: '1.5rem', lineHeight: 1.7 }}>{bd.tagline || 'Tu negocio, tu presencia online'}</p>
+                  {bd.tagline && (
+                    <p style={{ fontSize: '1.1rem', opacity: 0.9, marginBottom: '1.5rem', lineHeight: 1.7 }}>{bd.tagline}</p>
+                  )}
                   <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
                     <button style={{ background: '#fff', color, padding: '0.875rem 2rem', borderRadius: '9999px', fontWeight: '700', border: 'none', cursor: 'pointer' }}>Contactar ahora →</button>
                     <button style={{ background: 'transparent', color: '#fff', padding: '0.875rem 2rem', borderRadius: '9999px', fontWeight: '700', border: '2px solid rgba(255,255,255,0.6)', cursor: 'pointer' }}>Ver servicios</button>
@@ -74,25 +78,23 @@ function SiteFullPreview({ project, device, color }: { project: any; device: Dev
             )
 
           case 'about':
+            if (!bd.description) return null
             return (
               <section key="about" style={{ padding: `${py} ${px}`, background: '#f8fafc', textAlign: 'center' }}>
                 <h2 style={{ fontSize: isMobile ? '1.75rem' : '2.25rem', fontWeight: '800', marginBottom: '1rem' }}>Sobre Nosotros</h2>
-                <p style={{ color: '#475569', lineHeight: 1.8, maxWidth: '680px', margin: '0 auto', fontSize: '1rem' }}>{bd.description || 'Somos un equipo apasionado comprometido con la excelencia.'}</p>
+                <p style={{ color: '#475569', lineHeight: 1.8, maxWidth: '680px', margin: '0 auto', fontSize: '1rem' }}>{bd.description}</p>
               </section>
             )
 
           case 'services':
           case 'features':
+            if (!bd.services.length) return null
             return (
               <section key={section.id} style={{ padding: `${py} ${px}`, background: '#fff' }}>
                 <p style={{ textAlign: 'center', color, fontWeight: '700', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.75rem' }}>Nuestros servicios</p>
                 <h2 style={{ textAlign: 'center', fontSize: isMobile ? '1.75rem' : '2.5rem', fontWeight: '800', marginBottom: '3rem' }}>Todo lo que necesitás</h2>
                 <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: '1.5rem' }}>
-                  {(bd.services.length > 0 ? bd.services : [
-                    { id: '1', name: 'Servicio 1', description: 'Descripción del servicio', emoji: '⭐' },
-                    { id: '2', name: 'Servicio 2', description: 'Descripción del servicio', emoji: '🔧' },
-                    { id: '3', name: 'Servicio 3', description: 'Descripción del servicio', emoji: '✅' },
-                  ]).map((s: any) => (
+                  {bd.services.map((s: any) => (
                     <div key={s.id} style={{ background: '#fff', border: '1px solid #e8edf3', borderRadius: '1.25rem', padding: '1.75rem', borderTop: `3px solid ${color}` }}>
                       <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>{s.emoji ?? '✦'}</div>
                       <h3 style={{ fontWeight: '700', fontSize: '1.05rem', marginBottom: '0.5rem' }}>{s.name}</h3>
@@ -104,16 +106,13 @@ function SiteFullPreview({ project, device, color }: { project: any; device: Dev
             )
 
           case 'pricing':
+            if (!bd.services.length) return null
             return (
               <section key="pricing" style={{ padding: `${py} ${px}`, background: '#f8fafc' }}>
                 <h2 style={{ textAlign: 'center', fontSize: isMobile ? '1.75rem' : '2.25rem', fontWeight: '800', marginBottom: '0.5rem' }}>Precios</h2>
                 <p style={{ textAlign: 'center', color: '#64748b', marginBottom: '3rem' }}>Elegí el plan que mejor se adapta a vos</p>
                 <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: '1.5rem', maxWidth: '860px', margin: '0 auto' }}>
-                  {(bd.services.length > 0 ? bd.services.slice(0, 3) : [
-                    { id: '1', name: 'Básico', price: '$9.990/mes', description: 'Ideal para empezar' },
-                    { id: '2', name: 'Estándar', price: '$19.990/mes', description: 'Para crecer' },
-                    { id: '3', name: 'Premium', price: '$39.990/mes', description: 'Máximo rendimiento' },
-                  ]).map((s: any, i: number) => (
+                  {bd.services.slice(0, 3).map((s: any, i: number) => (
                     <div key={s.id} style={{ background: '#fff', border: `2px solid ${i === 1 ? color : '#e8edf3'}`, borderRadius: '1.5rem', padding: '1.75rem', display: 'flex', flexDirection: 'column', gap: '1rem', transform: i === 1 ? 'scale(1.04)' : 'none', boxShadow: i === 1 ? `0 8px 30px ${color}30` : 'none' }}>
                       {i === 1 && <span style={{ background: color, color: '#fff', fontSize: '0.7rem', fontWeight: '700', padding: '0.25rem 0.75rem', borderRadius: '9999px', alignSelf: 'flex-start', textTransform: 'uppercase' }}>Popular</span>}
                       <div>
@@ -129,15 +128,16 @@ function SiteFullPreview({ project, device, color }: { project: any; device: Dev
             )
 
           case 'testimonials':
+            if (!bd.testimonials.length) return null
             return (
               <section key="testimonials" style={{ padding: `${py} ${px}`, background: section.id === 'testimonials' ? '#f8fafc' : '#fff' }}>
                 <h2 style={{ textAlign: 'center', fontSize: isMobile ? '1.75rem' : '2.25rem', fontWeight: '800', marginBottom: '3rem' }}>Lo que dicen nuestros clientes</h2>
                 <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: '1.25rem' }}>
-                  {(bd.testimonials.length > 0 ? bd.testimonials : [
-                    { id: '1', author: 'Cliente', role: 'Usuario', content: 'Excelente servicio.', rating: 5 },
-                  ]).map((t: any) => (
+                  {bd.testimonials.map((t: any) => (
                     <div key={t.id} style={{ background: '#fff', borderRadius: '1.25rem', padding: '1.5rem', border: '1px solid #e8edf3' }}>
-                      <p style={{ color: '#f59e0b', fontSize: '1rem', marginBottom: '0.75rem' }}>{'★'.repeat(t.rating ?? 5)}</p>
+                      {typeof t.rating === 'number' && t.rating > 0 && (
+                        <p style={{ color: '#f59e0b', fontSize: '1rem', marginBottom: '0.75rem' }}>{'★'.repeat(Math.min(5, Math.round(t.rating)))}</p>
+                      )}
                       <p style={{ color: '#475569', fontStyle: 'italic', marginBottom: '1.25rem', fontSize: '0.9rem', lineHeight: 1.75 }}>"{t.content}"</p>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                         <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: '700', fontSize: '0.85rem', flexShrink: 0 }}>
@@ -155,13 +155,12 @@ function SiteFullPreview({ project, device, color }: { project: any; device: Dev
             )
 
           case 'team':
+            if (!bd.team.length) return null
             return (
               <section key="team" style={{ padding: `${py} ${px}`, background: '#fff' }}>
                 <h2 style={{ textAlign: 'center', fontSize: isMobile ? '1.75rem' : '2.25rem', fontWeight: '800', marginBottom: '3rem' }}>Nuestro Equipo</h2>
                 <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '2rem' }}>
-                  {(bd.team.length > 0 ? bd.team : [
-                    { id: '1', name: 'Nombre Apellido', role: 'Cargo', bio: '' },
-                  ]).slice(0, 4).map((m: any) => (
+                  {bd.team.slice(0, 4).map((m: any) => (
                     <div key={m.id} style={{ textAlign: 'center', maxWidth: '160px' }}>
                       {m.image
                         ? <img src={m.image} alt={m.name} style={{ width: '80px', height: '80px', borderRadius: '1rem', objectFit: 'cover', margin: '0 auto 0.75rem' }} />
@@ -195,13 +194,12 @@ function SiteFullPreview({ project, device, color }: { project: any; device: Dev
             )
 
           case 'faq':
+            if (!bd.faqs.length) return null
             return (
               <section key="faq" style={{ padding: `${py} ${px}`, background: '#fff' }}>
                 <h2 style={{ textAlign: 'center', fontSize: isMobile ? '1.75rem' : '2.25rem', fontWeight: '800', marginBottom: '3rem' }}>Preguntas Frecuentes</h2>
                 <div style={{ maxWidth: '680px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  {(bd.faqs.length > 0 ? bd.faqs : [
-                    { id: '1', question: '¿Cómo puedo contactarlos?', answer: 'Podés escribirnos por email o WhatsApp en cualquier momento.' },
-                  ]).map((faq: any) => (
+                  {bd.faqs.map((faq: any) => (
                     <div key={faq.id} style={{ border: '1px solid #e8edf3', borderRadius: '1rem', padding: '1.25rem 1.5rem' }}>
                       <p style={{ fontWeight: '700', marginBottom: '0.5rem', fontSize: '0.95rem' }}>{faq.question}</p>
                       <p style={{ color: '#64748b', fontSize: '0.875rem', lineHeight: 1.75 }}>{faq.answer}</p>
@@ -212,11 +210,12 @@ function SiteFullPreview({ project, device, color }: { project: any; device: Dev
             )
 
           case 'stats':
+            if (!bd.stats?.length) return null
             return (
               <section key="stats" style={{ padding: `${py} ${px}`, background: color }}>
                 <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '2rem', textAlign: 'center', color: '#fff' }}>
-                  {[['500+', 'Clientes'], ['10+', 'Años'], ['98%', 'Satisfacción'], ['24/7', 'Soporte']].map(([v, l]) => (
-                    <div key={l}><p style={{ fontSize: '2.5rem', fontWeight: '800', lineHeight: 1 }}>{v}</p><p style={{ opacity: 0.8, marginTop: '0.5rem', fontSize: '0.9rem' }}>{l}</p></div>
+                  {bd.stats.map((s: any) => (
+                    <div key={s.id}><p style={{ fontSize: '2.5rem', fontWeight: '800', lineHeight: 1 }}>{s.number}</p><p style={{ opacity: 0.8, marginTop: '0.5rem', fontSize: '0.9rem' }}>{s.label}</p></div>
                   ))}
                 </div>
               </section>
@@ -226,7 +225,9 @@ function SiteFullPreview({ project, device, color }: { project: any; device: Dev
             return (
               <section key="cta" style={{ padding: `${py} ${px}`, background: `${color}12`, textAlign: 'center' }}>
                 <h2 style={{ fontSize: isMobile ? '1.75rem' : '2.25rem', fontWeight: '800', marginBottom: '1rem' }}>{bd.tagline || '¿Listo para empezar?'}</h2>
-                <p style={{ color: '#64748b', marginBottom: '2rem', maxWidth: '560px', margin: '0 auto 2rem', lineHeight: 1.7 }}>{bd.description || 'Contactanos hoy y llevá tu negocio al siguiente nivel.'}</p>
+                {bd.description && (
+                  <p style={{ color: '#64748b', marginBottom: '2rem', maxWidth: '560px', margin: '0 auto 2rem', lineHeight: 1.7 }}>{bd.description}</p>
+                )}
                 <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
                   <button style={{ background: color, color: '#fff', padding: '0.875rem 2.5rem', borderRadius: '9999px', fontWeight: '700', border: 'none', cursor: 'pointer' }}>Contactar ahora</button>
                   <button style={{ background: 'transparent', color, padding: '0.875rem 2.5rem', borderRadius: '9999px', fontWeight: '700', border: `2px solid ${color}`, cursor: 'pointer' }}>Saber más</button>
@@ -237,8 +238,7 @@ function SiteFullPreview({ project, device, color }: { project: any; device: Dev
           case 'contact':
             return (
               <section key="contact" style={{ padding: `${py} ${px}`, background: '#fff' }}>
-                <h2 style={{ textAlign: 'center', fontSize: isMobile ? '1.75rem' : '2.25rem', fontWeight: '800', marginBottom: '0.5rem' }}>Contactate con nosotros</h2>
-                <p style={{ textAlign: 'center', color: '#64748b', marginBottom: '3rem' }}>Estamos para ayudarte en todo momento</p>
+                <h2 style={{ textAlign: 'center', fontSize: isMobile ? '1.75rem' : '2.25rem', fontWeight: '800', marginBottom: '3rem' }}>Contactate con nosotros</h2>
                 <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '3rem', maxWidth: '800px', margin: '0 auto' }}>
                   <div>
                     {bd.contact.phone && <p style={{ color: '#475569', marginBottom: '0.75rem', fontSize: '0.9rem' }}>📞 {bd.contact.phone}</p>}
