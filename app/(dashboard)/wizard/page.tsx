@@ -1371,8 +1371,8 @@ function Step10({ data, setField }: { data: any; setField: any }) {
 
       <div className="bg-gradient-to-r from-brand-50 to-violet-50 border border-brand-100 rounded-2xl p-5 text-center">
         <Sparkles className="h-8 w-8 text-brand-500 mx-auto mb-2" />
-        <p className="text-sm font-semibold text-surface-800">¡Listo para generar!</p>
-        <p className="text-xs text-surface-500 mt-1">La IA creará tu sitio profesional en segundos.</p>
+        <p className="text-sm font-semibold text-surface-800">¡Listo para crear tu sitio!</p>
+        <p className="text-xs text-surface-500 mt-1">Con lo que cargaste, armamos tu sitio sobre una plantilla profesional.</p>
       </div>
     </div>
   )
@@ -1435,12 +1435,14 @@ export default function WizardPage() {
 
   const handleSubmit = async () => {
     if (!valid) {
-      toast.error('Completá el título SEO antes de generar')
+      toast.error('Completá el título SEO antes de crear tu sitio')
       return
     }
 
+    // The spinner is driven purely by the real project-creation POST below
+    // (addProject). There is no artificial delay: the loading state reflects
+    // actual work, so what the user sees matches what the server is doing.
     setIsSubmitting(true)
-    await new Promise((r) => setTimeout(r, 2200))
 
     const selectedType = businessTypes.find((bt) => bt.id === data.businessType)
 
@@ -1520,14 +1522,14 @@ export default function WizardPage() {
     } catch (err) {
       setIsSubmitting(false)
       toast.error(
-        err instanceof Error ? err.message : 'No se pudo generar el sitio. Intentá de nuevo.'
+        err instanceof Error ? err.message : 'No se pudo crear el sitio. Intentá de nuevo.'
       )
       return
     }
 
     reset()
     setIsSubmitting(false)
-    toast.success('¡Sitio generado con éxito! Revisalo en el editor.')
+    toast.success('¡Tu sitio está listo! Revisalo en el editor.')
     router.push(`/projects/${saved.id}/editor`)
   }
 
@@ -1684,7 +1686,7 @@ export default function WizardPage() {
               loading={isSubmitting}
               className="shadow-brand"
             >
-              {isSubmitting ? 'Generando...' : 'Generar mi sitio'}
+              {isSubmitting ? 'Creando tu sitio...' : 'Crear mi sitio'}
             </Button>
           )}
         </div>
