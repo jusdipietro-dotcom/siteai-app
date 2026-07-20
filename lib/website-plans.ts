@@ -27,8 +27,8 @@ export const WEBSITE_PLANS: Record<WebsitePlanId, WebsitePlanConfig> = {
   essential: {
     id: 'essential',
     name: 'Essential',
-    monthly: 12000,
-    annual: 8400,
+    monthly: 19000,
+    annual: 13300,
     title: 'Plan Essential — Automatic IA Lab',
     description: 'Publica tu sitio y empeza a crecer',
     maxProjects: 1,
