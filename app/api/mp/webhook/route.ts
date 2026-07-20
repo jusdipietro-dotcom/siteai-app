@@ -1361,7 +1361,14 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ received: true })
       }
 
-      const FAILED = ['rejected', 'cancelled', 'charged_back']
+      // 'refunded' belongs here for the same reason 'charged_back' does: the
+      // money is gone. Without it a refunded charge never entered grace and the
+      // project stayed 'active' indefinitely, billed for nothing.
+      //
+      // 'in_mediation' is deliberately absent — a disputed charge is not yet a
+      // lost one, and suspending on the dispute rather than its outcome is a
+      // commercial-policy call, not a bug fix. Flagged for the business to decide.
+      const FAILED = ['rejected', 'cancelled', 'charged_back', 'refunded']
 
       if (payStatus === 'approved') {
         // Recovery. Restores billing state only — no content is touched, so a
