@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Menu, X, MessageCircle } from 'lucide-react'
+import { Menu, X, MessageCircle, LogIn } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { WA_GENERIC } from '@/lib/whatsapp'
@@ -74,6 +74,20 @@ export function LandingNavbar() {
           </nav>
 
           <div className="hidden md:flex items-center gap-3">
+            {/* Secondary on purpose: existing customers need a way in, but it
+                must not compete with the WhatsApp CTA. */}
+            <Link
+              href="/login"
+              className={cn(
+                'inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium rounded-lg transition-colors',
+                scrolled
+                  ? 'text-surface-600 hover:text-surface-900 hover:bg-surface-50'
+                  : 'text-surface-300 hover:text-white hover:bg-white/10'
+              )}
+            >
+              <LogIn className="w-4 h-4" />
+              Iniciar sesion
+            </Link>
             <a href={WA_GENERIC} target="_blank" rel="noopener noreferrer">
               <Button size="sm" variant="gradient" className="gap-1.5">
                 <MessageCircle className="w-4 h-4" />
@@ -122,6 +136,12 @@ export function LandingNavbar() {
                     Consultanos por WhatsApp
                   </Button>
                 </a>
+                <Link href="/login" onClick={() => setMobileOpen(false)}>
+                  <Button variant="outline" className="w-full gap-1.5">
+                    <LogIn className="w-4 h-4" />
+                    Iniciar sesion
+                  </Button>
+                </Link>
               </div>
             </nav>
           </motion.div>
