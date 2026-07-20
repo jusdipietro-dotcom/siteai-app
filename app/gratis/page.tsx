@@ -2,11 +2,12 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Navbar } from '@/components/layout/Navbar'
 import { Footer } from '@/components/landing/Footer'
-import { CheckCircle2, ArrowRight, Zap, Globe, Smartphone, Search, MessageCircle, Shield } from 'lucide-react'
+import { CheckCircle2, ArrowRight, Wand2, Eye, Smartphone, Search, MessageCircle, Shield, Globe, RefreshCw } from 'lucide-react'
+import { WEBSITE_PLANS, formatARS } from '@/lib/website-plans'
 
 export const metadata: Metadata = {
-  title: 'Sitio Web Gratis con IA',
-  description: 'Genera un sitio web profesional para tu negocio en 60 segundos. Sin programar, sin diseñadores, sin tarjeta de credito. Proba gratis ahora.',
+  title: 'Armá tu Sitio Web Gratis',
+  description: 'Arma el sitio web de tu negocio y velo terminado sin pagar nada ni cargar tarjeta. Publicarlo online requiere una suscripcion, desde ARS $12.000 por mes.',
   keywords: [
     'crear sitio web gratis',
     'sitio web gratis Argentina',
@@ -15,8 +16,8 @@ export const metadata: Metadata = {
     'crear pagina web sin programar',
   ],
   openGraph: {
-    title: 'Sitio Web Gratis con IA | Automatic IA Lab',
-    description: 'Generá un sitio web profesional para tu negocio en 60 segundos. Sin programar, sin diseñadores, sin tarjeta de crédito.',
+    title: 'Armá tu Sitio Web Gratis | Automatic IA Lab',
+    description: 'Armá el sitio de tu negocio y velo terminado sin pagar nada. Publicarlo online requiere una suscripción.',
     url: 'https://automaticialab.com/gratis',
     type: 'website',
     images: [{ url: 'https://automaticialab.com/og-image.png', width: 1200, height: 630, alt: 'Automatic IA Lab' }],
@@ -26,26 +27,56 @@ export const metadata: Metadata = {
   },
 }
 
-const benefits = [
-  { icon: Zap, title: 'Listo en 60 segundos', desc: 'Nuestra IA genera contenido, diseño y estructura al instante.' },
-  { icon: Globe, title: 'Publicación automática', desc: 'Tu sitio queda online con URL propia de inmediato.' },
-  { icon: Smartphone, title: '100% responsive', desc: 'Se ve perfecto en celular, tablet y computadora.' },
-  { icon: Search, title: 'SEO incluido', desc: 'Metadatos optimizados para que Google te encuentre.' },
-  { icon: MessageCircle, title: 'WhatsApp integrado', desc: 'Botón de contacto directo para tus clientes.' },
-  { icon: Shield, title: 'HTTPS siempre', desc: 'Certificado SSL incluido. Tu sitio siempre seguro.' },
+/** Lo que se puede hacer sin pagar ni cargar tarjeta. */
+const freeIncludes = [
+  { icon: Wand2, title: 'Asistente guiado', desc: 'Respondés unas preguntas sobre tu negocio y armamos la estructura, los textos y el diseño.' },
+  { icon: Eye, title: 'Vista previa completa', desc: 'Ves el sitio terminado antes de decidir. La vista previa lleva una barra y marca de agua.' },
+  { icon: RefreshCw, title: 'Edición ilimitada', desc: 'Cambiás textos, colores, imágenes y secciones las veces que quieras.' },
+]
+
+/** Lo que se habilita al activar la suscripcion. Ver lib/website-plans.ts. */
+const paidIncludes = [
+  { icon: Globe, title: 'Sitio publicado', desc: 'Tu sitio pasa a ser accesible con un subdominio propio: tunegocio.sitios.automaticialab.com' },
+  { icon: Shield, title: 'SSL y hosting', desc: 'Certificado HTTPS y alojamiento incluidos en la suscripción.' },
+  { icon: Search, title: 'SEO en el sitio público', desc: 'Título, descripción y metadatos para compartir y para que Google te encuentre.' },
+  { icon: MessageCircle, title: 'WhatsApp integrado', desc: 'Botón de contacto directo a tu número, si lo cargás en el asistente.' },
+  { icon: Smartphone, title: '100% responsive', desc: 'Se ve bien en celular, tablet y computadora.' },
+  { icon: RefreshCw, title: 'Seguí editando', desc: 'Republicá los cambios sin límite mientras la suscripción esté activa.' },
 ]
 
 const steps = [
-  { num: '01', title: 'Completás el formulario', desc: 'Nombre, rubro, servicios, colores. En 5 minutos tenés todo listo.' },
-  { num: '02', title: 'La IA genera tu sitio', desc: 'Contenido profesional, diseño personalizado y estructura optimizada.' },
-  { num: '03', title: 'Tu sitio se publica', desc: 'URL propia, SSL incluido. Compartilo y empezá a recibir consultas.' },
+  { num: '01', title: 'Completás el asistente', desc: 'Nombre, rubro, servicios, contacto y colores. Sin tarjeta de crédito.' },
+  { num: '02', title: 'Armamos tu sitio', desc: 'Estructura, secciones y diseño listos, con imágenes generadas por IA. Lo editás a gusto.' },
+  { num: '03', title: 'Lo publicás cuando quieras', desc: 'Elegís tu subdominio y activás la suscripción. Recién acá se paga.' },
 ]
 
+const essential = WEBSITE_PLANS.essential
+
 const faqs = [
-  { q: '¿Es realmente gratis?', a: 'Sí. El plan Free te permite generar tu sitio, verlo completo y editarlo. No necesitás tarjeta de crédito.' },
-  { q: '¿Necesito saber programar?', a: 'Para nada. Completás un formulario simple y la IA se encarga de todo: textos, diseño, estructura y publicación.' },
-  { q: '¿Puedo usar mi propio dominio?', a: 'Sí, con el plan Professional podés configurar tu dominio personalizado.' },
-  { q: '¿Qué rubros soporta?', a: 'Restaurantes, abogados, médicos, gimnasios, peluquerías, inmobiliarias, contadores, fotógrafos, y muchos más.' },
+  {
+    q: '¿Qué es gratis exactamente?',
+    a: 'Crear tu cuenta, armar el sitio con el asistente, editarlo y verlo terminado en vista previa. Todo eso no cuesta nada y no pide tarjeta de crédito.',
+  },
+  {
+    q: '¿Entonces qué se paga?',
+    a: `Publicar el sitio para que sea accesible en internet. Ahí entra la suscripción, desde ${formatARS(essential.monthly)} por mes. Incluye subdominio propio, SSL y hosting.`,
+  },
+  {
+    q: '¿Necesito saber programar?',
+    a: 'No. Completás un asistente paso a paso y el sitio se arma solo. Las imágenes se generan con IA; los textos salen de lo que cargás sobre tu negocio y los podés editar cuando quieras.',
+  },
+  {
+    q: '¿Puedo usar mi propio dominio?',
+    a: 'Todavía no. Al publicar recibís un subdominio propio del tipo tunegocio.sitios.automaticialab.com. La conexión de dominios propios (tunegocio.com) no está disponible.',
+  },
+  {
+    q: '¿Qué rubros soporta?',
+    a: 'Hay 12 rubros con diseño y contenido preparados: restaurante, abogado, consultorio médico, estudio contable, inmobiliaria, gimnasio, peluquería, boutique, agencia, arquitectura, fotografía y servicios profesionales.',
+  },
+  {
+    q: '¿Qué pasa si dejo de pagar?',
+    a: 'El sitio deja de estar publicado. Tu proyecto y tus ediciones siguen en tu cuenta, y podés volver a publicarlo reactivando la suscripción.',
+  },
 ]
 
 export default function GratisLandingPage() {
@@ -61,46 +92,46 @@ export default function GratisLandingPage() {
         <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="inline-flex items-center gap-2 bg-brand-500/10 border border-brand-500/20 rounded-full px-4 py-1.5 mb-8">
             <span className="w-2 h-2 rounded-full bg-brand-400 animate-pulse" />
-            <span className="text-sm font-medium text-brand-300">Plan gratuito — Sin tarjeta de crédito</span>
+            <span className="text-sm font-medium text-brand-300">Armalo gratis — Sin tarjeta de crédito</span>
           </div>
 
           <h1 className="text-4xl sm:text-6xl lg:text-7xl font-bold text-white tracking-tight leading-[1.1]">
-            Creá tu sitio web<br />
+            Armá tu sitio web<br />
             <span className="bg-gradient-to-r from-brand-400 to-cyan-300 bg-clip-text text-transparent">
-              gratis con IA
+              gratis
             </span>
           </h1>
 
           <p className="mt-6 text-lg sm:text-xl text-surface-300 max-w-2xl mx-auto leading-relaxed">
-            Generá un sitio web profesional para tu negocio en menos de 60 segundos.
-            Sin programar, sin diseñadores, sin complicaciones.
+            Armá el sitio de tu negocio y velo terminado sin pagar nada.
+            Pagás solo cuando decidís publicarlo online.
           </p>
 
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
-              href="/register"
+              href="/register?next=creador-de-sitios"
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-semibold px-8 py-4 rounded-xl text-lg transition-colors shadow-lg shadow-brand-500/25"
             >
-              Crear mi sitio gratis
+              Armar mi sitio gratis
               <ArrowRight className="w-5 h-5" />
             </Link>
             <Link
-              href="/dashboard"
+              href="/servicios/creador-de-sitios"
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white/10 hover:bg-white/15 text-white font-medium px-8 py-4 rounded-xl text-lg transition-colors border border-white/10"
             >
-              Ver demo en vivo
+              Ver cómo funciona y precios
             </Link>
           </div>
 
-          <div className="mt-8 flex items-center justify-center gap-6 text-sm text-surface-400">
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-surface-400">
             <span className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-brand-400" /> Sin tarjeta
+              <CheckCircle2 className="w-4 h-4 text-brand-400" /> Sin tarjeta para armarlo
             </span>
             <span className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-brand-400" /> Listo en 60s
+              <CheckCircle2 className="w-4 h-4 text-brand-400" /> Vista previa completa
             </span>
             <span className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-brand-400" /> +500 negocios
+              <CheckCircle2 className="w-4 h-4 text-brand-400" /> 12 rubros
             </span>
           </div>
         </div>
@@ -111,7 +142,7 @@ export default function GratisLandingPage() {
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <p className="text-sm font-semibold uppercase tracking-widest text-brand-600 mb-3">Así de fácil</p>
-            <h2 className="text-3xl sm:text-4xl font-bold text-surface-900">Tres pasos. Menos de 5 minutos.</h2>
+            <h2 className="text-3xl sm:text-4xl font-bold text-surface-900">Tres pasos. Los dos primeros son gratis.</h2>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
@@ -126,17 +157,48 @@ export default function GratisLandingPage() {
         </div>
       </section>
 
-      {/* Beneficios */}
+      {/* Qué es gratis y qué se paga */}
       <section className="py-20 sm:py-28">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <p className="text-sm font-semibold uppercase tracking-widest text-brand-600 mb-3">Todo incluido</p>
-            <h2 className="text-3xl sm:text-4xl font-bold text-surface-900">¿Qué incluye el plan gratuito?</h2>
+            <p className="text-sm font-semibold uppercase tracking-widest text-brand-600 mb-3">Sin letra chica</p>
+            <h2 className="text-3xl sm:text-4xl font-bold text-surface-900">Qué es gratis y qué se paga</h2>
+            <p className="mt-4 text-surface-600 max-w-2xl mx-auto">
+              Preferimos decírtelo antes de que inviertas tiempo, no en la pantalla de pago.
+            </p>
           </div>
 
+          <div className="mb-6 flex items-center gap-3">
+            <span className="inline-flex items-center rounded-full bg-success-100 px-3 py-1 text-sm font-semibold text-success-700">
+              Gratis
+            </span>
+            <span className="text-sm text-surface-500">Sin tarjeta de crédito</span>
+          </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
+            {freeIncludes.map((b) => (
+              <div key={b.title} className="flex gap-4 p-6 rounded-xl bg-surface-50">
+                <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-success-100 text-success-700 flex items-center justify-center">
+                  <b.icon className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-surface-900">{b.title}</h3>
+                  <p className="mt-1 text-sm text-surface-600">{b.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="mb-6 flex items-center gap-3">
+            <span className="inline-flex items-center rounded-full bg-brand-100 px-3 py-1 text-sm font-semibold text-brand-700">
+              Con suscripción
+            </span>
+            <span className="text-sm text-surface-500">
+              Desde {formatARS(essential.monthly)} por mes
+            </span>
+          </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {benefits.map((b) => (
-              <div key={b.title} className="flex gap-4 p-6 rounded-xl bg-surface-50 hover:bg-brand-50 transition-colors">
+            {paidIncludes.map((b) => (
+              <div key={b.title} className="flex gap-4 p-6 rounded-xl bg-surface-50">
                 <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-brand-100 text-brand-600 flex items-center justify-center">
                   <b.icon className="w-5 h-5" />
                 </div>
@@ -147,30 +209,14 @@ export default function GratisLandingPage() {
               </div>
             ))}
           </div>
-        </div>
-      </section>
 
-      {/* Social proof */}
-      <section className="py-16 bg-surface-950">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            <div>
-              <p className="text-3xl font-bold text-white">+500</p>
-              <p className="text-sm text-surface-400 mt-1">negocios creados</p>
-            </div>
-            <div>
-              <p className="text-3xl font-bold text-white">58s</p>
-              <p className="text-sm text-surface-400 mt-1">tiempo promedio</p>
-            </div>
-            <div>
-              <p className="text-3xl font-bold text-white">12+</p>
-              <p className="text-sm text-surface-400 mt-1">rubros disponibles</p>
-            </div>
-            <div>
-              <p className="text-3xl font-bold text-white">4.9/5</p>
-              <p className="text-sm text-surface-400 mt-1">calificación</p>
-            </div>
-          </div>
+          <p className="mt-10 text-center text-surface-600">
+            Los planes, precios y el detalle completo están en{' '}
+            <Link href="/servicios/creador-de-sitios" className="text-brand-600 font-medium underline underline-offset-4 hover:text-brand-700">
+              la página del creador de sitios
+            </Link>
+            .
+          </p>
         </div>
       </section>
 
@@ -198,17 +244,17 @@ export default function GratisLandingPage() {
             Tu negocio merece estar en internet.
           </h2>
           <p className="mt-4 text-lg text-surface-300">
-            Creá tu primer sitio en minutos. Sin código, sin diseñadores, sin excusas.
+            Armá tu sitio y velo terminado. Decidís si lo publicás después.
           </p>
           <Link
-            href="/register"
+            href="/register?next=creador-de-sitios"
             className="mt-10 inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-semibold px-10 py-4 rounded-xl text-lg transition-colors shadow-lg shadow-brand-500/25"
           >
-            Empezar gratis ahora
+            Armar mi sitio gratis
             <ArrowRight className="w-5 h-5" />
           </Link>
           <p className="mt-4 text-sm text-surface-500">
-            Sin tarjeta de credito. Plan gratuito disponible para siempre.
+            Armarlo y verlo no cuesta nada ni pide tarjeta. Publicarlo requiere una suscripción activa.
           </p>
         </div>
       </section>
@@ -216,12 +262,13 @@ export default function GratisLandingPage() {
       {/* Comparativa */}
       <section className="py-16 bg-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-2xl font-bold text-surface-900 mb-6 text-center">¿Por que elegir Automatic IA Lab?</h2>
+          <h2 className="text-2xl font-bold text-surface-900 mb-6 text-center">¿Por qué elegir Automatic IA Lab?</h2>
           <p className="text-surface-600 text-center max-w-2xl mx-auto mb-8">
-            Comparado con contratar un diseñador web o usar herramientas complicadas, nuestra plataforma
-            te permite tener un sitio profesional en minutos, no semanas. Con contenido generado por
-            inteligencia artificial adaptado a tu rubro, optimizacion SEO automatica y publicacion
-            instantanea. Miles de negocios en Argentina ya confian en nosotros para su presencia online.
+            Comparado con contratar un diseñador web o pelearte con herramientas complicadas, acá armás
+            un sitio profesional en una tarde y no en semanas. Estructura y diseño preparados para tu
+            rubro, imágenes generadas con IA, botón de WhatsApp y metadatos SEO. Y a diferencia de otras
+            plataformas, ves el resultado terminado antes de poner un peso: pagás recién cuando decidís
+            publicarlo.
           </p>
         </div>
       </section>
@@ -235,20 +282,28 @@ export default function GratisLandingPage() {
           __html: JSON.stringify({
             '@context': 'https://schema.org',
             '@type': 'WebPage',
-            name: 'Crear Sitio Web Gratis con IA',
-            description: 'Generá un sitio web profesional para tu negocio en 60 segundos con inteligencia artificial.',
+            name: 'Armá tu Sitio Web Gratis',
+            description: 'Armá el sitio web de tu negocio y velo terminado sin costo. Publicarlo online requiere una suscripción.',
             url: 'https://automaticialab.com/gratis',
             mainEntity: {
               '@type': 'SoftwareApplication',
               name: 'Automatic IA Lab',
               applicationCategory: 'WebApplication',
               operatingSystem: 'Web',
-              offers: {
-                '@type': 'Offer',
-                price: '0',
-                priceCurrency: 'ARS',
-                description: 'Plan gratuito — generá tu sitio web con IA sin costo',
-              },
+              offers: [
+                {
+                  '@type': 'Offer',
+                  price: '0',
+                  priceCurrency: 'ARS',
+                  description: 'Armá, editá y previsualizá tu sitio sin costo y sin tarjeta de crédito',
+                },
+                {
+                  '@type': 'Offer',
+                  price: String(essential.monthly),
+                  priceCurrency: 'ARS',
+                  description: `Plan ${essential.name} — publicá tu sitio con subdominio propio, SSL y hosting`,
+                },
+              ],
             },
           }),
         }}
