@@ -499,7 +499,8 @@ model Project {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  siteLeads SiteLead[]
 
   @@index([billingStatus, graceUntil])
   // Every `payment` notification runs findFirst({ where: { preapprovalId } })
@@ -563,4 +564,27 @@ model Inquiry {
 
   @@index([service, status])
   @@index([createdAt])
+}
+
+// Leads captured by the contact form on a published client site. Distinct from
+// Inquiry (which is the agency's own sales funnel): a SiteLead belongs to a
+// specific Project, so it is routed to and owned by that project's user — never
+// the platform. Kept separate rather than folded into Inquiry so the two flows,
+// which have different recipients and lifecycles, never bleed into each other.
+model SiteLead {
+  id        String   @id @default(cuid())
+  projectId String
+  name      String
+  email     String
+  phone     String?
+  message   String   @db.Text
+  status    String   @default("new") // new, read, archived
+  ipAddress String?
+  userAgent String?  @db.Text
+  createdAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  // The owner reads their leads newest-first, scoped to a project they own.
+  @@index([projectId, createdAt])
 }

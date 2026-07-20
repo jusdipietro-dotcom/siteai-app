@@ -426,21 +426,107 @@ export function PublishedSite({ project: row }: { project: Project }) {
                 </div>
                 <div className="contact-form">
                   <p style={{ fontWeight: 700, color: '#0f172a', marginBottom: '1rem', fontSize: '0.95rem' }}>Envianos un mensaje</p>
-                  <form
-                    action={`mailto:${bd.contact?.email || ''}`}
-                    method="get"
-                    encType="text/plain"
-                  >
-                    <input className="form-field" type="text" name="nombre" placeholder="Tu nombre" required />
-                    <input className="form-field" type="email" name="email" placeholder="Tu email" required />
-                    <input className="form-field" type="tel" name="tel" placeholder="Tu teléfono (opcional)" />
-                    <textarea className="form-field form-textarea" name="body" placeholder="¿En qué podemos ayudarte?" required />
-                    <button type="submit" className="btn-submit">Enviar mensaje →</button>
+                  {/*
+                    Real lead capture. The old `mailto:` + method=get submitted
+                    nothing (and nothing at all on mobile/webmail), so every lead
+                    was silently lost. This posts to /api/site-leads, which stores
+                    the lead against this project and notifies the owner. Progressive
+                    enhancement via a vanilla script rather than a React island: the
+                    published document nests its own <html> under the app's root
+                    layout, where hydration is unreliable — the same reason the
+                    hamburger above uses an inline script.
+                  */}
+                  <form id="lead-form">
+                    {/* Honeypot — hidden from humans, catches bots (same contract as /api/inquiries) */}
+                    <input
+                      id="lead-honeypot"
+                      type="text"
+                      name="company_website"
+                      tabIndex={-1}
+                      autoComplete="off"
+                      aria-hidden="true"
+                      style={{ position: 'absolute', left: '-9999px', width: '1px', height: '1px', opacity: 0 }}
+                    />
+                    <input id="lead-name" className="form-field" type="text" name="nombre" placeholder="Tu nombre" required minLength={2} />
+                    <input id="lead-email" className="form-field" type="email" name="email" placeholder="Tu email" required />
+                    <input id="lead-phone" className="form-field" type="tel" name="tel" placeholder="Tu teléfono (opcional)" />
+                    <textarea id="lead-message" className="form-field form-textarea" name="mensaje" placeholder="¿En qué podemos ayudarte?" required minLength={2} />
+                    <button id="lead-submit" type="submit" className="btn-submit">Enviar mensaje →</button>
+                    <p
+                      id="lead-status"
+                      role="status"
+                      aria-live="polite"
+                      style={{ display: 'none', marginTop: '0.75rem', fontSize: '0.85rem', fontWeight: 600 }}
+                    />
                   </form>
                 </div>
               </div>
             </div>
           </section>
+        )}
+
+        {showContact && (
+          <script dangerouslySetInnerHTML={{ __html: `
+            (function () {
+              var pid = ${JSON.stringify(row.id)};
+              // Delegate on document, not on the form node: this published document
+              // nests its own <html> under the app's root layout, so React may
+              // replace the form node during hydration and detach a node-level
+              // listener. document survives, and every element is looked up fresh
+              // at submit time.
+              function el(id) { return document.getElementById(id); }
+              function val(id) { var n = el(id); return n ? n.value : ''; }
+              function setStatus(msg, kind) {
+                var s = el('lead-status');
+                if (!s) return;
+                s.textContent = msg || '';
+                s.style.display = msg ? 'block' : 'none';
+                s.style.color = kind === 'error' ? '#dc2626' : '#16a34a';
+              }
+              document.addEventListener('submit', function (e) {
+                var form = e.target;
+                if (!form || form.id !== 'lead-form') return;
+                e.preventDefault();
+                setStatus('', '');
+                var btn = el('lead-submit');
+                var defaultLabel = 'Enviar mensaje →';
+                if (btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
+                var payload = {
+                  projectId: pid,
+                  name: val('lead-name'),
+                  email: val('lead-email'),
+                  phone: val('lead-phone'),
+                  message: val('lead-message'),
+                  honeypot: val('lead-honeypot')
+                };
+                fetch('/api/site-leads', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(payload)
+                }).then(function (res) {
+                  return res.json().catch(function () { return {}; }).then(function (data) {
+                    return { ok: res.ok, data: data };
+                  });
+                }).then(function (r) {
+                  var b = el('lead-submit');
+                  if (r.ok && r.data && r.data.ok) {
+                    if (form.reset) form.reset();
+                    setStatus('¡Mensaje enviado! Te vamos a responder a la brevedad.', 'success');
+                    if (b) { b.textContent = 'Mensaje enviado ✓'; }
+                    setTimeout(function () { var b2 = el('lead-submit'); if (b2) { b2.disabled = false; b2.textContent = defaultLabel; } }, 4000);
+                  } else {
+                    var msg = (r.data && r.data.error) ? r.data.error : 'No se pudo enviar el mensaje. Intenta de nuevo.';
+                    setStatus(msg, 'error');
+                    if (b) { b.disabled = false; b.textContent = defaultLabel; }
+                  }
+                }).catch(function () {
+                  var b = el('lead-submit');
+                  setStatus('No se pudo enviar el mensaje. Revisa tu conexion e intenta de nuevo.', 'error');
+                  if (b) { b.disabled = false; b.textContent = defaultLabel; }
+                });
+              }, true);
+            })();
+          `}} />
         )}
 
         {/* ── Footer ── */}

@@ -210,6 +210,58 @@ export async function sendInquiryNotificationEmail(
   })
 }
 
+/**
+ * Notifies a published-site owner that their contact form captured a lead.
+ *
+ * Unlike sendInquiryNotificationEmail (which goes to the platform admin), this
+ * goes to the business OWNER: `to` is resolved by the caller from the site's
+ * public contact email, falling back to the account email. replyTo is the
+ * visitor so the owner can answer with one tap.
+ */
+export async function sendSiteLeadNotificationEmail(params: {
+  to: string
+  businessName: string
+  lead: {
+    id: string
+    name: string
+    email: string
+    phone?: string | null
+    message: string
+  }
+}) {
+  const { to, businessName, lead } = params
+
+  const rows: Array<[string, string]> = [
+    ['Nombre', lead.name],
+    ['Email', lead.email],
+    ...(lead.phone ? [['Telefono', lead.phone] as [string, string]] : []),
+  ]
+  const rowsHtml = rows
+    .map(
+      ([k, v]) =>
+        `<tr><td style="padding:6px 12px;color:#666;font-size:13px">${k}</td><td style="padding:6px 12px;font-weight:600;font-size:13px">${v}</td></tr>`
+    )
+    .join('')
+
+  const html = emailWrapper(`Nuevo mensaje desde ${businessName}`, `
+    <p style="margin:0 0 12px"><strong>${lead.name}</strong> te dejo un mensaje desde el formulario de contacto de tu sitio.</p>
+    <table style="width:100%;border-collapse:collapse;background:white;border-radius:8px;overflow:hidden;margin:16px 0">
+      ${rowsHtml}
+    </table>
+    <p style="font-size:13px;color:#444;margin-top:16px"><strong>Mensaje:</strong></p>
+    <p style="background:white;padding:12px;border-radius:8px;font-size:14px;color:#222;white-space:pre-wrap">${lead.message}</p>
+    <p style="font-size:12px;color:#999;margin-top:16px">Respondele directamente a <a href="mailto:${lead.email}" style="color:#0099ff">${lead.email}</a>${lead.phone ? ` o llamalo al <strong>${lead.phone}</strong>` : ''}.</p>
+  `)
+
+  await transporter.sendMail({
+    from: FROM,
+    to,
+    replyTo: lead.email,
+    subject: `Nuevo mensaje en ${businessName} — de ${lead.name}`,
+    html,
+  })
+}
+
 export async function sendReviewRequestEmail(
   to: string,
   details: {
