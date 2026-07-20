@@ -479,8 +479,7 @@ export function PublishedSite({ project: row }: { project: Project }) {
             </div>
 
             <p className="footer-copy">
-              © {new Date().getFullYear()} {name}. Todos los derechos reservados.{' '}
-              <span style={{ opacity: 0.5 }}>· Sitio creado con Automatic IA Lab</span>
+              © {new Date().getFullYear()} {name}. Todos los derechos reservados.
             </p>
           </div>
         </footer>
