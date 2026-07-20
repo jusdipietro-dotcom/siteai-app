@@ -5,13 +5,14 @@ import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   ArrowLeft, Globe, CheckCircle2, Circle, Rocket, ExternalLink,
-  Copy, Twitter, Facebook, Link2, Sparkles, AlertCircle, Lock, Zap,
+  Copy, Twitter, Facebook, Link2, Sparkles, AlertCircle, Lock, Zap, PowerOff,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { SubdomainPicker } from '@/components/dashboard/SubdomainPicker'
+import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
 import { WEBSITE_PLANS, formatARS } from '@/lib/website-plans'
 import { publishedSiteUrl } from '@/lib/site-domain'
 import { useProjectStore } from '@/store/useProjectStore'
@@ -28,13 +29,15 @@ export default function PublishPage() {
   const params = useParams()
   const router = useRouter()
   const id = params.id as string
-  const { projects, publishProject, setSubdomain } = useProjectStore()
+  const { projects, publishProject, unpublishProject, setSubdomain } = useProjectStore()
   const project = projects.find((p) => p.id === id)
 
   const [publishing, setPublishing] = useState(false)
   const [published, setPublished] = useState(project?.status === 'published')
   const [showSuccess, setShowSuccess] = useState(false)
   const [customDomain, setCustomDomain] = useState('')
+  const [confirmUnpublish, setConfirmUnpublish] = useState(false)
+  const [unpublishing, setUnpublishing] = useState(false)
 
   if (!project) return <div className="flex items-center justify-center h-screen text-surface-500">Proyecto no encontrado</div>
 
@@ -166,6 +169,25 @@ export default function PublishPage() {
     toast.success('URL copiada al portapapeles')
   }
 
+  async function handleUnpublish() {
+    setUnpublishing(true)
+    try {
+      await unpublishProject(id)
+      setPublished(false)
+      setShowSuccess(false)
+      setConfirmUnpublish(false)
+      toast.success('Tu sitio ya no está online. Podés volver a publicarlo cuando quieras.')
+    } catch (err) {
+      toast.error(
+        err instanceof Error && err.message
+          ? err.message
+          : 'No se pudo despublicar el sitio. Intentá de nuevo.'
+      )
+    } finally {
+      setUnpublishing(false)
+    }
+  }
+
   return (
     <div className="min-h-screen">
       {/* Topbar */}
@@ -185,17 +207,32 @@ export default function PublishPage() {
 
         {/* Already published banner */}
         {published && !showSuccess && (
-          <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-5 flex items-start gap-4">
-            <CheckCircle2 className="w-5 h-5 text-emerald-500 mt-0.5 shrink-0" />
-            <div className="flex-1 min-w-0">
-              <p className="font-semibold text-emerald-900">Tu sitio está publicado</p>
-              <a href={siteUrl} target="_blank" rel="noreferrer" className="text-sm text-emerald-700 hover:underline flex items-center gap-1 mt-1 truncate">
-                {siteUrl} <ExternalLink className="w-3 h-3 shrink-0" />
-              </a>
+          <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-5 space-y-4">
+            <div className="flex items-start gap-4">
+              <CheckCircle2 className="w-5 h-5 text-emerald-500 mt-0.5 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-emerald-900">Tu sitio está publicado</p>
+                <a href={siteUrl} target="_blank" rel="noreferrer" className="text-sm text-emerald-700 hover:underline flex items-center gap-1 mt-1 truncate">
+                  {siteUrl} <ExternalLink className="w-3 h-3 shrink-0" />
+                </a>
+              </div>
+              <Button variant="outline" size="sm" className="shrink-0" onClick={copyUrl}>
+                <Copy className="w-3.5 h-3.5" />
+              </Button>
             </div>
-            <Button variant="outline" size="sm" className="shrink-0" onClick={copyUrl}>
-              <Copy className="w-3.5 h-3.5" />
-            </Button>
+            <div className="flex items-center justify-between gap-3 border-t border-emerald-200/70 pt-3">
+              <p className="text-xs text-emerald-700/90">
+                ¿Necesitás cambiar el subdominio o darlo de baja? Despublicá el sitio primero.
+              </p>
+              <Button
+                variant="destructive-ghost"
+                size="sm"
+                className="shrink-0 gap-1.5"
+                onClick={() => setConfirmUnpublish(true)}
+              >
+                <PowerOff className="w-3.5 h-3.5" /> Despublicar
+              </Button>
+            </div>
           </div>
         )}
 
@@ -306,6 +343,19 @@ export default function PublishPage() {
           </Button>
         </div>
       </div>
+
+      {/* Unpublish confirmation */}
+      <ConfirmDialog
+        open={confirmUnpublish}
+        onOpenChange={setConfirmUnpublish}
+        variant="destructive"
+        title="¿Despublicar el sitio?"
+        description="El sitio dejará de estar online de inmediato: la dirección pública devolverá 404 para cualquier visitante. Tu contenido se conserva y podés volver a publicarlo cuando quieras. Al despublicar también se libera el subdominio para poder cambiarlo."
+        confirmLabel="Despublicar sitio"
+        cancelLabel="Cancelar"
+        onConfirm={handleUnpublish}
+        loading={unpublishing}
+      />
 
       {/* Success Modal */}
       <AnimatePresence>
