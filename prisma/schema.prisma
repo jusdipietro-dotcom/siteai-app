@@ -1,6 +1,9 @@
 generator client {
-  provider      = "prisma-client-js"
-  binaryTargets = ["native", "rhel-openssl-3.0.x"]
+  provider = "prisma-client-js"
+  // The runtime image is Alpine (musl) with OpenSSL 3, so the musl engine is
+  // required. The standalone build only traces the engines Prisma generated,
+  // so a missing target fails at request time, not at build time.
+  binaryTargets = ["native", "rhel-openssl-3.0.x", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
