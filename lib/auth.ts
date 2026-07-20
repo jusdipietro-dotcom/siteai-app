@@ -3,6 +3,7 @@ import CredentialsProvider from 'next-auth/providers/credentials'
 import GoogleProvider from 'next-auth/providers/google'
 import bcrypt from 'bcryptjs'
 import { prisma } from './prisma'
+import { isAdminEmail } from './admin-emails'
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -86,6 +87,14 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         session.user.id = token.id as string
         session.user.plan = (token.plan as string) ?? 'free'
+        // Derived here rather than in the JWT so that changing ADMIN_EMAILS
+        // takes effect on the next request instead of the next sign-in.
+        //
+        // This is a UI hint only — it tells a user whether *they* are an admin
+        // so the sidebar can render the Admin entry, and never ships the
+        // allowlist itself to the browser. Authorization is always re-derived
+        // server-side by requireAdmin(); nothing trusts this flag.
+        session.user.isAdmin = isAdminEmail(token.email)
       }
       return session
     },

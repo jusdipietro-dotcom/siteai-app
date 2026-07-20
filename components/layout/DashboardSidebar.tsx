@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard, BookTemplate, Settings, HelpCircle,
   Plus, LogOut, Search as SearchIcon, Image, ChevronLeft, ChevronRight,
-  Scale, Tag, Users, MessageSquare, Linkedin, TrendingUp, Send, Target, Receipt, FileSearch, CalendarDays, Briefcase, Shield, Gift, FileText,
+  Scale, Tag, Users, MessageSquare, Linkedin, TrendingUp, Send, Target, Receipt, FileSearch, CalendarDays, Briefcase, Shield, Gift, FileText, Globe,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useUIStore } from '@/store/useUIStore'
@@ -31,6 +31,13 @@ const NAV_ITEMS = [
   { href: '/lexpost', label: 'LexPost Legal', icon: FileText },
   { href: '/suite-juridica', label: 'Suite Juridica', icon: Briefcase },
   { href: '/jurisprudencia', label: 'Jurisprudencia IA', icon: Shield },
+]
+
+const ADMIN_ITEMS = [
+  { href: '/admin/sitios',         label: 'Sitios',         icon: Globe },
+  { href: '/admin/suscripciones',  label: 'Suscripciones',  icon: Users },
+  { href: '/admin/cupones',        label: 'Cupones',        icon: Tag },
+  { href: '/admin/cuentas-gratis', label: 'Cuentas Gratis', icon: Gift },
 ]
 
 const BOTTOM_ITEMS = [
@@ -181,42 +188,29 @@ export function DashboardSidebar() {
           </div>
         )}
 
-        {/* Admin section — only visible for admin users */}
-        {!sidebarCollapsed && user?.email && ['automaticialab@gmail.com'].includes(user.email.toLowerCase()) && (
+        {/* Admin section — rendered only for admins.
+            `isAdmin` is stamped onto the session server-side (see lib/auth.ts):
+            the browser learns whether *this* user is an admin, never who the
+            admins are. Purely cosmetic — every /admin route and API re-checks
+            server-side, so faking this flag reveals nothing but dead links. */}
+        {!sidebarCollapsed && user?.isAdmin && (
           <div className="mt-3 px-3">
             <p className="text-[10px] font-bold uppercase tracking-widest text-white/25 mb-1.5 px-1">
               Admin
             </p>
-            <Link
-              href="/admin/cupones"
-              className={cn(
-                'flex items-center gap-2.5 h-8 px-2 rounded-lg text-xs text-white/50 hover:bg-white/6 hover:text-white/80 transition-all',
-                pathname.includes('/admin/cupones') && 'bg-white/8 text-white/80'
-              )}
-            >
-              <Tag className="h-3.5 w-3.5 shrink-0" />
-              Cupones
-            </Link>
-            <Link
-              href="/admin/suscripciones"
-              className={cn(
-                'flex items-center gap-2.5 h-8 px-2 rounded-lg text-xs text-white/50 hover:bg-white/6 hover:text-white/80 transition-all',
-                pathname.includes('/admin/suscripciones') && 'bg-white/8 text-white/80'
-              )}
-            >
-              <Users className="h-3.5 w-3.5 shrink-0" />
-              Suscripciones
-            </Link>
-            <Link
-              href="/admin/cuentas-gratis"
-              className={cn(
-                'flex items-center gap-2.5 h-8 px-2 rounded-lg text-xs text-white/50 hover:bg-white/6 hover:text-white/80 transition-all',
-                pathname.includes('/admin/cuentas-gratis') && 'bg-white/8 text-white/80'
-              )}
-            >
-              <Gift className="h-3.5 w-3.5 shrink-0" />
-              Cuentas Gratis
-            </Link>
+            {ADMIN_ITEMS.map(({ href, label, icon: Icon }) => (
+              <Link
+                key={href}
+                href={href}
+                className={cn(
+                  'flex items-center gap-2.5 h-8 px-2 rounded-lg text-xs text-white/50 hover:bg-white/6 hover:text-white/80 transition-all',
+                  pathname.startsWith(href) && 'bg-white/8 text-white/80'
+                )}
+              >
+                <Icon className="h-3.5 w-3.5 shrink-0" />
+                {label}
+              </Link>
+            ))}
           </div>
         )}
       </div>

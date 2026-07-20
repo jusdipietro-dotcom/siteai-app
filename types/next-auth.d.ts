@@ -8,6 +8,11 @@ declare module 'next-auth' {
       email?: string | null
       image?: string | null
       plan: string
+      /**
+       * UI hint for rendering admin-only navigation. Never an authorization
+       * decision — server code must call requireAdmin() instead.
+       */
+      isAdmin?: boolean
     }
   }
 
