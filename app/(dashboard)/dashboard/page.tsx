@@ -76,9 +76,13 @@ export default function DashboardPage() {
     setDeletingId(null)
   }
 
-  const handleDuplicate = (id: string, name: string) => {
-    duplicateProject(id)
-    toast.success(`"${name}" duplicado`)
+  const handleDuplicate = async (id: string, name: string) => {
+    try {
+      await duplicateProject(id)
+      toast.success(`"${name}" duplicado`)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : `No se pudo duplicar "${name}"`)
+    }
   }
 
   const handlePublish = async (id: string, name: string) => {

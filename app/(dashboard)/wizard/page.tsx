@@ -1476,7 +1476,22 @@ export default function WizardPage() {
       },
     }
 
-    const saved = await addProject(newProject)
+    // Only navigate once the server confirms the row exists. addProject() throws
+    // on a failed POST rather than handing back the client-generated id, so we
+    // can no longer push the user into an editor for a project that was never
+    // created. The wizard state is deliberately NOT reset on failure — the user
+    // keeps everything they typed and can retry.
+    let saved: Project
+    try {
+      saved = await addProject(newProject)
+    } catch (err) {
+      setIsSubmitting(false)
+      toast.error(
+        err instanceof Error ? err.message : 'No se pudo generar el sitio. Intentá de nuevo.'
+      )
+      return
+    }
+
     reset()
     setIsSubmitting(false)
     toast.success('¡Sitio generado con éxito! Revisalo en el editor.')

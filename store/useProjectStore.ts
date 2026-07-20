@@ -77,25 +77,46 @@ export const useProjectStore = create<ProjectStore>()((set, get) => ({
     }
   },
 
+  // Optimistic insert, but never optimistic about the result: on any failure the
+  // placeholder is removed again and the error is rethrown. Returning the
+  // client-side `project` on a failed POST used to hand callers an id that does
+  // not exist server-side — the wizard then navigated to
+  // /projects/{phantomId}/editor, which 404s, and the row was never created.
   addProject: async (project) => {
     set((state) => ({ projects: [project, ...state.projects], isLoaded: true }))
+
+    const rollback = () =>
+      set((state) => ({ projects: state.projects.filter((p) => p.id !== project.id) }))
+
+    let res: Response
     try {
-      const res = await fetch('/api/projects', {
+      res = await fetch('/api/projects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(project),
       })
-      if (res.ok) {
-        const saved: Project = await res.json()
-        set((state) => ({
-          projects: state.projects.map((p) => (p.id === project.id ? saved : p)),
-        }))
-        return saved
-      }
     } catch (err) {
+      rollback()
       console.error('[ProjectStore] addProject error:', err)
+      throw new Error('No se pudo guardar el proyecto. Revisá tu conexión.')
     }
-    return project
+
+    const body = await res.json().catch(() => ({}))
+
+    if (!res.ok) {
+      rollback()
+      const error = new Error(
+        body?.error || 'No se pudo guardar el proyecto'
+      ) as Error & { status?: number }
+      error.status = res.status
+      throw error
+    }
+
+    const saved: Project = body
+    set((state) => ({
+      projects: state.projects.map((p) => (p.id === project.id ? saved : p)),
+    }))
+    return saved
   },
 
   updateProject: (id, updates) => {
@@ -120,6 +141,11 @@ export const useProjectStore = create<ProjectStore>()((set, get) => ({
       id: generateId(),
       name: `${original.name} (copia)`,
       slug: `${original.slug}-copia-${generateId(4)}`,
+      // A subdomain is unique across the whole table, so carrying the original's
+      // over from the spread guaranteed a 409 on POST /api/projects — duplicating
+      // any project that had claimed a subdomain always failed. The copy starts
+      // with no subdomain; the user claims a new one from the editor.
+      subdomain: null,
       status: 'draft',
       hasPaid: false,
       plan: 'free',
