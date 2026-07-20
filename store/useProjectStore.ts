@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { toast } from 'sonner'
 import type { Project, ProjectStatus, SectionConfig } from '@/types'
 import { generateId } from '@/lib/utils'
 
@@ -24,15 +25,56 @@ interface ProjectStore {
   removeMediaFromProject: (projectId: string, mediaId: string) => void
 }
 
+/**
+ * Undoes a failed optimistic write by re-reading the row from the server.
+ *
+ * Deliberately NOT a snapshot restore. Snapshotting the project before the
+ * request and putting it back on failure would clobber every edit the user made
+ * while that request was in flight — type "a", "ab", "abc", let the "ab" write
+ * fail, and the snapshot rollback wipes "abc" too. The server is the only
+ * authority on what was actually persisted, so we show exactly that.
+ *
+ * The toast is keyed per project so a burst of failed writes collapses into one
+ * message instead of stacking.
+ */
+async function revertFromServer(id: string, message: string) {
+  toast.error(message, { id: `project-sync-${id}` })
+  await useProjectStore.getState().refreshProject(id)
+}
+
 // Billing state (plan / hasPaid / preapprovalId / views / publishedUrl) is never
 // sent from here: the server owns it and the API strips it from request bodies.
 // Read it back with refreshProject() / reloadProjects() instead of computing it.
-function syncUpdate(id: string, updates: Record<string, unknown>) {
-  fetch(`/api/projects/${id}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(updates),
-  }).catch((err) => console.error('[ProjectStore] sync error:', err))
+//
+// This used to only .catch() network errors, so a 400/409/500 was discarded
+// entirely while the store had already applied the change: the user edited,
+// saw the edit, reloaded, and it was gone. It now inspects the response and
+// resyncs from the server on any failure.
+//
+// It stays fire-and-forget from the caller's point of view — the mutators below
+// remain synchronous so typing never blocks on a round trip — but it returns its
+// promise so a caller that wants to await a save can.
+function syncUpdate(id: string, updates: Record<string, unknown>): Promise<void> {
+  return (async () => {
+    let res: Response
+    try {
+      res = await fetch(`/api/projects/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates),
+      })
+    } catch (err) {
+      console.error('[ProjectStore] sync error:', err)
+      await revertFromServer(id, 'No se pudieron guardar los cambios. Revisá tu conexión.')
+      return
+    }
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}))
+      console.error(`[ProjectStore] sync rejected (${res.status}):`, body)
+      await revertFromServer(id, body?.error || 'No se pudieron guardar los cambios')
+    }
+  })()
 }
 
 export const useProjectStore = create<ProjectStore>()((set, get) => ({
@@ -169,12 +211,13 @@ export const useProjectStore = create<ProjectStore>()((set, get) => ({
     syncUpdate(id, { status })
   },
 
-  // Deliberately NOT routed through updateProject(): syncUpdate() is
-  // fire-and-forget and swallows the response, so a 409 (subdomain taken, or
-  // frozen because the project is published) would be logged to the console and
-  // the UI would keep showing a subdomain the server refused to store.
-  // This awaits the write and rethrows with the HTTP status attached so callers
-  // can tell "someone claimed it first" from "the request failed".
+  // Deliberately NOT routed through updateProject(). syncUpdate() now checks the
+  // response and resyncs on failure, but it still resolves without telling the
+  // caller what went wrong — it can only show a generic toast. Claiming a
+  // subdomain needs more than that: the caller has to distinguish a 409
+  // ("someone claimed it first", or frozen because the project is published)
+  // from a transport failure, and drive its own inline field error. So this
+  // awaits the write and rethrows with the HTTP status attached.
   setSubdomain: async (id, subdomain) => {
     const res = await fetch(`/api/projects/${id}`, {
       method: 'PUT',
