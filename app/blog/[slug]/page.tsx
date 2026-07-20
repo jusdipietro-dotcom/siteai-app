@@ -158,7 +158,7 @@ export default function BlogPostPage({ params }: PageProps) {
               ¿Listo para crear tu sitio web?
             </h3>
             <p className="text-surface-600 mb-6">
-              Dejá que la IA construya tu presencia online en minutos. Crea tu sitio
+              Armá tu presencia online en minutos con un asistente guiado. Crea tu sitio
               web profesional sin código, sin diseñadores, sin complicaciones.
             </p>
             <Link

@@ -28,7 +28,7 @@ export function EmptyState({ hasProjects, onClear }: EmptyStateProps) {
       </div>
       <h3 className="text-xl font-bold text-surface-900 mb-2">Todavía no creaste ningún sitio</h3>
       <p className="text-surface-500 mb-8 max-w-sm mx-auto">
-        Creá tu primer sitio web con IA en menos de 5 minutos. Sin código, sin diseñadores.
+        Creá tu primer sitio web en minutos, con un asistente guiado. Sin código, sin diseñadores.
       </p>
       <Link href="/wizard">
         <Button variant="gradient" size="lg" className="gap-2 shadow-brand">

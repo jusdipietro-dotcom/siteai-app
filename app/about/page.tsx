@@ -36,18 +36,19 @@ export default function AboutPage() {
           <h2 className="text-2xl font-bold text-surface-950 mb-4">Nuestra mision</h2>
           <p className="text-surface-600 leading-relaxed mb-8">
             Automatizar lo repetitivo para que los negocios se enfoquen en lo importante: atender
-            a sus clientes, crecer y generar valor. Usamos inteligencia artificial para crear sitios web
-            profesionales en minutos, monitorear notificaciones judiciales de forma automatica y
-            construir flujos de trabajo inteligentes que ahorran horas de trabajo manual cada semana.
-            Nuestro objetivo es que la tecnologia trabaje para vos, no al reves.
+            a sus clientes, crecer y generar valor. Con nuestras herramientas armas tu sitio web
+            profesional en minutos, monitoreamos notificaciones judiciales de forma automatica y
+            construimos flujos de trabajo con inteligencia artificial que ahorran horas de trabajo
+            manual cada semana. Nuestro objetivo es que la tecnologia trabaje para vos, no al reves.
           </p>
 
           <h2 className="text-2xl font-bold text-surface-950 mb-4">Que hacemos</h2>
           <div className="space-y-4 text-surface-600 leading-relaxed mb-8">
             <p>
-              <strong className="text-surface-900">Sitios web con IA:</strong> Genera tu pagina web
-              profesional en menos de 60 segundos. Completas un formulario, la IA entiende tu negocio
-              y crea un sitio optimizado para Google, adaptado a celulares y listo para recibir consultas.
+              <strong className="text-surface-900">Sitios web autogestionados:</strong> Arma tu pagina web
+              profesional en minutos. Completas un asistente guiado con los datos de tu negocio y montamos
+              un sitio sobre una plantilla profesional, optimizado para Google, adaptado a celulares y listo
+              para recibir consultas.
             </p>
             <p>
               <strong className="text-surface-900">Monitoreo judicial automatico:</strong> Para

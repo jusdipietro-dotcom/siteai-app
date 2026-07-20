@@ -14,7 +14,7 @@ const sections = [
   {
     title: '2. Descripción del servicio',
     content:
-      'Automatic IA Lab es una plataforma de generación de sitios web con inteligencia artificial destinada a negocios locales. El servicio incluye la creación, edición y publicación de sitios web mediante templates y contenido generado automáticamente.',
+      'Automatic IA Lab es una plataforma autogestionada de creación de sitios web destinada a negocios locales. El servicio incluye la creación, edición y publicación de sitios web mediante un asistente guiado y plantillas profesionales, a partir de la información que aporta el usuario.',
   },
   {
     title: '3. Cuenta de usuario',
@@ -44,7 +44,7 @@ const sections = [
   {
     title: '8. Propiedad intelectual',
     content:
-      'El contenido generado por la IA para tu sitio web es de tu propiedad. La plataforma, su codigo fuente, diseño, marca y documentacion son propiedad exclusiva de Automatic IA Lab. No esta permitido copiar, modificar o distribuir el software de la plataforma sin autorizacion expresa.',
+      'El contenido que cargás en tu sitio web es de tu propiedad. La plataforma, su codigo fuente, diseño, marca y documentacion son propiedad exclusiva de Automatic IA Lab. No esta permitido copiar, modificar o distribuir el software de la plataforma sin autorizacion expresa.',
   },
   {
     title: '9. Garantia y reembolsos',
