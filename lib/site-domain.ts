@@ -36,9 +36,16 @@ export const SITES_SUBDOMAIN_BASE =
 const DEV_SUBDOMAIN_BASES =
   process.env.NODE_ENV === 'production' ? [] : ['localhost', 'lvh.me']
 
-/** Strips a `:port` suffix and lowercases. Host headers carry the port. */
+/**
+ * Strips a `:port` suffix and lowercases. Host headers carry the port.
+ *
+ * Also strips the trailing dot of a fully-qualified host: `example.com.` and
+ * `example.com` name the same host, but the raw form matched neither the
+ * subdomain suffix nor the path-host equality check, so such a request fell
+ * through to the dashboard branch instead of resolving to its site.
+ */
 function normalizeHost(host: string): string {
-  return host.trim().toLowerCase().split(':')[0]
+  return host.trim().toLowerCase().split(':')[0].replace(/\.+$/, '')
 }
 
 /**
