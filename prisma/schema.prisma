@@ -479,6 +479,15 @@ model Project {
   suspendedAt     DateTime?
   // 'payment_failed' (grace elapsed) | 'cancelled' (deliberate user action).
   suspendedReason String?
+  // Gift provenance. `hasPaid` alone cannot distinguish a site an admin
+  // comped from one a customer actually paid for, which is exactly the
+  // ambiguity the old regalar-sitio.sh left behind. Deliberately separate
+  // columns rather than a flag folded into `plan` or `billingStatus`, so a
+  // gift stays traceable even after the plan changes.
+  // Stores the granting admin's email (readable, and survives that admin's
+  // User row being deleted). Both null => not a gift.
+  grantedBy       String?
+  grantedAt       DateTime?
   template      String?
   thumbnail     String?
   publishedUrl  String?
