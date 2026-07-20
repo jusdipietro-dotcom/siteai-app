@@ -12,7 +12,7 @@ const buttonVariants = cva(
         primary:     'bg-brand-600 text-white hover:bg-brand-700 shadow-soft',
         gradient:    'gradient-brand text-white hover:opacity-90 shadow-brand',
         secondary:   'bg-surface-100 text-surface-800 hover:bg-surface-200',
-        outline:     'border border-surface-200 bg-white text-surface-700 hover:bg-surface-50 hover:border-surface-300',
+        outline:     'border border-surface-200 bg-transparent text-surface-700 hover:bg-surface-50 hover:border-surface-300',
         ghost:       'text-surface-600 hover:bg-surface-100 hover:text-surface-900',
         destructive: 'bg-danger-600 text-white hover:bg-danger-700',
         'destructive-ghost': 'text-danger-600 hover:bg-danger-50 hover:text-danger-700',
