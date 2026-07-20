@@ -11,22 +11,22 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { useProjectStore } from '@/store/useProjectStore'
 import { cn } from '@/lib/utils'
+import {
+  WEBSITE_PLANS_LIST,
+  websitePlanPrice,
+  formatARS,
+  type WebsitePlanId,
+} from '@/lib/website-plans'
 import type { Plan } from '@/types'
 
 // ─── Plan definitions ─────────────────────────────────────────────────────────
+// Precios, features y límites vienen de lib/website-plans.ts (única fuente de
+// verdad, compartida con el backend de MercadoPago y la página pública).
+// Acá solo se agrega el icono, que es específico de esta UI.
 
-const PLAN_PRICES: Record<string, { monthly: number; annual: number }> = {
-  essential:    { monthly: 12000, annual: 8400 },
-  professional: { monthly: 29000, annual: 20300 },
-}
-
-function planPrice(id: string, annual: boolean) {
-  const p = PLAN_PRICES[id] ?? { monthly: 0, annual: 0 }
-  return annual ? p.annual : p.monthly
-}
-
-function formatARS(n: number) {
-  return `ARS $${n.toLocaleString('es-AR')}`
+const PLAN_ICONS: Record<WebsitePlanId, typeof Zap> = {
+  essential: Zap,
+  professional: Star,
 }
 
 const PLAN_META: {
@@ -36,36 +36,14 @@ const PLAN_META: {
   icon: typeof Zap
   popular?: boolean
   features: string[]
-}[] = [
-  {
-    id: 'essential',
-    name: 'Essential',
-    description: 'Publicá tu sitio y empezá a crecer',
-    icon: Zap,
-    features: [
-      'Sitio publicado con URL pública',
-      'Certificado SSL incluido',
-      'Editor visual: ediciones ilimitadas',
-      'Botón de WhatsApp integrado',
-      'SEO básico (título, descripción, keywords)',
-      'Soporte por email',
-    ],
-  },
-  {
-    id: 'professional',
-    name: 'Professional',
-    description: 'Todo lo que necesitás para destacarte',
-    icon: Star,
-    popular: true,
-    features: [
-      'Todo lo de Essential',
-      'Hasta 3 proyectos activos',
-      'SEO avanzado + sitemap.xml',
-      'Google Analytics integrado',
-      'Soporte prioritario',
-    ],
-  },
-]
+}[] = WEBSITE_PLANS_LIST.map((p) => ({
+  id: p.id as Plan,
+  name: p.name,
+  description: p.description,
+  icon: PLAN_ICONS[p.id],
+  popular: p.popular,
+  features: p.features,
+}))
 
 // ─── Inner component (useSearchParams requires Suspense wrapper) ──────────────
 
@@ -87,7 +65,7 @@ function CheckoutContent() {
 
   const PLANS = PLAN_META.map(p => ({
     ...p,
-    price: formatARS(planPrice(p.id, isAnnual)),
+    price: formatARS(websitePlanPrice(p.id, isAnnual)),
     period: isAnnual ? '/mes · facturación anual' : '/mes',
   }))
 

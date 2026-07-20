@@ -3,14 +3,13 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { isValidEmail } from '@/lib/validators'
+import { getWebsitePlanConfig } from '@/lib/website-plans'
 
 const ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN!
 
 // ─── Configuración de planes ────────────────────────────────────────────────
-const PLAN_CONFIG: Record<string, { monthly: number; annual: number; title: string }> = {
-  essential:    { monthly: 12000, annual: 8400,  title: 'Plan Essential — Automatic IA Lab' },
-  professional: { monthly: 29000, annual: 20300, title: 'Plan Professional — Automatic IA Lab' },
-}
+// Precios y límites viven en lib/website-plans.ts (única fuente de verdad,
+// compartida con el checkout y la página pública del producto).
 
 export async function POST(req: NextRequest) {
   try {
@@ -27,7 +26,7 @@ export async function POST(req: NextRequest) {
     const { plan, projectId, payerEmail, billing } = await req.json()
     const isAnnual = billing === 'annual'
 
-    const config = PLAN_CONFIG[plan]
+    const config = getWebsitePlanConfig(plan)
     if (!config) {
       return NextResponse.json({ error: 'Plan inválido' }, { status: 400 })
     }
@@ -53,7 +52,7 @@ export async function POST(req: NextRequest) {
     const paidCount = await prisma.project.count({
       where: { userId: session.user.id, hasPaid: true, id: { not: projectId } },
     })
-    const maxAllowed = plan === 'professional' ? 3 : 1
+    const maxAllowed = config.maxProjects
     if (paidCount >= maxAllowed) {
       return NextResponse.json(
         { error: `Tu plan permite hasta ${maxAllowed} proyecto${maxAllowed > 1 ? 's' : ''} activo${maxAllowed > 1 ? 's' : ''}. Cancelá uno existente para continuar.` },
