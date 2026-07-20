@@ -1,7 +1,7 @@
 'use client'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { ArrowRight, Zap, Scale, MessageSquare } from 'lucide-react'
+import { ArrowRight, Sparkles, MessageSquare } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 export function CtaSection() {
@@ -15,26 +15,25 @@ export function CtaSection() {
           viewport={{ once: true }}
         >
           <div className="inline-flex items-center gap-2 bg-brand-500/15 border border-brand-500/30 rounded-full px-4 py-2 text-sm font-medium text-brand-300 mb-8">
-            <Zap className="w-3.5 h-3.5" />
-            Sin tarjeta de crédito para empezar
+            <Sparkles className="w-3.5 h-3.5" />
+            Reunión inicial sin costo · cotización en 24 horas
           </div>
           <h2 className="text-4xl sm:text-5xl font-extrabold text-white mb-6 leading-tight">
-            Automatizá lo que te quita tiempo.
-            <span className="block text-brand-400">Enfocate en lo que importa.</span>
+            Hablemos de tu proyecto.
+            <span className="block text-brand-400">Empezamos con un diagnóstico técnico.</span>
           </h2>
           <p className="text-lg text-surface-400 mb-10">
-            Sitios web, monitoreo judicial, prospeccion B2B, email marketing, resenas,
-            LinkedIn, trading y mas. 11 productos listos para vos. Empeza hoy.
+            Inteligencia artificial, marketing digital, diseño web y SEO. 4 pilares de una agencia
+            argentina. Cada implementación se cotiza a medida.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/register">
+            <Link href="/contacto">
               <Button size="xl" variant="gradient" className="gap-2 w-full sm:w-auto shadow-brand">
-                <Zap className="w-5 h-5" />
-                Empezar gratis
+                Pedir cotización
                 <ArrowRight className="w-4 h-4" />
               </Button>
             </Link>
-            <Link href="https://wa.me/5491171311465?text=Hola,%20quiero%20información%20sobre%20los%20productos">
+            <Link href="https://wa.me/5491171311465?text=Hola,%20quiero%20info%20sobre%20una%20cotizaci%C3%B3n">
               <Button size="xl" variant="outline" className="gap-2 w-full sm:w-auto border-surface-700 text-surface-300 hover:bg-surface-800 hover:text-white">
                 <MessageSquare className="w-5 h-5" />
                 Hablemos por WhatsApp

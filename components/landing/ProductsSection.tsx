@@ -57,10 +57,10 @@ const products = [
       { icon: FileText, text: 'Texto completo del PDF extraido' },
       { icon: Shield, text: 'Deduplicacion inteligente' },
     ],
-    cta: 'Activar monitoreo',
-    ctaHref: '/register?next=monitoreo',
-    price: 'Desde $19.000/mes',
-    priceNote: 'Por CUIT monitoreado',
+    cta: 'Suscribirme',
+    ctaHref: '/alertajudicial',
+    price: 'Desde $15.000/mes',
+    priceNote: '60 dias gratis | Sin contrato minimo',
   },
   {
     id: 'lexpost',
@@ -181,19 +181,19 @@ const products = [
     badge: 'Trading',
     title: 'Senales Crypto IA',
     subtitle: 'Trading inteligente con analisis tecnico automatizado',
-    description: 'Bot de senales crypto con 60% win rate verificado. Analiza 18 pares con 7 indicadores tecnicos (RSI, MACD, EMA, Bollinger, ADX, Volumen, Velas) + 3 indicadores macro (Fear & Greed, Funding Rate, BTC Dominance). Alertas en Telegram con Stop Loss y Take Profit automaticos.',
+    description: 'Bot de senales crypto educativas. Analiza 18 pares con 7 indicadores tecnicos (RSI, MACD, EMA, Bollinger, ADX, Volumen, Velas) + 3 indicadores macro (Fear & Greed, Funding Rate, BTC Dominance). Alertas en Telegram con niveles sugeridos de Stop Loss y Take Profit. Informativo, no es asesoramiento financiero ni garantiza ganancias.',
     icon: CandlestickChart,
     gradient: 'from-emerald-500 to-green-600',
     bgGlow: 'bg-emerald-500/10',
     features: [
-      { icon: Activity, text: '60% win rate verificado — 18 pares 24/7' },
+      { icon: Activity, text: '18 pares analizados 24/7 en tiempo real' },
       { icon: Shield, text: '7 indicadores tecnicos + 3 macro' },
       { icon: MessageSquare, text: 'Alertas Telegram con SL/TP y score de confianza' },
     ],
     cta: 'Activar senales crypto',
     ctaHref: '/register?next=crypto',
     price: '$20.000/mes',
-    priceNote: '18 pares | 60% win rate | 24/7',
+    priceNote: '18 pares | análisis técnico | 24/7',
   },
   {
     id: 'redes-sociales',
@@ -295,11 +295,12 @@ export function ProductsSection() {
             return (
               <motion.div
                 key={product.id}
+                id={`producto-${product.id}`}
                 initial={{ opacity: 0, y: 32 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
-                className="relative bg-surface-50 rounded-3xl border border-surface-100 overflow-hidden hover:shadow-card transition-shadow duration-300"
+                className="relative bg-surface-50 rounded-3xl border border-surface-100 overflow-hidden hover:shadow-card transition-shadow duration-300 scroll-mt-24"
               >
                 <div className={`grid lg:grid-cols-2 gap-0 ${isReversed ? 'lg:[direction:rtl]' : ''}`}>
                   {/* Content side */}

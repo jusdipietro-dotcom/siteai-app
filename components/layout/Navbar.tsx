@@ -9,10 +9,10 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 const navLinks = [
-  { label: 'Productos', href: '/#productos' },
-  { label: 'Como funciona', href: '/#how-it-works' },
-  { label: 'Precios', href: '/#pricing' },
-  { label: 'FAQ', href: '/#faq' },
+  { label: 'Servicios', href: '/#servicios' },
+  { label: 'Para abogados', href: '/automatizacion-para-abogados' },
+  { label: 'Casos premium', href: '/premium' },
+  { label: 'Testimonios', href: '/testimonios' },
   { label: 'Blog', href: '/blog' },
   { label: 'Contacto', href: '/contacto' },
 ]
@@ -60,12 +60,9 @@ export function Navbar() {
 
           {/* CTA */}
           <div className="hidden md:flex items-center gap-3">
-            <Link href="/login">
-              <Button variant="ghost" size="sm">Iniciar sesión</Button>
-            </Link>
-            <Link href="/register">
+            <Link href="/contacto">
               <Button size="sm" variant="gradient" className="gap-1.5">
-                Empezar gratis <ChevronRight className="w-3.5 h-3.5" />
+                Pedir cotización <ChevronRight className="w-3.5 h-3.5" />
               </Button>
             </Link>
           </div>
@@ -103,11 +100,8 @@ export function Navbar() {
                 </Link>
               ))}
               <div className="flex flex-col gap-2 mt-3 pt-3 border-t border-surface-100">
-                <Link href="/login" onClick={() => setMobileOpen(false)}>
-                  <Button variant="outline" className="w-full">Iniciar sesión</Button>
-                </Link>
-                <Link href="/register" onClick={() => setMobileOpen(false)}>
-                  <Button variant="gradient" className="w-full">Empezar gratis</Button>
+                <Link href="/contacto" onClick={() => setMobileOpen(false)}>
+                  <Button variant="gradient" className="w-full">Pedir cotización</Button>
                 </Link>
               </div>
             </nav>

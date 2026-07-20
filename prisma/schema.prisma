@@ -519,3 +519,25 @@ model LexPostSubscription {
   @@index([userId, status])
   @@index([preapprovalId])
 }
+
+model Inquiry {
+  id          String   @id @default(cuid())
+  service     String   // diseno-web, seo, custom, premium
+  packageId   String?  // id del paquete elegido (landing-basic, seo-pro, etc)
+  name        String
+  email       String
+  phone       String?
+  company     String?
+  website     String?
+  budget      String?  // rango de presupuesto orientativo
+  message     String   @db.Text
+  source      String?  // pagina de origen
+  status      String   @default("new") // new, contacted, won, lost
+  ipAddress   String?
+  userAgent   String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([service, status])
+  @@index([createdAt])
+}

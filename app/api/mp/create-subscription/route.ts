@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { isValidEmail } from '@/lib/validators'
 
 const ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN!
 
@@ -30,7 +31,7 @@ export async function POST(req: NextRequest) {
     if (!config) {
       return NextResponse.json({ error: 'Plan inválido' }, { status: 400 })
     }
-    if (!payerEmail || !payerEmail.includes('@')) {
+    if (!isValidEmail(payerEmail)) {
       return NextResponse.json({ error: 'Email inválido' }, { status: 400 })
     }
     if (!projectId) {

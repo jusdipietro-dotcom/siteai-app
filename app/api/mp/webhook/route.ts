@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createHmac, timingSafeEqual } from 'crypto'
 import { prisma } from '@/lib/prisma'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
-import { sendPaymentConfirmationEmail, sendSubscriptionCancelledEmail } from '@/lib/email'
+import { sendPaymentConfirmationEmail, sendSubscriptionCancelledEmail, sendAdminProvisioningAlert } from '@/lib/email'
 import { getGraceEndDate, GRACE_PERIOD_MS } from '@/lib/project-billing'
 
 const ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN!
@@ -273,9 +273,10 @@ export async function POST(req: NextRequest) {
 
         if (status === 'authorized' && linkedinSubId) {
           // Atomic idempotency: only update if still pending_payment or trial (trial-to-paid)
+          // Mark as 'provisioning' first; n8n callback will mark 'active' when ready.
           const { count } = await prisma.linkedInSubscription.updateMany({
             where: { id: linkedinSubId, status: { in: ['pending_payment', 'trial'] } },
-            data: { status: 'active', preapprovalId, provisionedAt: new Date() },
+            data: { status: 'provisioning', preapprovalId },
           })
 
           if (count === 0) {
@@ -294,9 +295,14 @@ export async function POST(req: NextRequest) {
             })
           }
 
-          console.log(`[MP Webhook] LinkedIn ${linkedinSubId} → active (plan: ${linkedinPlan})`)
+          console.log(`[MP Webhook] LinkedIn ${linkedinSubId} → provisioning (plan: ${linkedinPlan})`)
 
-          // Send payment confirmation email
+          // Trigger n8n provisioning workflow (will callback /api/linkedin/provision-callback)
+          await triggerLinkedInProvisioning(linkedinSubId).catch((e) =>
+            console.error('[MP Webhook] LinkedIn n8n trigger error:', e)
+          )
+
+          // Send payment confirmation email + admin alert (kept as fallback)
           try {
             const subForEmail = await prisma.linkedInSubscription.findUnique({
               where: { id: linkedinSubId },
@@ -307,6 +313,20 @@ export async function POST(req: NextRequest) {
                 type: 'linkedin',
                 plan: linkedinPlan,
               })
+
+              await sendAdminProvisioningAlert({
+                product: 'LinkedIn Optimizer',
+                plan: linkedinPlan,
+                subscriptionId: linkedinSubId,
+                userEmail: subForEmail.user.email,
+                notificationEmail: subForEmail.notificationEmail,
+                payerEmail: subForEmail.payerEmail,
+                extraInfo: {
+                  'LinkedIn name': subForEmail.linkedinName ?? 'no especificado',
+                  Industria: subForEmail.industry ?? '',
+                  Audiencia: subForEmail.audience ?? '',
+                },
+              }).catch((e) => console.error('[MP Webhook] LinkedIn admin alert failed:', e))
             }
           } catch (emailErr) {
             console.error('[MP Webhook] Failed to send linkedin payment email:', emailErr)
@@ -724,11 +744,10 @@ export async function POST(req: NextRequest) {
 
           console.log(`[MP Webhook] Turnos ${turnosSubId} → provisioning (plan: ${turnosPlan})`)
 
-          // Mark as active (n8n workflow provisioning is done manually or via script)
-          await prisma.turnosSubscription.update({
-            where: { id: turnosSubId },
-            data: { status: 'active', provisionedAt: new Date() },
-          })
+          // Trigger n8n provisioning workflow (will callback /api/turnos/provision-callback)
+          await triggerTurnosProvisioning(turnosSubId).catch((e) =>
+            console.error('[MP Webhook] Turnos n8n trigger error:', e)
+          )
 
           try {
             const subForEmail = await prisma.turnosSubscription.findUnique({
@@ -740,6 +759,20 @@ export async function POST(req: NextRequest) {
                 type: 'turnos',
                 plan: turnosPlan,
               })
+
+              // Turnos requires manual workflow cloning per tenant → alert admin
+              await sendAdminProvisioningAlert({
+                product: 'Turnos Online',
+                plan: turnosPlan,
+                subscriptionId: turnosSubId,
+                userEmail: subForEmail.user.email,
+                notificationEmail: subForEmail.notificationEmail,
+                payerEmail: subForEmail.payerEmail,
+                extraInfo: {
+                  'Slug': subForEmail.slug ?? 'no asignado',
+                  'Workflow n8n ID': subForEmail.n8nWorkflowId ?? 'pendiente clonar',
+                },
+              }).catch((e) => console.error('[MP Webhook] Turnos admin alert failed:', e))
             }
           } catch (emailErr) {
             console.error('[MP Webhook] Failed to send turnos payment email:', emailErr)
@@ -1139,6 +1172,100 @@ export async function POST(req: NextRequest) {
               }
             } catch (emailErr) {
               console.error('[MP Webhook] Failed to send suite cancellation email:', emailErr)
+            }
+          }
+        }
+
+        return NextResponse.json({ received: true })
+      }
+
+      // ─── LexPost subscription: "lexpost:subscriptionId:plan" ───
+      if (parts[0] === 'lexpost') {
+        if (parts.length < 3 || !parts[1] || !parts[2]) {
+          console.warn('[MP Webhook] Invalid lexpost external_reference:', external_reference)
+          return NextResponse.json({ received: true })
+        }
+        const lexpostSubId = parts[1]
+        const lexpostPlan = parts[2]
+
+        if (status === 'authorized' && lexpostSubId) {
+          // Mark as 'provisioning'; n8n callback will mark 'active' when ready.
+          const { count } = await prisma.lexPostSubscription.updateMany({
+            where: { id: lexpostSubId, status: { in: ['pending_payment', 'trial'] } },
+            data: { status: 'provisioning', preapprovalId },
+          })
+
+          if (count === 0) {
+            console.log(`[MP Webhook] LexPost ${lexpostSubId} already processed — skipping`)
+            return NextResponse.json({ received: true })
+          }
+
+          const currentSub = await prisma.lexPostSubscription.findUnique({ where: { id: lexpostSubId } })
+          if (currentSub?.couponId) {
+            await prisma.coupon.update({
+              where: { id: currentSub.couponId },
+              data: { usedCount: { increment: 1 } },
+            })
+          }
+
+          console.log(`[MP Webhook] LexPost ${lexpostSubId} → provisioning (plan: ${lexpostPlan})`)
+
+          // Trigger n8n provisioning workflow (will callback /api/lexpost/provision-callback)
+          await triggerLexpostProvisioning(lexpostSubId).catch((e) =>
+            console.error('[MP Webhook] LexPost n8n trigger error:', e)
+          )
+
+          try {
+            const subForEmail = await prisma.lexPostSubscription.findUnique({
+              where: { id: lexpostSubId },
+              include: { user: { select: { email: true } } },
+            })
+            if (subForEmail?.user.email) {
+              await sendPaymentConfirmationEmail(subForEmail.user.email, {
+                type: 'lexpost',
+                plan: lexpostPlan,
+              })
+
+              // LexPost requires manual provisioning (no n8n workflow yet) → alert admin
+              await sendAdminProvisioningAlert({
+                product: 'LexPost',
+                plan: lexpostPlan,
+                subscriptionId: lexpostSubId,
+                userEmail: subForEmail.user.email,
+                notificationEmail: subForEmail.notificationEmail,
+                payerEmail: subForEmail.payerEmail,
+                extraInfo: {
+                  'IG username': subForEmail.igUsername ?? 'no especificado',
+                  'IG accounts': subForEmail.igAccountCount,
+                  'Publicaciones limit': subForEmail.publicationsLimit,
+                },
+              }).catch((e) => console.error('[MP Webhook] LexPost admin alert failed:', e))
+            }
+          } catch (emailErr) {
+            console.error('[MP Webhook] Failed to send lexpost payment email:', emailErr)
+          }
+        }
+
+        if ((status === 'cancelled' || status === 'paused') && lexpostSubId) {
+          const { count: lpCount } = await prisma.lexPostSubscription.updateMany({
+            where: { id: lexpostSubId, status: { in: ['active', 'provisioning', 'pending_payment', 'trial'] } },
+            data: { status: 'suspended' },
+          })
+          if (lpCount > 0) {
+            console.log(`[MP Webhook] LexPost ${lexpostSubId} suspended (${status})`)
+            try {
+              const subForEmail = await prisma.lexPostSubscription.findUnique({
+                where: { id: lexpostSubId },
+                include: { user: { select: { email: true } } },
+              })
+              if (subForEmail?.user.email) {
+                await sendSubscriptionCancelledEmail(subForEmail.user.email, {
+                  type: 'lexpost',
+                  plan: lexpostPlan,
+                })
+              }
+            } catch (emailErr) {
+              console.error('[MP Webhook] Failed to send lexpost cancellation email:', emailErr)
             }
           }
         }
@@ -2055,6 +2182,121 @@ async function provisionSuiteJuridica(suiteSubId: string, suitePlan: string) {
       where: { id: suiteSubId },
       data: { status: 'active', provisionedAt: new Date() },
     }).catch(() => {})
+  }
+}
+
+/**
+ * Trigger n8n provisioning webhook for Turnos.
+ * Posts subscription details so n8n can clone the base workflow per tenant.
+ */
+async function triggerTurnosProvisioning(subscriptionId: string) {
+  const webhookUrl = process.env.N8N_TURNOS_PROVISIONING_WEBHOOK
+  if (!webhookUrl) {
+    console.warn('[MP Webhook] N8N_TURNOS_PROVISIONING_WEBHOOK not configured — manual provisioning required')
+    return
+  }
+  try {
+    const sub = await prisma.turnosSubscription.findUnique({
+      where: { id: subscriptionId },
+      include: { user: { select: { email: true, name: true } } },
+    })
+    if (!sub) {
+      console.error(`[MP Webhook] Turnos subscription ${subscriptionId} not found`)
+      return
+    }
+    const res = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        subscriptionId,
+        plan: sub.plan,
+        slug: sub.slug,
+        userEmail: sub.user.email,
+        userName: sub.user.name,
+        notificationEmail: sub.notificationEmail,
+        callbackUrl: `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://automaticialab.com'}/api/turnos/provision-callback`,
+        callbackSecret: process.env.TURNOS_PROVISION_SECRET ?? '',
+      }),
+    })
+    console.log(`[MP Webhook] Turnos provisioning triggered for ${subscriptionId} → ${res.status}`)
+  } catch (err) {
+    console.error(`[MP Webhook] Turnos provisioning failed for ${subscriptionId}:`, err)
+  }
+}
+
+/** Trigger n8n provisioning webhook for LinkedIn. */
+async function triggerLinkedInProvisioning(subscriptionId: string) {
+  const webhookUrl = process.env.N8N_LINKEDIN_PROVISIONING_WEBHOOK
+  if (!webhookUrl) {
+    console.warn('[MP Webhook] N8N_LINKEDIN_PROVISIONING_WEBHOOK not configured — manual provisioning required')
+    return
+  }
+  try {
+    const sub = await prisma.linkedInSubscription.findUnique({
+      where: { id: subscriptionId },
+      include: { user: { select: { email: true, name: true } } },
+    })
+    if (!sub) {
+      console.error(`[MP Webhook] LinkedIn subscription ${subscriptionId} not found`)
+      return
+    }
+    const res = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        subscriptionId,
+        plan: sub.plan,
+        userEmail: sub.user.email,
+        userName: sub.user.name,
+        linkedinName: sub.linkedinName,
+        industry: sub.industry,
+        audience: sub.audience,
+        notificationEmail: sub.notificationEmail,
+        callbackUrl: `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://automaticialab.com'}/api/linkedin/provision-callback`,
+        callbackSecret: process.env.LINKEDIN_PROVISION_SECRET ?? '',
+      }),
+    })
+    console.log(`[MP Webhook] LinkedIn provisioning triggered for ${subscriptionId} → ${res.status}`)
+  } catch (err) {
+    console.error(`[MP Webhook] LinkedIn provisioning failed for ${subscriptionId}:`, err)
+  }
+}
+
+/** Trigger n8n provisioning webhook for LexPost. */
+async function triggerLexpostProvisioning(subscriptionId: string) {
+  const webhookUrl = process.env.N8N_LEXPOST_PROVISIONING_WEBHOOK
+  if (!webhookUrl) {
+    console.warn('[MP Webhook] N8N_LEXPOST_PROVISIONING_WEBHOOK not configured — manual provisioning required')
+    return
+  }
+  try {
+    const sub = await prisma.lexPostSubscription.findUnique({
+      where: { id: subscriptionId },
+      include: { user: { select: { email: true, name: true } } },
+    })
+    if (!sub) {
+      console.error(`[MP Webhook] LexPost subscription ${subscriptionId} not found`)
+      return
+    }
+    const res = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        subscriptionId,
+        plan: sub.plan,
+        userEmail: sub.user.email,
+        userName: sub.user.name,
+        igUsername: sub.igUsername,
+        igAccountCount: sub.igAccountCount,
+        publicationsLimit: sub.publicationsLimit,
+        notificationEmail: sub.notificationEmail,
+        callbackUrl: `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://automaticialab.com'}/api/lexpost/provision-callback`,
+        callbackSecret: process.env.LEXPOST_PROVISION_SECRET ?? '',
+      }),
+    })
+    console.log(`[MP Webhook] LexPost provisioning triggered for ${subscriptionId} → ${res.status}`)
+  } catch (err) {
+    console.error(`[MP Webhook] LexPost provisioning failed for ${subscriptionId}:`, err)
   }
 }
 

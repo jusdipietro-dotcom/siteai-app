@@ -1,29 +1,26 @@
 import Link from 'next/link'
 
 const links: Record<string, { label: string; href: string }[]> = {
-  Productos: [
-    { label: 'Sitios Web con IA', href: '/#productos' },
-    { label: 'Monitoreo Judicial', href: '/#productos' },
-    { label: 'Prospeccion B2B', href: '/#productos' },
-    { label: 'Captacion de Leads', href: '/#productos' },
-    { label: 'Resenas Google IA', href: '/#productos' },
-    { label: 'LinkedIn Optimizer', href: '/#productos' },
-    { label: 'Email Marketing', href: '/#productos' },
-    { label: 'Senales Crypto', href: '/#productos' },
-    { label: 'Redes Sociales', href: '/#productos' },
-    { label: 'Turnos Online', href: '/#productos' },
-    { label: 'Automatizaciones', href: '/#productos' },
+  Servicios: [
+    { label: 'Inteligencia Artificial', href: '/servicios/inteligencia-artificial' },
+    { label: 'Marketing Digital', href: '/servicios/marketing-digital' },
+    { label: 'Diseño Web', href: '/servicios/diseno-web' },
+    { label: 'Posicionamiento SEO', href: '/servicios/seo' },
+  ],
+  Verticales: [
+    { label: 'Para abogados', href: '/automatizacion-para-abogados' },
+    { label: 'Casos premium', href: '/premium' },
+    { label: 'Workflows a medida', href: '/contacto' },
+    { label: 'Chatbot IA a medida', href: '/contacto' },
   ],
   Recursos: [
+    { label: 'Testimonios', href: '/testimonios' },
     { label: 'Blog', href: '/blog' },
-    { label: 'Preguntas frecuentes', href: '/#faq' },
-    { label: 'Precios', href: '/#pricing' },
-    { label: 'Plan Gratuito', href: '/gratis' },
     { label: 'Sobre nosotros', href: '/about' },
     { label: 'Contacto', href: '/contacto' },
   ],
   Legal: [
-    { label: 'Terminos de uso', href: '/terms' },
+    { label: 'Términos de uso', href: '/terms' },
     { label: 'Privacidad', href: '/privacy' },
   ],
 }
@@ -32,7 +29,7 @@ export function Footer() {
   return (
     <footer className="bg-surface-950 border-t border-surface-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-10 mb-12">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-10 mb-12">
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
             <div className="flex items-center gap-2 mb-4">

@@ -18,7 +18,7 @@ const PLANS = [
     name: 'Señales',
     price: 20000,
     features: [
-      '18 pares seleccionados — 60% win rate verificado',
+      '18 pares analizados con 7 indicadores técnicos + 3 macro',
       '7 indicadores técnicos + 3 macro (Fear & Greed, Funding, BTC Dom)',
       'Stop Loss y Take Profit automáticos',
       'Filtros de calidad: ADX, patrones de velas, volatilidad',
@@ -31,7 +31,7 @@ const PLANS = [
     price: 35000,
     popular: true,
     features: [
-      'Todo lo del plan Señales (18 pares, 60% win rate)',
+      'Todo lo del plan Señales (18 pares)',
       'Pares personalizados adicionales',
       'Reportes semanales con métricas (Profit Factor, Sharpe)',
       'Análisis macro diario (Fear & Greed, Funding Rate)',
@@ -384,6 +384,18 @@ function CryptoPage() {
                       </ul>
                     </button>
                   ))}
+                </div>
+
+                {/* Aviso de riesgo — honesto y obligatorio */}
+                <div className="mt-6 flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl p-4">
+                  <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
+                  <p className="text-xs text-amber-800 leading-relaxed">
+                    <strong>Aviso importante:</strong> son alertas técnicas <strong>informativas y educativas</strong>,
+                    NO asesoramiento financiero ni recomendaciones de inversión. El trading de criptomonedas implica
+                    riesgo de pérdida, incluso total, del capital. Ningún sistema acierta siempre y los resultados
+                    pasados no garantizan resultados futuros. Operá solo con capital que puedas permitirte perder
+                    y bajo tu propia responsabilidad.
+                  </p>
                 </div>
               </motion.div>
             )}

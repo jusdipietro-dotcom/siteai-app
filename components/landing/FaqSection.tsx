@@ -5,64 +5,40 @@ import { ChevronDown } from 'lucide-react'
 
 const faqs = [
   {
-    q: 'Necesito saber programar para usar la plataforma?',
-    a: 'No. Todos nuestros productos son plug & play. Vos elegis, nosotros configuramos y la IA hace el resto. No se requiere ningun conocimiento tecnico.',
+    q: '¿Qué tipos de proyectos hacen?',
+    a: 'Cuatro pilares: inteligencia artificial aplicada (chatbots, agentes autónomos, automatización con LLMs), marketing digital (Meta Ads, Google Ads, contenido), diseño web a medida (landing, sitios institucionales, e-commerce) y posicionamiento SEO (técnico, local, orgánico). Cada proyecto se cotiza según alcance.',
   },
   {
-    q: 'Puedo contratar un solo producto o tengo que contratar todo?',
-    a: 'Cada producto es 100% independiente. Podes contratar solo el que necesitas o combinar varios. El alta es online y la activacion es inmediata en la mayoria de los casos.',
+    q: '¿Cómo es el proceso de contratación?',
+    a: 'Tres pasos. Primero diagnóstico técnico (USD 300-700, 5-10 días) con relevamiento, arquitectura y documento de 15-30 páginas. Después implementación a medida (USD 1.500-5.000, 15-45 días, descuenta el diagnóstico). Finalmente mantenimiento opcional (USD 200-500/mes, sin permanencia).',
   },
   {
-    q: 'Los precios son en dolares?',
-    a: 'No. Todos nuestros precios son en pesos argentinos (ARS). Aceptamos MercadoPago y transferencia bancaria. Sin tarjetas internacionales ni conversiones.',
+    q: '¿Por qué cobran el diagnóstico?',
+    a: 'Porque requiere 5-15 horas de trabajo profesional (relevamiento + arquitectura + documentación). El documento es tuyo: lo podés usar con nosotros o con otra agencia. Si avanzás con la implementación, descontamos el 100% del diagnóstico.',
   },
   {
-    q: 'Que pasa si cancelo?',
-    a: 'Podes cancelar cuando quieras, sin penalidades ni contratos de permanencia. Tu servicio seguira activo hasta que venza el periodo contratado.',
+    q: '¿Cobran en pesos o en USD?',
+    a: 'Cobramos en USD por estabilidad de tarifas pero aceptamos pago en pesos argentinos al MEP/CCL del día. Aceptamos transferencia, MercadoPago o crypto (USDT/USDC). Plan de pago: 50% al arrancar, 30% a mitad, 20% contra entrega.',
   },
   {
-    q: 'Que es el Monitoreo Judicial?',
-    a: 'Es un servicio que revisa automaticamente los portales PJN y SCBA cada 2 horas y te envia por email las nuevas notificaciones con el texto completo del PDF. No necesitas entrar al portal nunca mas.',
+    q: '¿Hay permanencia en el mantenimiento?',
+    a: 'No. Trabajamos mes a mes. Si decidís cortar, nos avisás con 30 días y te entregamos toda la documentación, accesos y aprendizajes. Sin penalidad.',
   },
   {
-    q: 'Que portales judiciales monitorean?',
-    a: 'Actualmente PJN y SCBA, con expansion planificada a MEV, PJ Buenos Aires, Cordoba y Santa Fe durante 2026.',
+    q: '¿Quién es dueño del código y los activos?',
+    a: 'Vos. Te entregamos código fuente + documentación + acceso al servidor + cuentas de ads bajo tu nombre. Sin vendor lock-in. Si decidís discontinuar, te llevás todo y podés operarlo con otra agencia.',
   },
   {
-    q: 'Como funciona la Prospeccion B2B con IA?',
-    a: 'El sistema busca prospectos en tu nicho y ciudad, extrae emails verificados de sus webs, y envia emails unicos generados por IA que mencionan datos reales de cada negocio. Todo automatico con seguimiento en Google Sheets.',
+    q: '¿Trabajan con cualquier rubro?',
+    a: 'Sí, pero somos especialistas en: estudios jurídicos (suite completa con monitoreo PJN/SCBA), e-commerce de indumentaria, gastronomía, clínicas y consultorios, inmobiliarias, servicios B2B y profesionales independientes.',
   },
   {
-    q: 'Cuantos leads puedo capturar por dia?',
-    a: 'Entre 50 y 150 leads unicos por dia dependiendo de los nichos y ciudades. Se deduplican automaticamente. No hay limite mensual.',
+    q: '¿Cuánto tarda en estar listo un proyecto?',
+    a: 'Diagnóstico: 5-10 días. Implementación según tipo: landing simple 5-7 días, sitio institucional 10-15 días, tienda online 15-25 días, sistema con IA 4-8 semanas, integración compleja 8-12 semanas.',
   },
   {
-    q: 'Como funciona el respondedor de resenas de Google?',
-    a: 'Un agente de IA monitorea tu perfil de Google Business cada 30 minutos. Cuando detecta una resena nueva, genera una respuesta personalizada segun la puntuacion, el contenido y el nombre del cliente. Se publica automaticamente con el tono de tu marca.',
-  },
-  {
-    q: 'Que hace el LinkedIn Optimizer?',
-    a: 'Analiza tu perfil de LinkedIn, genera recomendaciones de optimizacion y crea publicaciones profesionales de alto impacto. Lo confirmas desde Telegram y se publica automaticamente. Incluye plan de contenido semanal.',
-  },
-  {
-    q: 'Como funcionan las Senales Crypto?',
-    a: 'Un bot analiza 18 pares crypto con 7 indicadores tecnicos + 3 macro. Cuando hay confluencia (score >= 6/10), te envia una alerta a Telegram con precio de entrada, Stop Loss, Take Profit y ratio riesgo/beneficio. 60% win rate verificado.',
-  },
-  {
-    q: 'Que incluye la automatizacion de redes sociales?',
-    a: 'Un sistema 100% automatizado busca contenido de tu nicho, lo procesa con IA, genera imagenes y lo publica en Instagram automaticamente. Incluye 4 publicaciones diarias (fotos y reels) sin intervencion humana.',
-  },
-  {
-    q: 'Como funciona el sistema de Turnos Online?',
-    a: 'Tus clientes eligen dia, hora y servicio desde una web responsive. El turno se confirma automaticamente por email y se registra en Google Calendar. Incluye disponibilidad en tiempo real y personalizacion completa.',
-  },
-  {
-    q: 'Que tipo de automatizaciones hacen a medida?',
-    a: 'Desarrollamos flujos con IA: scraping de datos, integraciones API, agentes LLM (GPT, Gemini, Groq), procesamiento de documentos, notificaciones inteligentes y mas. Cada proyecto se adapta a tu necesidad.',
-  },
-  {
-    q: 'Como es el soporte?',
-    a: 'Soporte directo por WhatsApp. Sin bots, sin tickets, sin esperar dias. Respondemos consultas en horario comercial y emergencias criticas fuera de horario.',
+    q: '¿Cómo es el soporte?',
+    a: 'Soporte directo por WhatsApp y email. Sin bots, sin tickets. Respondemos consultas en horario comercial L-V 9-18 ART y emergencias críticas fuera de horario.',
   },
 ]
 

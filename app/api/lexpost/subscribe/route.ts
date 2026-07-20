@@ -5,12 +5,17 @@ import { prisma } from '@/lib/prisma'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 import { isUserFreeAccount } from '@/lib/free-account'
 import { getTrialEndDate, expireStaleTrials, hasUsedTrial } from '@/lib/trial'
+import { LEXPOST_PLANS as LEXPOST_PLANS_RAW } from '@/lib/lexpost-plans'
 
-const LEXPOST_PLANS: Record<string, { monthly: number; title: string; limit: number; accounts: number }> = {
-  basico:       { monthly: 15000, title: 'LexPost Basico',       limit: 10, accounts: 1 },
-  profesional:  { monthly: 25000, title: 'LexPost Profesional',  limit: 0,  accounts: 1 }, // 0 = unlimited
-  estudio:      { monthly: 45000, title: 'LexPost Estudio',      limit: 0,  accounts: 3 },
-}
+// Adapter: keep legacy field names (limit, accounts) used by this endpoint.
+const LEXPOST_PLANS = Object.fromEntries(
+  Object.entries(LEXPOST_PLANS_RAW).map(([k, v]) => [k, {
+    monthly: v.monthly,
+    title: v.title,
+    limit: v.publicationsLimit,
+    accounts: v.igAccountCount,
+  }])
+) as Record<string, { monthly: number; title: string; limit: number; accounts: number }>
 
 export async function POST(req: NextRequest) {
   try {

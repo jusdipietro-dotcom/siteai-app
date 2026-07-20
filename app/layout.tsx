@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Inter } from 'next/font/google'
 import { Toaster } from 'sonner'
 import './globals.css'
 import { CommandPalette } from '@/components/shared/CommandPalette'
@@ -6,29 +7,29 @@ import { GlobalKeyboardShortcuts } from '@/components/shared/GlobalKeyboardShort
 import { Providers } from '@/components/providers/Providers'
 import { WhatsAppButton } from '@/components/shared/WhatsAppButton'
 
+// Self-host Inter via next/font (auto preload + woff2 + no FOUT).
+// Replaces the previous @import on Google Fonts which blocked render.
+const inter = Inter({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-inter',
+  preload: true,
+})
+
 export const metadata: Metadata = {
-  title: { default: 'Automatic IA Lab — Automatizaciones con IA', template: '%s · Automatic IA Lab' },
-  description: 'Plataforma de automatizacion con IA: 11 productos para escalar tu negocio. Sitios web, monitoreo judicial, prospeccion B2B, email marketing, resenas Google, LinkedIn, senales crypto, turnos online y mas. Todo sin codigo, desde Argentina.',
-  keywords: [
-    'automatizacion con inteligencia artificial',
-    'crear sitio web gratis',
-    'generador de sitios web con IA',
-    'notificaciones judiciales automaticas',
-    'monitoreo judicial Argentina',
-    'automatizacion para abogados',
-    'responder resenas google con ia',
-    'gestion de resenas google business',
-    'optimizar perfil linkedin con ia',
-    'linkedin optimizer bot',
-    'prospeccion b2b con ia',
-    'captacion de leads automatica',
-    'email marketing automatizado argentina',
-    'senales crypto trading bot',
-    'turnos online profesionales',
-    'automatizacion redes sociales instagram',
-    'automatic ia lab',
-  ],
-  icons: { icon: '/favicon.ico' },
+  metadataBase: new URL('https://automaticialab.com'),
+  title: {
+    default: 'Automatic IA Lab — Agencia de IA, Marketing, Diseño Web y SEO',
+    template: '%s · Automatic IA Lab',
+  },
+  description:
+    'Agencia digital argentina especializada en IA, marketing, diseño web y SEO. Trabajamos a medida: contanos tu proyecto y coordinamos una reunión sin compromiso por WhatsApp.',
+  icons: {
+    icon: '/favicon.ico',
+    shortcut: '/favicon.ico',
+    apple: '/logo.png',
+  },
+  manifest: undefined,
   robots: 'index, follow',
   verification: { google: 'C1f6_LmId69To22LmPBUOUV_Ys0Gwiu0jdJCbFdkaP0' },
   alternates: {
@@ -38,25 +39,31 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'es_AR',
     siteName: 'Automatic IA Lab',
-    title: 'Automatic IA Lab — Automatizaciones con IA',
-    description: 'Plataforma de automatizacion con IA: 11 productos para escalar tu negocio. Sitios web, monitoreo judicial, prospeccion B2B, email marketing y mas.',
+    title: 'Automatic IA Lab — Agencia de IA, Marketing, Diseño Web y SEO',
+    description:
+      'Agencia digital argentina especializada en IA, marketing, diseño web y SEO. Trabajamos a medida: contanos tu proyecto y coordinamos una reunión sin compromiso por WhatsApp.',
     url: 'https://automaticialab.com',
-    images: [{ url: 'https://automaticialab.com/og-image.png', width: 1200, height: 630, alt: 'Automatic IA Lab' }],
+    images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'Automatic IA Lab — Agencia digital' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Automatic IA Lab — Automatizaciones con IA',
-    description: 'Plataforma de automatizacion con IA: 11 productos para escalar tu negocio. Sitios web, monitoreo judicial, prospeccion B2B, email marketing y mas.',
-    images: ['https://automaticialab.com/og-image.png'],
+    site: '@automaticialab',
+    creator: '@automaticialab',
+    title: 'Automatic IA Lab — Agencia de IA, Marketing, Diseño Web y SEO',
+    description:
+      'Agencia digital argentina especializada en IA, marketing, diseño web y SEO. Trabajamos a medida: contanos tu proyecto y coordinamos una reunión sin compromiso por WhatsApp.',
+    images: ['/og-image.png'],
   },
+}
+
+export const viewport = {
+  themeColor: '#0099ff',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es" suppressHydrationWarning>
+    <html lang="es" suppressHydrationWarning className={inter.variable}>
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         {/* Google Analytics — Reemplazar G-KW8GZ3S9DY con tu ID real */}
         <script async src="https://www.googletagmanager.com/gtag/js?id=G-KW8GZ3S9DY" />
         <script

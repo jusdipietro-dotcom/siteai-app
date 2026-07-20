@@ -1,38 +1,32 @@
-import { Navbar } from '@/components/layout/Navbar'
-import { Hero } from '@/components/landing/Hero'
-import { ProductsSection } from '@/components/landing/ProductsSection'
-import { Features } from '@/components/landing/Features'
-import { HowItWorks } from '@/components/landing/HowItWorks'
-import { BusinessTypes } from '@/components/landing/BusinessTypes'
-import { StatsSection } from '@/components/landing/StatsSection'
-import { Testimonials } from '@/components/landing/Testimonials'
-import { FaqSection } from '@/components/landing/FaqSection'
-import { Pricing } from '@/components/landing/Pricing'
-import { SuiteJuridicaSection } from '@/components/landing/SuiteJuridicaSection'
-import { CtaSection } from '@/components/landing/CtaSection'
-import { Footer } from '@/components/landing/Footer'
+import { LandingNavbar } from '@/components/landing/LandingNavbar'
+import { LandingHero } from '@/components/landing/LandingHero'
+import { LandingServices } from '@/components/landing/LandingServices'
+import { LandingSolutions } from '@/components/landing/LandingSolutions'
+import { LandingVerticals } from '@/components/landing/LandingVerticals'
+import { LandingProcess } from '@/components/landing/LandingProcess'
+import { LandingWhyUs } from '@/components/landing/LandingWhyUs'
+import { LandingFaq } from '@/components/landing/LandingFaq'
+import { LandingCta } from '@/components/landing/LandingCta'
+import { LandingFooter } from '@/components/landing/LandingFooter'
 import { OrganizationSchema } from '@/components/seo/OrganizationSchema'
-import { FaqSchema } from '@/components/seo/FaqSchema'
+import { WebSiteSchema } from '@/components/seo/WebSiteSchema'
 
 export default function LandingPage() {
   return (
     <>
+      <WebSiteSchema />
       <OrganizationSchema />
-      <FaqSchema />
       <main className="min-h-screen bg-white">
-        <Navbar />
-        <Hero />
-        <ProductsSection />
-        <SuiteJuridicaSection />
-        <HowItWorks />
-        <StatsSection />
-        <Features />
-        <BusinessTypes />
-        <Testimonials />
-        <FaqSection />
-        <Pricing />
-        <CtaSection />
-        <Footer />
+        <LandingNavbar />
+        <LandingHero />
+        <LandingServices />
+        <LandingSolutions />
+        <LandingVerticals />
+        <LandingProcess />
+        <LandingWhyUs />
+        <LandingFaq />
+        <LandingCta />
+        <LandingFooter />
       </main>
     </>
   )

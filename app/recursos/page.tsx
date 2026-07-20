@@ -188,16 +188,16 @@ export default function RecursosPage() {
       <section className="py-20 bg-surface-50">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl font-bold text-surface-900 mb-4">
-            ¿Listo para crear tu sitio web?
+            ¿Listo para crecer tu negocio?
           </h2>
           <p className="text-lg text-surface-600 mb-8">
-            Dejá de leer y empezá a hacer. Creá tu sitio web gratis en menos de 60 segundos.
+            Dejá de leer y empezá a hacer. Pedinos un diagnóstico técnico y armamos una propuesta a medida.
           </p>
           <Link
-            href="/register"
+            href="/contacto"
             className="inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-semibold px-8 py-4 rounded-xl text-lg transition-colors shadow-lg shadow-brand-500/25"
           >
-            Crear mi sitio gratis
+            Pedir cotización
             <ArrowRight className="w-5 h-5" />
           </Link>
         </div>

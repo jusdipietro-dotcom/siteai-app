@@ -82,7 +82,7 @@ const productPricing = [
     name: 'Senales Crypto',
     price: '$20.000',
     period: '/mes',
-    note: '18 pares | 60% win rate',
+    note: '18 pares | análisis técnico',
     gradient: 'from-emerald-500 to-green-600',
     href: '/register?next=crypto',
   },

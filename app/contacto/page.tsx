@@ -29,8 +29,8 @@ const channels = [
     icon: MessageCircle,
     title: 'WhatsApp',
     desc: 'Chatea con nosotros directamente. Ideal para consultas rapidas.',
-    action: '+54 9 11 0000-0000',
-    href: 'https://wa.me/5491100000000?text=Hola%2C%20tengo%20una%20consulta%20sobre%20Automatic%20IA%20Lab',
+    action: '+54 9 11 7131-1465',
+    href: 'https://wa.me/5491171311465?text=Hola%2C%20tengo%20una%20consulta%20sobre%20Automatic%20IA%20Lab',
     cta: 'Abrir WhatsApp',
   },
 ]
@@ -93,27 +93,26 @@ export default function ContactoPage() {
           <h2 className="text-2xl font-bold text-surface-950 mb-4">Preguntas frecuentes antes de contactar</h2>
           <div className="space-y-4 mb-12">
             <div className="bg-surface-50 rounded-xl p-5">
-              <h3 className="font-semibold text-surface-900 mb-1">Quiero crear mi sitio web gratis</h3>
+              <h3 className="font-semibold text-surface-900 mb-1">Quiero pedir un diagnóstico</h3>
               <p className="text-sm text-surface-600">
-                No necesitas contactarnos. Registrate directamente en{' '}
-                <Link href="/register" className="text-brand-600 hover:text-brand-700 underline">
-                  la plataforma
-                </Link>{' '}
-                y crea tu sitio en minutos.
+                Escribinos por email o WhatsApp contándonos sobre tu negocio y qué proceso querés
+                mejorar. Te respondemos en menos de 24 horas y coordinamos una reunión inicial gratis
+                de 30 minutos. El diagnóstico técnico cuesta USD 300-700 según alcance.
               </p>
             </div>
             <div className="bg-surface-50 rounded-xl p-5">
-              <h3 className="font-semibold text-surface-900 mb-1">Tengo un problema con mi cuenta</h3>
+              <h3 className="font-semibold text-surface-900 mb-1">¿Cuánto cuesta una implementación?</h3>
               <p className="text-sm text-surface-600">
-                Escribinos por email a automaticialab@gmail.com con tu nombre de usuario y una
-                descripcion del problema. Respondemos en menos de 24 horas habiles.
+                Implementación: USD 1.500 a 5.000 según alcance (descuenta el diagnóstico).
+                Mantenimiento mensual opcional: USD 200 a 500/mes (sin permanencia). Cobramos en USD
+                pero aceptamos pago en pesos al MEP/CCL del día.
               </p>
             </div>
             <div className="bg-surface-50 rounded-xl p-5">
-              <h3 className="font-semibold text-surface-900 mb-1">Necesito una automatizacion a medida</h3>
+              <h3 className="font-semibold text-surface-900 mb-1">Necesito una automatización a medida</h3>
               <p className="text-sm text-surface-600">
-                Contanos que proceso queres automatizar y te armamos una propuesta personalizada.
-                Escribinos por email o WhatsApp con los detalles de tu caso.
+                Es lo que hacemos. Contanos qué proceso querés automatizar y te armamos una propuesta
+                personalizada. Escribinos por email o WhatsApp con los detalles de tu caso.
               </p>
             </div>
           </div>

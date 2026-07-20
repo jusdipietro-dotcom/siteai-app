@@ -6,12 +6,7 @@ import { encryptPortalCredentials } from '@/lib/encryption'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 import { isUserFreeAccount } from '@/lib/free-account'
 import { getTrialEndDate, expireStaleTrials, hasUsedTrial } from '@/lib/trial'
-
-const MONITORING_PLANS: Record<string, { monthly: number; title: string; maxCuils: number }> = {
-  basico:       { monthly: 19000, title: 'Monitoreo Judicial Básico',       maxCuils: 1 },
-  profesional:  { monthly: 35000, title: 'Monitoreo Judicial Profesional',  maxCuils: 3 },
-  estudio:      { monthly: 75000, title: 'Monitoreo Judicial Estudio',      maxCuils: 8 },
-}
+import { MONITOREO_PLANS as MONITORING_PLANS } from '@/lib/monitoreo-plans'
 
 export async function POST(req: NextRequest) {
   try {

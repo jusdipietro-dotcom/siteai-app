@@ -4,6 +4,25 @@ const nextConfig = {
   // En Vercel esto no hace falta y puede ignorarse — Vercel detecta Next.js automáticamente.
   output: process.env.BUILD_STANDALONE === 'true' ? 'standalone' : undefined,
 
+  async redirects() {
+    return [
+      {
+        // Permanent 301 redirect www -> non-www (canonical host).
+        source: '/:path*',
+        has: [{ type: 'host', value: 'www.automaticialab.com' }],
+        destination: 'https://automaticialab.com/:path*',
+        permanent: true,
+      },
+      // Legacy SaaS auto-product URLs → /contacto (agency model now).
+      // /admin/* and /(dashboard)/* keep working (auth-gated, internal use).
+      { source: '/gratis', destination: '/contacto', permanent: true },
+      { source: '/recursos', destination: '/contacto', permanent: true },
+      { source: '/leads', destination: '/contacto', permanent: true },
+      { source: '/servicios/email-marketing', destination: '/servicios/marketing-digital', permanent: true },
+      { source: '/servicios/prospeccion', destination: '/servicios/marketing-digital', permanent: true },
+    ]
+  },
+
   async headers() {
     return [
       {
@@ -17,7 +36,7 @@ const nextConfig = {
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "img-src 'self' data: https: blob:",
               "font-src 'self' https://fonts.gstatic.com",
-              "connect-src 'self' https://www.google-analytics.com https://vitals.vercel-insights.com",
+              "connect-src 'self' https://www.google-analytics.com https://vitals.vercel-insights.com https://api.automaticialab.com",
               "frame-ancestors 'none'",
             ].join('; '),
           },
