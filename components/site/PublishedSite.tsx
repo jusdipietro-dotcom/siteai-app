@@ -27,6 +27,19 @@ export function PublishedSite({ project: row }: { project: Project }) {
 
   const has = (id: string) => sectionEnabled(sections, id)
 
+  // A section renders only when the owner actually supplied its content — we
+  // never invent services, reviews or figures to fill an enabled-but-empty
+  // section. Nav and footer links read the same flags so they can't point at
+  // an anchor that was omitted.
+  const showAbout = has('about') && !!bd.description
+  const showServices = has('services') && !!bd.services?.length
+  const showStats = has('stats') && !!bd.stats?.length
+  const showTeam = has('team') && !!bd.team?.length
+  const showTestimonials = has('testimonials') && !!bd.testimonials?.length
+  const showFaq = has('faq') && !!bd.faqs?.length
+  const showCta = has('cta')
+  const showContact = has('contact')
+
   // Fonts from branding
   const fontHeadingId = bd.branding?.fontHeading || 'inter'
   const fontBodyId = bd.branding?.fontBody || 'inter'
@@ -130,12 +143,8 @@ export function PublishedSite({ project: row }: { project: Project }) {
           .testi-avatar { width: 36px; height: 36px; border-radius: 50%; background: ${color}; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 0.85rem; flex-shrink: 0; }
           /* About */
           .about-section { background: #f8fafc; }
-          .about-inner { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center; }
+          .about-inner { max-width: 720px; }
           .about-badge { display: inline-flex; align-items: center; gap: 0.5rem; background: ${color}18; color: ${color}; font-size: 0.75rem; font-weight: 700; padding: 0.4rem 0.875rem; border-radius: 9999px; margin-bottom: 1rem; }
-          @media (max-width: 768px) {
-            .about-inner { grid-template-columns: 1fr; gap: 2rem; }
-            .about-icons { grid-template-columns: 1fr 1fr !important; }
-          }
           /* Team */
           .team-member-card { text-align: center; }
           .team-avatar { width: 72px; height: 72px; border-radius: 50%; background: ${color}22; display: flex; align-items: center; justify-content: center; font-size: 1.75rem; font-weight: 800; color: ${color}; margin: 0 auto 1rem; }
@@ -178,12 +187,12 @@ export function PublishedSite({ project: row }: { project: Project }) {
             <span className="navbar-logo">{name}</span>
             <div className="navbar-links hide-mobile">
               <a href="#inicio">Inicio</a>
-              {has('services') && <a href="#servicios">Servicios</a>}
-              {has('about') && <a href="#nosotros">Nosotros</a>}
-              {has('testimonials') && <a href="#testimonios">Testimonios</a>}
-              {has('contact') && <a href="#contacto">Contacto</a>}
+              {showServices && <a href="#servicios">Servicios</a>}
+              {showAbout && <a href="#nosotros">Nosotros</a>}
+              {showTestimonials && <a href="#testimonios">Testimonios</a>}
+              {showContact && <a href="#contacto">Contacto</a>}
             </div>
-            {has('contact') && (
+            {showContact && (
               <a href="#contacto" className="btn-primary hide-mobile" style={{ padding: '0.5rem 1.25rem', fontSize: '0.875rem' }}>
                 Contactar
               </a>
@@ -194,10 +203,10 @@ export function PublishedSite({ project: row }: { project: Project }) {
           </div>
           <div className="mobile-menu" id="mobile-menu">
             <a href="#inicio" onClick={undefined}>Inicio</a>
-            {has('services') && <a href="#servicios">Servicios</a>}
-            {has('about') && <a href="#nosotros">Nosotros</a>}
-            {has('testimonials') && <a href="#testimonios">Testimonios</a>}
-            {has('contact') && <a href="#contacto">Contacto</a>}
+            {showServices && <a href="#servicios">Servicios</a>}
+            {showAbout && <a href="#nosotros">Nosotros</a>}
+            {showTestimonials && <a href="#testimonios">Testimonios</a>}
+            {showContact && <a href="#contacto">Contacto</a>}
           </div>
         </nav>
         <script dangerouslySetInnerHTML={{ __html: `
@@ -216,16 +225,16 @@ export function PublishedSite({ project: row }: { project: Project }) {
         {/* ── Hero ── */}
         <section className="hero" id="inicio">
           <div className="container hero-content">
-            <div className="hero-badge">✦ {bd.businessType || 'Negocio local'}</div>
+            {bd.businessType && <div className="hero-badge">✦ {bd.businessType}</div>}
             <h1>{name}</h1>
-            <p className="hero-tagline">
-              {bd.tagline || bd.description || 'Tu presencia online, profesional y lista para crecer.'}
-            </p>
+            {(bd.tagline || bd.description) && (
+              <p className="hero-tagline">{bd.tagline || bd.description}</p>
+            )}
             <div className="hero-cta">
-              {has('contact') && (
+              {showContact && (
                 <a href="#contacto" className="btn-primary">Contactar ahora</a>
               )}
-              {has('services') && (
+              {showServices && (
                 <a href="#servicios" className="btn-outline">Ver servicios</a>
               )}
             </div>
@@ -233,42 +242,25 @@ export function PublishedSite({ project: row }: { project: Project }) {
         </section>
 
         {/* ── About ── */}
-        {has('about') && (
+        {showAbout && (
           <section className="section-pad about-section" id="nosotros">
             <div className="container">
               <div className="about-inner">
-                <div>
-                  <div className="about-badge">💡 Sobre nosotros</div>
-                  <h2 className="heading-lg" style={{ marginBottom: '1rem' }}>¿Quiénes somos?</h2>
-                  <p className="subtext" style={{ marginBottom: '1.5rem' }}>
-                    {bd.description || 'Somos un equipo comprometido con brindar el mejor servicio a nuestros clientes. Trabajamos con pasión y dedicación para superar tus expectativas.'}
-                  </p>
-                  {has('contact') && (
-                    <a href="#contacto" className="btn-primary" style={{ background: 'transparent', color: color, border: `2px solid ${color}`, borderRadius: '9999px', padding: '0.75rem 1.5rem', fontWeight: 700, fontSize: '0.875rem', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
-                      Contactanos →
-                    </a>
-                  )}
-                </div>
-                <div className="about-icons" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                  {[
-                    { emoji: '🏆', label: 'Calidad garantizada' },
-                    { emoji: '⚡', label: 'Respuesta rápida' },
-                    { emoji: '🤝', label: 'Atención personalizada' },
-                    { emoji: '📍', label: 'Presencia local' },
-                  ].map(({ emoji, label }) => (
-                    <div key={label} style={{ background: '#fff', border: '1px solid #e8edf3', borderRadius: '1rem', padding: '1.25rem', textAlign: 'center' }}>
-                      <div style={{ fontSize: '1.75rem', marginBottom: '0.5rem' }}>{emoji}</div>
-                      <p style={{ fontWeight: 600, fontSize: '0.8rem', color: '#475569' }}>{label}</p>
-                    </div>
-                  ))}
-                </div>
+                <div className="about-badge">💡 Sobre nosotros</div>
+                <h2 className="heading-lg" style={{ marginBottom: '1rem' }}>¿Quiénes somos?</h2>
+                <p className="subtext" style={{ marginBottom: '1.5rem' }}>{bd.description}</p>
+                {showContact && (
+                  <a href="#contacto" className="btn-primary" style={{ background: 'transparent', color: color, border: `2px solid ${color}`, borderRadius: '9999px', padding: '0.75rem 1.5rem', fontWeight: 700, fontSize: '0.875rem', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+                    Contactanos →
+                  </a>
+                )}
               </div>
             </div>
           </section>
         )}
 
         {/* ── Services ── */}
-        {has('services') && (
+        {showServices && (
           <section className="section-pad" id="servicios" style={{ background: '#fff' }}>
             <div className="container">
               <p className="label" style={{ textAlign: 'center' }}>Nuestros servicios</p>
@@ -277,14 +269,7 @@ export function PublishedSite({ project: row }: { project: Project }) {
                 Soluciones pensadas para tu negocio
               </p>
               <div className="grid-3">
-                {(bd.services?.length > 0
-                  ? bd.services
-                  : [
-                      { id: '1', name: 'Consulta inicial', description: 'Evaluación detallada de tu situación con nuestros expertos.', emoji: '⭐' },
-                      { id: '2', name: 'Servicio principal', description: 'El servicio más solicitado por nuestros clientes, con resultados comprobados.', emoji: '🔧' },
-                      { id: '3', name: 'Seguimiento', description: 'Acompañamiento continuo para asegurar los mejores resultados.', emoji: '✅' },
-                    ]
-                ).map((s) => (
+                {bd.services.map((s) => (
                   <div key={s.id} className="card service-card">
                     <div className="service-emoji">{s.emoji || '✨'}</div>
                     <h3 style={{ fontWeight: 700, fontSize: '1.05rem', marginBottom: '0.5rem', color: '#0f172a' }}>{s.name}</h3>
@@ -300,19 +285,14 @@ export function PublishedSite({ project: row }: { project: Project }) {
         )}
 
         {/* ── Stats ── */}
-        {has('stats') && (
+        {showStats && bd.stats && (
           <section className="section-pad-sm stats-section">
             <div className="container">
               <div className="grid-4" style={{ textAlign: 'center' }}>
-                {[
-                  { number: '+500', label: 'Clientes satisfechos' },
-                  { number: '+10', label: 'Años de experiencia' },
-                  { number: '98%', label: 'Tasa de satisfacción' },
-                  { number: '24/7', label: 'Disponibilidad' },
-                ].map(({ number, label }) => (
-                  <div key={label}>
-                    <div className="stat-number">{number}</div>
-                    <div className="stat-label">{label}</div>
+                {bd.stats.map((s) => (
+                  <div key={s.id}>
+                    <div className="stat-number">{s.number}</div>
+                    <div className="stat-label">{s.label}</div>
                   </div>
                 ))}
               </div>
@@ -321,7 +301,7 @@ export function PublishedSite({ project: row }: { project: Project }) {
         )}
 
         {/* ── Team ── */}
-        {has('team') && bd.team?.length > 0 && (
+        {showTeam && (
           <section className="section-pad" style={{ background: '#f8fafc' }}>
             <div className="container">
               <p className="label" style={{ textAlign: 'center' }}>El equipo</p>
@@ -341,22 +321,17 @@ export function PublishedSite({ project: row }: { project: Project }) {
         )}
 
         {/* ── Testimonials ── */}
-        {has('testimonials') && (
+        {showTestimonials && (
           <section className="section-pad testi-section" id="testimonios">
             <div className="container">
               <p className="label" style={{ textAlign: 'center' }}>Testimonios</p>
               <h2 className="heading-lg" style={{ textAlign: 'center', marginBottom: '3rem' }}>Lo que dicen nuestros clientes</h2>
               <div className="grid-3">
-                {(bd.testimonials?.length > 0
-                  ? bd.testimonials
-                  : [
-                      { id: '1', author: 'María García', role: 'Cliente satisfecha', content: 'Excelente servicio, totalmente recomendable.', rating: 5 },
-                      { id: '2', author: 'Carlos López', role: 'Cliente', content: 'Profesionales de primera. Me ayudaron a resolver todo rápidamente.', rating: 5 },
-                      { id: '3', author: 'Ana Martínez', role: 'Clienta fiel', content: 'Increíble atención y resultados. Los recomiendo a todos.', rating: 5 },
-                    ]
-                ).map((t) => (
+                {bd.testimonials.map((t) => (
                   <div key={t.id} className="card testi-card">
-                    <div className="stars">{'★'.repeat(t.rating ?? 5)}</div>
+                    {typeof t.rating === 'number' && t.rating > 0 && (
+                      <div className="stars">{'★'.repeat(Math.min(5, Math.round(t.rating)))}</div>
+                    )}
                     <p className="testi-quote">"{t.content}"</p>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                       <div className="testi-avatar">{t.author?.[0] ?? '?'}</div>
@@ -373,7 +348,7 @@ export function PublishedSite({ project: row }: { project: Project }) {
         )}
 
         {/* ── FAQ ── */}
-        {has('faq') && bd.faqs?.length > 0 && (
+        {showFaq && (
           <section className="section-pad" style={{ background: '#fff' }}>
             <div className="container" style={{ maxWidth: '720px' }}>
               <p className="label" style={{ textAlign: 'center' }}>Preguntas frecuentes</p>
@@ -391,16 +366,13 @@ export function PublishedSite({ project: row }: { project: Project }) {
         )}
 
         {/* ── CTA ── */}
-        {has('cta') && (
+        {showCta && (
           <section className="section-pad cta-section">
             <div className="container" style={{ textAlign: 'center' }}>
               <h2 style={{ fontSize: 'clamp(1.75rem, 4vw, 2.5rem)', fontWeight: 900, marginBottom: '1rem' }}>
                 ¿Listo para empezar?
               </h2>
-              <p style={{ color: '#94a3b8', marginBottom: '2rem', fontSize: '1.05rem' }}>
-                Contactanos hoy y recibí una consulta sin costo.
-              </p>
-              {has('contact') && (
+              {showContact && (
                 <a href="#contacto" className="btn-primary" style={{ fontSize: '1rem' }}>
                   Quiero más información →
                 </a>
@@ -410,14 +382,11 @@ export function PublishedSite({ project: row }: { project: Project }) {
         )}
 
         {/* ── Contact ── */}
-        {has('contact') && (
+        {showContact && (
           <section className="section-pad" id="contacto" style={{ background: '#fff' }}>
             <div className="container">
               <p className="label" style={{ textAlign: 'center' }}>Contacto</p>
-              <h2 className="heading-lg" style={{ textAlign: 'center', marginBottom: '0.5rem' }}>Contactate con nosotros</h2>
-              <p className="subtext" style={{ textAlign: 'center', marginBottom: '3rem' }}>
-                Estamos para ayudarte en todo momento
-              </p>
+              <h2 className="heading-lg" style={{ textAlign: 'center', marginBottom: '3rem' }}>Contactate con nosotros</h2>
               <div className="grid-2" style={{ maxWidth: '800px', margin: '0 auto', alignItems: 'start' }}>
                 <div>
                   {bd.contact?.phone && (
@@ -504,9 +473,9 @@ export function PublishedSite({ project: row }: { project: Project }) {
             )}
 
             <div style={{ display: 'flex', justifyContent: 'center', gap: '1.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
-              {has('services') && <a href="#servicios" style={{ fontSize: '0.8rem', color: '#64748b' }}>Servicios</a>}
-              {has('about') && <a href="#nosotros" style={{ fontSize: '0.8rem', color: '#64748b' }}>Nosotros</a>}
-              {has('contact') && <a href="#contacto" style={{ fontSize: '0.8rem', color: '#64748b' }}>Contacto</a>}
+              {showServices && <a href="#servicios" style={{ fontSize: '0.8rem', color: '#64748b' }}>Servicios</a>}
+              {showAbout && <a href="#nosotros" style={{ fontSize: '0.8rem', color: '#64748b' }}>Nosotros</a>}
+              {showContact && <a href="#contacto" style={{ fontSize: '0.8rem', color: '#64748b' }}>Contacto</a>}
             </div>
 
             <p className="footer-copy">

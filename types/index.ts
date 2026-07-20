@@ -52,6 +52,19 @@ export interface FAQItem {
   answer: string
 }
 
+/**
+ * A figure the business owner claims about itself ("+10", "Años de experiencia").
+ *
+ * Owner-supplied only. The stats section renders nothing when this is empty —
+ * never a default set of numbers, because an invented figure on a client's
+ * live site is deceptive advertising the business owner is liable for.
+ */
+export interface BusinessStat {
+  id: string
+  number: string
+  label: string
+}
+
 export interface ContactData {
   phone: string
   whatsapp: string
@@ -98,6 +111,7 @@ export interface BusinessData {
   team: TeamMember[]
   testimonials: Testimonial[]
   faqs: FAQItem[]
+  stats?: BusinessStat[]
   contact: ContactData
   socials: SocialLinks
   seo: SEOData
