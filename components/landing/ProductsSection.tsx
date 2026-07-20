@@ -8,14 +8,14 @@ const products = [
   {
     id: 'sitios-web',
     badge: 'Producto estrella',
-    title: 'Sitios Web con IA',
-    subtitle: 'Tu negocio online en 60 segundos',
-    description: 'Genera un sitio web profesional completando un formulario simple. Nuestra IA crea el contenido, diseno y estructura adaptada a tu rubro. Publicado con SSL, SEO y WhatsApp integrado.',
+    title: 'Sitios Web autogestionados',
+    subtitle: 'Tu negocio online en minutos',
+    description: 'Arma un sitio web profesional completando un asistente guiado. Con los datos de tu negocio montamos el sitio sobre una plantilla acorde a tu rubro. Publicado con SSL, SEO y WhatsApp integrado.',
     icon: Globe,
     gradient: 'from-brand-500 to-cyan-500',
     bgGlow: 'bg-brand-500/10',
     features: [
-      { icon: Zap, text: 'Generacion instantanea con IA' },
+      { icon: Zap, text: 'Asistente guiado, sin codigo' },
       { icon: Globe, text: 'URL propia con SSL incluido' },
       { icon: FileText, text: 'SEO optimizado para Google' },
     ],
