@@ -95,11 +95,48 @@ SELECT column_name
 FROM   information_schema.columns
 WHERE  table_name = 'Project'
   AND  column_name IN ('subdomain', 'billingStatus');
+
+-- Inquiry: expected to ALREADY EXIST on any db push database, even though
+-- 20260721_add_inquiry has obviously never been recorded as applied.
+-- Either answer is fine — see "The Inquiry special case" below.
+SELECT to_regclass('public."Inquiry"');
 ```
 
 > `billingStatus` is the column named in `20260720_add_project_billing_lifecycle`;
 > if your local `migration.sql` names it differently, use the real name. Check with
 > `bat prisma/migrations/20260720_add_project_billing_lifecycle/migration.sql`.
+
+### The `Inquiry` special case — read before Case A
+
+`model Inquiry` was merged into `prisma/schema.prisma` without anyone generating a
+migration for it. While the container ran `db push` that was invisible: push created
+the table directly. Under `migrate deploy` it would simply never have been created,
+and `POST /api/inquiries` — the lead-capture endpoint for automaticialab.com — would
+500 on every request against a fresh database.
+
+`20260721_add_inquiry` closes that gap. **It is the one migration in this repo written
+with `CREATE TABLE IF NOT EXISTS` / `CREATE INDEX IF NOT EXISTS`**, precisely because
+its target database is expected to be in either state:
+
+| Database | What the migration does |
+|---|---|
+| Production / anything that ran `db push` | Table already present — applies as a no-op, records the history row |
+| Fresh database, new environment, restored-from-schema | Creates the table and both indexes |
+
+Consequences for this runbook:
+
+- **Do not `migrate resolve --applied 20260721_add_inquiry`.** It is deliberately
+  absent from the Case A baselining list below. Let `migrate deploy` execute it. If
+  you baseline it away on a database that turns out *not* to have the table, the
+  table is never created and the endpoint stays broken with no error to point at.
+- It is safe to let deploy run it **even if Step 1 showed the table already exists**.
+  That is the whole reason for the `IF NOT EXISTS` guards, and it is the only
+  migration here to which the "only resolve what already exists" rule does not apply
+  in reverse.
+- The guards are safe rather than drift-hiding *for this table specifically*: the
+  production copy was created by `db push` from this same schema, so its shape is
+  the schema's shape by construction. Do not treat this as licence to write
+  `IF NOT EXISTS` in new migrations — see "Rules from here on".
 
 Now pick your case:
 
@@ -132,6 +169,10 @@ npx prisma migrate resolve --applied 20260324_add_email_marketing_indexes
 npx prisma migrate resolve --applied 20260719_add_project_subdomain
 npx prisma migrate resolve --applied 20260720_add_project_billing_lifecycle
 ```
+
+> `20260721_add_inquiry` is **intentionally not in that list.** Leave it unresolved
+> and let `migrate deploy` apply it — it is idempotent. See "The `Inquiry` special
+> case" above.
 
 > **Only mark a migration `--applied` if Step 1 confirmed its objects already exist.**
 > If, say, `Project.subdomain` is *missing*, do **not** resolve `20260719_add_project_subdomain`
@@ -247,6 +288,17 @@ An empty script means no drift. A non-empty one is the exact DDL gap; resolve it
 deliberately — usually by adding a new, forward-only migration — rather than by
 reaching for `db push` again.
 
+> **Expect this script to be large, and do not panic.** `Inquiry` was not the only
+> model that entered `prisma/schema.prisma` without a migration during the `db push`
+> era; several others (`PasswordResetToken`, the `Prospeccion` / `Facturacion` /
+> `Causas` / `Turnos` / `SuiteJuridica` / `LexPost` subscription tables, and some
+> added columns such as `User.isFreeAccount` and the `trialEndsAt` columns) are in
+> the same position. `20260721_add_inquiry` closes the `Inquiry` gap only, because
+> `Inquiry` is the one backing a live public endpoint. The rest is known, tracked
+> debt — each needs its own forward-only migration before a fresh environment can
+> be stood up from migrations alone. Run the diff above to get the current list;
+> **do not** paste the whole script into production as one ad-hoc migration.
+
 ---
 
 ## Then deploy
@@ -283,3 +335,25 @@ if any DDL landed, and start over.
   with a new migration.
 - **New migrations are authored with `npx prisma migrate dev` against a local
   database**, committed, and applied to production only via `migrate deploy`.
+
+  Caveat: `migrate dev` currently **fails in this repo** with `P3006`. It replays the
+  whole history into a shadow database, and `20260321_welcome_coupon` does not
+  replay — it references `Coupon."updatedAt"` before that column exists. Until that
+  is fixed forward, author new migrations the way `20260719_add_project_subdomain`
+  and `20260721_add_inquiry` were authored:
+
+  ```sh
+  # generate the exact DDL, never hand-write it
+  npx prisma migrate diff \
+    --from-schema-datasource prisma/schema.prisma \
+    --to-schema-datamodel  prisma/schema.prisma \
+    --script
+
+  # then: mkdir prisma/migrations/<YYYYMMDD_name>/, save the relevant slice as
+  # migration.sql, and apply it locally with `npx prisma migrate deploy`
+  ```
+
+- **Do not copy the `IF NOT EXISTS` style of `20260721_add_inquiry` into new
+  migrations.** It exists only to reconcile a table that the `db push` era already
+  created in production. For genuinely new objects, plain `CREATE TABLE` is correct —
+  you *want* it to fail loudly if something unexpected is already there.
