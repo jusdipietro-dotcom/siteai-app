@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   ArrowLeft, Check, Lock, Shield, Sparkles,
-  Star, Zap, Mail, RefreshCw,
+  Star, Zap, Mail, RefreshCw, Clock,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -59,7 +59,7 @@ function CheckoutContent() {
   const isAnnual = billingParam === 'annual'
 
   const [selectedPlan, setSelectedPlan] = useState<Plan>('essential')
-  const [step, setStep] = useState<'plan' | 'payment' | 'verifying' | 'success'>('plan')
+  const [step, setStep] = useState<'plan' | 'payment' | 'verifying' | 'pending' | 'success'>('plan')
   const [processing, setProcessing] = useState(false)
   const [payerEmail, setPayerEmail] = useState('')
 
@@ -104,16 +104,45 @@ function CheckoutContent() {
 
   /**
    * Re-reads the project from the server until the MercadoPago webhook has
-   * marked it as paid. The webhook lands asynchronously, so a few retries
-   * cover the gap. Returns the plan the server reports, if any.
+   * marked it as paid. The webhook lands asynchronously and can be slow, so we
+   * poll with exponential backoff over roughly a minute rather than a fixed
+   * handful of quick retries. Returns the plan the server reports, or null if
+   * the confirmation still has not arrived — the caller MUST treat null as
+   * "not confirmed yet", never as success.
    */
-  const pollUntilPaid = async (attempts = 5, delayMs = 1500) => {
+  const pollUntilPaid = async (attempts = 8, baseDelayMs = 2000) => {
     for (let i = 0; i < attempts; i++) {
       const fresh = await refreshProject(id)
       if (fresh?.hasPaid) return fresh.plan
-      if (i < attempts - 1) await new Promise((r) => setTimeout(r, delayMs))
+      if (i < attempts - 1) {
+        const delay = Math.min(baseDelayMs * Math.pow(1.5, i), 15000)
+        await new Promise((r) => setTimeout(r, delay))
+      }
     }
     return null
+  }
+
+  /**
+   * Manual re-check from the pending screen. Runs a short poll round and flips
+   * to success only if the server actually confirms payment.
+   */
+  const recheckPayment = async () => {
+    setProcessing(true)
+    try {
+      const serverPlan = await pollUntilPaid(4, 2000)
+      if (serverPlan) {
+        if (PLAN_META.some((p) => p.id === serverPlan)) setSelectedPlan(serverPlan)
+        setStep('success')
+        toast.success('¡Pago confirmado! Tu suscripción está activa.')
+      } else {
+        toast('Todavía no recibimos la confirmación. Probá de nuevo en unos minutos.', {
+          icon: '⏳',
+          duration: 6000,
+        })
+      }
+    } finally {
+      setProcessing(false)
+    }
   }
 
   const verifyPayment = async (preapprovalId: string | null, paymentId: string | null) => {
@@ -129,11 +158,23 @@ function CheckoutContent() {
         // The webhook is what actually marks the project as paid. Poll the
         // server instead of deriving the plan from the URL.
         const serverPlan = await pollUntilPaid()
-        if (serverPlan && PLAN_META.some((p) => p.id === serverPlan)) {
-          setSelectedPlan(serverPlan)
+        if (serverPlan) {
+          if (PLAN_META.some((p) => p.id === serverPlan)) {
+            setSelectedPlan(serverPlan)
+          }
+          setStep('success')
+          toast.success('¡Suscripción activada correctamente!')
+        } else {
+          // MP authorized the charge but the webhook that flips hasPaid hasn't
+          // landed yet. Claiming success here would send the user to /publish,
+          // which re-reads !hasPaid and shows the full paywall — asking a paying
+          // customer to pay twice. Show an honest pending state instead.
+          setStep('pending')
+          toast('Pago recibido. Estamos confirmando la activación.', {
+            icon: '⏳',
+            duration: 7000,
+          })
         }
-        setStep('success')
-        toast.success('¡Suscripción activada correctamente!')
       } else if (data.status === 'pending') {
         setStep('payment')
         toast('Tu suscripción está pendiente. MP te notificará por email cuando se confirme.', {
@@ -195,7 +236,7 @@ function CheckoutContent() {
       {/* Topbar */}
       <div className="bg-white border-b border-surface-100 px-6 py-4">
         <div className="max-w-4xl mx-auto flex items-center gap-3">
-          {step !== 'success' && step !== 'verifying' && (
+          {step !== 'success' && step !== 'verifying' && step !== 'pending' && (
             <button
               type="button"
               onClick={() => (step === 'payment' ? setStep('plan') : router.back())}
@@ -212,6 +253,8 @@ function CheckoutContent() {
                 ? 'Confirmar suscripción'
                 : step === 'verifying'
                 ? 'Verificando pago...'
+                : step === 'pending'
+                ? 'Confirmando tu pago...'
                 : '¡Suscripción activada!'}
             </h1>
             <p className="text-sm text-surface-500">{project.name}</p>
@@ -494,6 +537,52 @@ function CheckoutContent() {
               <p className="text-sm text-surface-500">
                 Confirmando el pago con MercadoPago. Un momento.
               </p>
+            </motion.div>
+          )}
+
+          {/* ─── Pending confirmation (MP authorized, webhook not yet landed) ─── */}
+          {step === 'pending' && (
+            <motion.div
+              key="pending"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="max-w-md mx-auto text-center py-12"
+            >
+              <div className="w-20 h-20 rounded-3xl bg-amber-50 flex items-center justify-center mx-auto mb-6">
+                <Clock className="w-10 h-10 text-amber-500" />
+              </div>
+
+              <h2 className="text-2xl font-extrabold text-surface-900 mb-2">
+                Estamos confirmando tu pago
+              </h2>
+              <p className="text-surface-500 text-sm mb-2">
+                MercadoPago ya autorizó el pago para{' '}
+                <strong className="text-surface-700">{project.name}</strong>. La activación
+                puede tardar unos minutos en impactar. <strong>No hace falta que vuelvas a
+                pagar.</strong>
+              </p>
+              <p className="text-surface-400 text-xs mb-8">
+                Te enviamos el comprobante por email. Podés verificar de nuevo ahora o volver
+                más tarde: en cuanto se confirme, vas a poder publicar tu sitio.
+              </p>
+
+              <div className="flex flex-col gap-3">
+                <Button
+                  variant="gradient"
+                  size="lg"
+                  className="w-full gap-2 shadow-brand"
+                  onClick={recheckPayment}
+                  loading={processing}
+                >
+                  <RefreshCw className="w-4 h-4" /> Volver a verificar
+                </Button>
+                <Link href="/dashboard">
+                  <Button variant="outline" size="lg" className="w-full">
+                    Ir al dashboard
+                  </Button>
+                </Link>
+              </div>
             </motion.div>
           )}
 
