@@ -16,13 +16,13 @@ const WA_LINK = 'https://wa.me/5491171311465?text=Hola%2C%20quiero%20info%20sobr
 const features = [
   {
     icon: Wand2,
-    title: 'La IA escribe el contenido',
-    desc: 'Contas de que es tu negocio y la IA redacta los textos, arma las secciones y elige una paleta acorde a tu rubro.',
+    title: 'Listo en minutos, sin codigo',
+    desc: 'Un asistente te guia paso a paso: cargas los datos de tu negocio y los volcamos en una plantilla profesional acorde a tu rubro. Sin disenador ni conocimientos tecnicos.',
   },
   {
     icon: Pencil,
     title: 'Editor visual',
-    desc: 'Cambias textos, colores, imagenes y secciones desde el navegador. Sin codigo y con ediciones ilimitadas.',
+    desc: 'Cambias textos, colores, imagenes y secciones desde el navegador, sin codigo. Falta una foto de portada? Genera una con IA o subi la tuya. Ediciones ilimitadas.',
   },
   {
     icon: Eye,
@@ -48,7 +48,7 @@ const features = [
 
 const steps = [
   { num: '1', title: 'Contanos de tu negocio', desc: 'Un asistente te hace las preguntas basicas: rubro, servicios, contacto y estilo.', free: true },
-  { num: '2', title: 'La IA genera tu sitio', desc: 'Textos, secciones y diseno listos en minutos. Podes regenerar lo que no te guste.', free: true },
+  { num: '2', title: 'Armamos tu sitio', desc: 'Con lo que cargaste, tu sitio queda montado sobre una plantilla profesional en minutos.', free: true },
   { num: '3', title: 'Editalo y previsualizalo', desc: 'Ajustas todo en el editor visual y ves el resultado final completo.', free: true },
   { num: '4', title: 'Publicalo', desc: 'Elegis tu subdominio y activas la suscripcion. Recien aca se paga.', free: false },
 ]
@@ -68,7 +68,7 @@ const faqs = [
   },
   {
     q: 'Necesito saber programar o disenar?',
-    a: 'No. El asistente te guia con preguntas simples y la IA se encarga del contenido y del diseno. Despues ajustas lo que quieras desde el editor visual.',
+    a: 'No. El asistente te guia con preguntas simples y arma el sitio sobre una plantilla profesional acorde a tu rubro. Despues ajustas lo que quieras desde el editor visual, sin escribir codigo.',
   },
   {
     q: 'Puedo editar el sitio despues de publicarlo?',
@@ -76,7 +76,7 @@ const faqs = [
   },
   {
     q: 'Cual es la diferencia con el servicio de diseno web?',
-    a: 'Este producto es autogestionado: lo armas vos con IA sobre una base de plantillas, en el dia y a precio fijo. El servicio de diseno web es a medida: lo disenamos y programamos nosotros en Next.js, sin plantillas y cotizado segun tu caso.',
+    a: 'Este producto es autogestionado: lo armas vos, sobre una base de plantillas profesionales, en el dia y a precio fijo. El servicio de diseno web es a medida: lo disenamos y programamos nosotros en Next.js, sin plantillas y cotizado segun tu caso.',
   },
 ]
 
@@ -103,7 +103,7 @@ export default function CreadorDeSitiosServicePage() {
               transition={{ delay: 0.1 }}
               className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight mb-6"
             >
-              Crea tu sitio web<br />vos mismo, con IA
+              Crea tu sitio web<br />vos mismo, en minutos
             </motion.h1>
             <motion.p
               initial={{ opacity: 0, y: 20 }}
@@ -111,8 +111,8 @@ export default function CreadorDeSitiosServicePage() {
               transition={{ delay: 0.2 }}
               className="text-xl text-white/90 mb-4 max-w-xl leading-relaxed"
             >
-              Contestas unas preguntas y la IA arma tu sitio completo. Lo editas, lo ves terminado y
-              decidis despues.
+              Contestas unas preguntas y armamos tu sitio completo sobre una plantilla profesional.
+              Lo editas, lo ves terminado y decidis despues.
             </motion.p>
             <motion.p
               initial={{ opacity: 0, y: 20 }}
@@ -187,7 +187,7 @@ export default function CreadorDeSitiosServicePage() {
               <ul className="space-y-2">
                 {[
                   'Crear tu cuenta',
-                  'Armar el sitio con el asistente y la IA',
+                  'Armar el sitio con el asistente guiado',
                   'Editar textos, colores, imagenes y secciones',
                   'Ver el sitio terminado en vista previa',
                 ].map(f => (
@@ -367,9 +367,9 @@ export default function CreadorDeSitiosServicePage() {
             <div className="bg-violet-50 rounded-2xl p-6 border border-violet-100">
               <h3 className="font-bold text-surface-900 mb-2">Lo armas vos (esta pagina)</h3>
               <p className="text-sm text-surface-600 mb-4 leading-relaxed">
-                Autogestionado, sobre una base de plantillas y con IA. Listo el mismo dia, a precio
-                fijo y publicado en un subdominio. Ideal si necesitas presencia online rapido y
-                sencilla.
+                Autogestionado, sobre una base de plantillas profesionales. Listo el mismo dia, a
+                precio fijo y publicado en un subdominio. Ideal si necesitas presencia online rapido
+                y sencilla.
               </p>
               <Link href="/register?next=creador-de-sitios">
                 <Button variant="gradient" className="w-full gap-2">
