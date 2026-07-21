@@ -125,6 +125,10 @@ model Coupon {
   turnosSubscriptions         TurnosSubscription[]
   suiteJuridicaSubscriptions  SuiteJuridicaSubscription[]
   lexpostSubscriptions        LexPostSubscription[]
+  // Website generator. Unlike the 12 subscription products above, a redemption
+  // here never opens a MercadoPago preapproval — a 100% coupon marks the
+  // project paid directly (app/api/projects/[id]/redeem-coupon).
+  projects                    Project[]
 }
 
 model TradingSubscription {
@@ -488,6 +492,25 @@ model Project {
   // User row being deleted). Both null => not a gift.
   grantedBy       String?
   grantedAt       DateTime?
+  // Coupon provenance, deliberately separate from the gift columns above.
+  // Three ways a project can end up with hasPaid = true, and the owner has to
+  // be able to tell them apart months later:
+  //   grantedBy/grantedAt set  => an admin comped it;
+  //   couponId set             => the owner redeemed a 100% coupon;
+  //   neither                  => a real MercadoPago sale (preapprovalId set).
+  // Overloading grantedBy with a sentinel like 'coupon:XXX' would make every
+  // "who comped this?" query lie, so these are their own columns.
+  //
+  // Only 100%-discount coupons are accepted here (see the redeem route): a
+  // partial discount would have to change the MercadoPago subscription amount,
+  // which this product does not do.
+  //
+  // These stay set if a gift is later revoked. Unlike grantedBy — which means
+  // "currently comped" — a redemption is a historical fact: the use was already
+  // consumed from the coupon and is not refunded, so erasing the trace would
+  // hide it.
+  couponId         String?
+  couponRedeemedAt DateTime?
   template      String?
   thumbnail     String?
   publishedUrl  String?
@@ -501,6 +524,7 @@ model Project {
 
   user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   siteLeads SiteLead[]
+  coupon    Coupon?    @relation(fields: [couponId], references: [id])
 
   @@index([billingStatus, graceUntil])
   // Every `payment` notification runs findFirst({ where: { preapprovalId } })
