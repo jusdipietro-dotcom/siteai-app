@@ -6,6 +6,7 @@ import { sendPaymentConfirmationEmail, sendSubscriptionCancelledEmail, sendAdmin
 import { getGraceEndDate, GRACE_PERIOD_MS, effectiveBillingStatus } from '@/lib/project-billing'
 import { parseJSON } from '@/lib/published-site'
 import { publishedSiteUrl } from '@/lib/site-domain'
+import { FLASK_BACKEND_TIMEOUT_MS, INTERNAL_PROVISION_TIMEOUT_MS, MP_API_TIMEOUT_MS, N8N_ADMIN_API_TIMEOUT_MS, N8N_WEBHOOK_TIMEOUT_MS, SCRAPER_CONTROL_TIMEOUT_MS } from '@/lib/fetch-timeouts'
 
 const ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN!
 const MP_WEBHOOK_SECRET = process.env.MP_WEBHOOK_SECRET
@@ -135,10 +136,23 @@ export async function POST(req: NextRequest) {
     }
 
     if (body.type === 'preapproval' && body.data?.id) {
-      const res = await fetch(`https://api.mercadopago.com/preapproval/${body.data.id}`, {
-        headers: { Authorization: `Bearer ${ACCESS_TOKEN}` },
-        cache: 'no-store',
-      })
+      // Bounded read. Without a signal a hung MP connection pins this handler
+      // (and its DB connection) open forever, and MP has already given up on the
+      // notification by then anyway. A timeout is the same situation as a 5xx —
+      // "we could not read MP" — so it takes the same exit, NOT a fall-through
+      // to `{ received: true }`, which would tell MP the event was delivered and
+      // lose it. 504 never hits mpReadFailure's 404 acknowledge branch.
+      let res: Response
+      try {
+        res = await fetch(`https://api.mercadopago.com/preapproval/${body.data.id}`, {
+          headers: { Authorization: `Bearer ${ACCESS_TOKEN}` },
+          cache: 'no-store',
+          signal: AbortSignal.timeout(MP_API_TIMEOUT_MS),
+        })
+      } catch (err) {
+        console.error(`[MP Webhook] preapproval ${body.data.id} read timed out or errored:`, err)
+        return mpReadFailure('preapproval', body.data.id, 504)
+      }
 
       // A failed read must NOT be answered 200. On a 401/429/5xx the parsed body
       // is an error object: external_reference comes back undefined, no product
@@ -876,6 +890,7 @@ export async function POST(req: NextRequest) {
                   await fetch(`${n8nUrl}/api/v1/workflows/${turnosSub.n8nWorkflowId}/deactivate`, {
                     method: 'POST',
                     headers: { 'X-N8N-API-KEY': n8nKey },
+                    signal: AbortSignal.timeout(N8N_ADMIN_API_TIMEOUT_MS),
                   })
                 }
               } catch (e) { console.error('[MP Webhook] Turnos n8n deactivation error:', e) }
@@ -1382,10 +1397,19 @@ export async function POST(req: NextRequest) {
 
       // Re-fetch from the API instead of trusting the notification body, the
       // same as the preapproval branch: the notification is only a nudge.
-      const payRes = await fetch(detailUrl, {
-        headers: { Authorization: `Bearer ${ACCESS_TOKEN}` },
-        cache: 'no-store',
-      })
+      // Bounded and routed through mpReadFailure on timeout for the same reason
+      // as the preapproval read above — an unread charge must retry, not 200.
+      let payRes: Response
+      try {
+        payRes = await fetch(detailUrl, {
+          headers: { Authorization: `Bearer ${ACCESS_TOKEN}` },
+          cache: 'no-store',
+          signal: AbortSignal.timeout(MP_API_TIMEOUT_MS),
+        })
+      } catch (err) {
+        console.error(`[MP Webhook] ${body.type} ${body.data.id} read timed out or errored:`, err)
+        return mpReadFailure(body.type, body.data.id, 504)
+      }
       // Same rule as the preapproval branch: a charge we could not read is not a
       // charge we can say anything about. Acknowledging it dropped failed
       // payments silently, so a card that started failing during an MP blip
@@ -1623,6 +1647,7 @@ async function triggerProvisioning(subscriptionId: string) {
           ...(provApiKey && { 'x-api-key': provApiKey }),
         },
         body: payload,
+        signal: AbortSignal.timeout(N8N_WEBHOOK_TIMEOUT_MS),
       })
 
       if (res.ok) {
@@ -1666,6 +1691,7 @@ async function triggerDeprovisioning(subscriptionId: string) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey },
       body: JSON.stringify({ tenantId: sub.n8nTenantId }),
+      signal: AbortSignal.timeout(N8N_WEBHOOK_TIMEOUT_MS),
     })
 
     console.log(`[MP Webhook] Deprovision tenant ${sub.n8nTenantId}: ${res.status}`)
@@ -1690,6 +1716,7 @@ async function cancelOldSubscription(oldSubId: string) {
           method: 'PUT',
           headers: { Authorization: `Bearer ${ACCESS}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({ status: 'cancelled' }),
+          signal: AbortSignal.timeout(MP_API_TIMEOUT_MS),
         })
       } catch (err) {
         console.error(`[MP Webhook] Failed to cancel old MP preapproval ${oldSub.preapprovalId}:`, err)
@@ -1703,6 +1730,7 @@ async function cancelOldSubscription(oldSubId: string) {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ tenantId: oldSub.n8nTenantId }),
+          signal: AbortSignal.timeout(N8N_WEBHOOK_TIMEOUT_MS),
         })
       } catch (err) {
         console.error(`[MP Webhook] Failed to remove old tenant ${oldSub.n8nTenantId}:`, err)
@@ -1754,6 +1782,7 @@ async function triggerReviewsProvisioning(subscriptionId: string) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: payload,
+        signal: AbortSignal.timeout(N8N_WEBHOOK_TIMEOUT_MS),
       })
 
       if (res.ok) {
@@ -1792,6 +1821,7 @@ async function triggerReviewsDeprovisioning(subscriptionId: string) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ subscriptionId, tenantId: sub.n8nTenantId }),
+      signal: AbortSignal.timeout(N8N_WEBHOOK_TIMEOUT_MS),
     })
 
     console.log(`[MP Webhook] Reviews deprovision tenant ${sub.n8nTenantId}: ${res.status}`)
@@ -1834,6 +1864,7 @@ async function triggerLeadsProvisioning(subscriptionId: string) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: payload,
+        signal: AbortSignal.timeout(N8N_WEBHOOK_TIMEOUT_MS),
       })
 
       if (res.ok) {
@@ -1899,6 +1930,7 @@ async function triggerEmailMarketingProvisioning(subscriptionId: string) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: payload,
+        signal: AbortSignal.timeout(N8N_WEBHOOK_TIMEOUT_MS),
       })
 
       if (res.ok) {
@@ -1946,6 +1978,7 @@ async function triggerEmailMarketingDeprovisioning(subscriptionId: string) {
         n8nWorkflowId: sub.n8nWorkflowId,
         businessName: sub.businessName,
       }),
+      signal: AbortSignal.timeout(N8N_WEBHOOK_TIMEOUT_MS),
     })
     console.log(`[MP Webhook] Email Marketing deprovisioning triggered for ${subscriptionId}`)
   } catch (err) {
@@ -1991,6 +2024,7 @@ async function triggerProspeccionProvisioning(subscriptionId: string) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: payload,
+        signal: AbortSignal.timeout(N8N_WEBHOOK_TIMEOUT_MS),
       })
 
       if (res.ok) {
@@ -2048,6 +2082,7 @@ async function triggerProspeccionDeprovisioning(subscriptionId: string) {
         n8nIcebreakerWorkflowId: sub.n8nIcebreakerWorkflowId,
         businessName: sub.businessName,
       }),
+      signal: AbortSignal.timeout(N8N_WEBHOOK_TIMEOUT_MS),
     })
     console.log(`[MP Webhook] Prospeccion deprovisioning triggered for ${subscriptionId}`)
   } catch (err) {
@@ -2081,6 +2116,7 @@ async function triggerCausasProvisioning(subscriptionId: string) {
           'x-portal-secret': scraperKey,
         },
         body: JSON.stringify({ subscriptionId }),
+        signal: AbortSignal.timeout(INTERNAL_PROVISION_TIMEOUT_MS),
       })
 
       if (provisionResp.ok) {
@@ -2125,6 +2161,7 @@ async function triggerCausasDeprovisioning(subscriptionId: string) {
         'Authorization': `Bearer ${scraperKey}`,
         'Content-Type': 'application/json',
       },
+      signal: AbortSignal.timeout(SCRAPER_CONTROL_TIMEOUT_MS),
     })
     console.log(`[MP Webhook] Causas deprovisioning triggered for ${subscriptionId}`)
   } catch (err) {
@@ -2165,6 +2202,7 @@ async function triggerFacturacionProvisioning(subscriptionId: string) {
           nombre: sub.user.name || sub.razonSocial,
           plan: sub.plan,
         }),
+        signal: AbortSignal.timeout(FLASK_BACKEND_TIMEOUT_MS),
       })
 
       if (res.ok) {
@@ -2221,6 +2259,7 @@ async function triggerFacturacionDeprovisioning(subscriptionId: string) {
         'X-Portal-Secret': provisionSecret,
       },
       body: JSON.stringify({ tenantId: sub.flaskTenantId }),
+      signal: AbortSignal.timeout(FLASK_BACKEND_TIMEOUT_MS),
     })
     console.log(`[MP Webhook] Facturacion deprovisioning triggered for ${subscriptionId}`)
   } catch (err) {
@@ -2366,6 +2405,7 @@ async function triggerTurnosProvisioning(subscriptionId: string) {
         callbackUrl: `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://automaticialab.com'}/api/turnos/provision-callback`,
         callbackSecret: process.env.TURNOS_PROVISION_SECRET ?? '',
       }),
+      signal: AbortSignal.timeout(N8N_WEBHOOK_TIMEOUT_MS),
     })
     console.log(`[MP Webhook] Turnos provisioning triggered for ${subscriptionId} → ${res.status}`)
   } catch (err) {
@@ -2404,6 +2444,7 @@ async function triggerLinkedInProvisioning(subscriptionId: string) {
         callbackUrl: `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://automaticialab.com'}/api/linkedin/provision-callback`,
         callbackSecret: process.env.LINKEDIN_PROVISION_SECRET ?? '',
       }),
+      signal: AbortSignal.timeout(N8N_WEBHOOK_TIMEOUT_MS),
     })
     console.log(`[MP Webhook] LinkedIn provisioning triggered for ${subscriptionId} → ${res.status}`)
   } catch (err) {
@@ -2442,6 +2483,7 @@ async function triggerLexpostProvisioning(subscriptionId: string) {
         callbackUrl: `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://automaticialab.com'}/api/lexpost/provision-callback`,
         callbackSecret: process.env.LEXPOST_PROVISION_SECRET ?? '',
       }),
+      signal: AbortSignal.timeout(N8N_WEBHOOK_TIMEOUT_MS),
     })
     console.log(`[MP Webhook] LexPost provisioning triggered for ${subscriptionId} → ${res.status}`)
   } catch (err) {
