@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { isValidEmail } from '@/lib/validators'
 import { getWebsitePlanConfig } from '@/lib/website-plans'
+import { MP_API_TIMEOUT_MS } from '@/lib/fetch-timeouts'
 
 const ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN!
 
@@ -140,6 +141,7 @@ export async function POST(req: NextRequest) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(body),
+      signal: AbortSignal.timeout(MP_API_TIMEOUT_MS),
     })
 
     const data = await res.json()

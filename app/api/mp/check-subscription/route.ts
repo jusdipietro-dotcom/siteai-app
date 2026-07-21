@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { MP_API_TIMEOUT_MS } from '@/lib/fetch-timeouts'
 
 const ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN!
 
@@ -105,6 +106,7 @@ export async function GET(req: NextRequest) {
       const res = await fetch(`https://api.mercadopago.com/preapproval/${preapprovalId}`, {
         headers: { Authorization: `Bearer ${ACCESS_TOKEN}` },
         cache: 'no-store',
+        signal: AbortSignal.timeout(MP_API_TIMEOUT_MS),
       })
 
       const data = await res.json()
@@ -140,6 +142,7 @@ export async function GET(req: NextRequest) {
       const res = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
         headers: { Authorization: `Bearer ${ACCESS_TOKEN}` },
         cache: 'no-store',
+        signal: AbortSignal.timeout(MP_API_TIMEOUT_MS),
       })
 
       const data = await res.json()

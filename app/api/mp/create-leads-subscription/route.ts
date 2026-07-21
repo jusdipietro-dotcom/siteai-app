@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { MP_API_TIMEOUT_MS, N8N_WEBHOOK_TIMEOUT_MS } from '@/lib/fetch-timeouts'
 
 const ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN!
 
@@ -70,6 +71,7 @@ export async function POST(req: NextRequest) {
               googleSheetUrl: sub.googleSheetUrl,
               notificationEmail: sub.notificationEmail,
             }),
+            signal: AbortSignal.timeout(N8N_WEBHOOK_TIMEOUT_MS),
           })
         } catch (err) {
           console.error('[MP Leads] Free provisioning webhook failed:', err)
@@ -120,6 +122,7 @@ export async function POST(req: NextRequest) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(body),
+      signal: AbortSignal.timeout(MP_API_TIMEOUT_MS),
     })
 
     const data = await res.json()
