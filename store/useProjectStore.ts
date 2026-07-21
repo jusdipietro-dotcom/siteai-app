@@ -17,6 +17,7 @@ interface ProjectStore {
   setSubdomain: (id: string, subdomain: string | null) => Promise<Project>
   publishProject: (id: string) => Promise<Project>
   unpublishProject: (id: string) => Promise<Project>
+  cancelSubscription: (id: string) => Promise<{ ok: boolean; mpCancelled?: boolean; gifted?: boolean; alreadyCancelled?: boolean }>
   updateSections: (id: string, sections: SectionConfig[]) => void
   toggleSection: (projectId: string, sectionId: string) => void
   reorderSections: (projectId: string, sections: SectionConfig[]) => void
@@ -267,6 +268,33 @@ export const useProjectStore = create<ProjectStore>()((set, get) => ({
       projects: state.projects.map((p) => (p.id === id ? saved : p)),
     }))
     return saved
+  },
+
+  // Deliberate cancellation. The server suspends the project (billingStatus
+  // 'suspended', reason 'cancelled') and cancels the MP preapproval; it returns
+  // a status envelope, not a Project, so the local billing fields are patched
+  // here to match. `status` is intentionally left untouched — the publish gate
+  // is closed by billingStatus, and the DB row keeps its published status.
+  cancelSubscription: async (id) => {
+    const res = await fetch(`/api/projects/${id}/cancel`, { method: 'POST' })
+    const body = await res.json().catch(() => ({}))
+    if (!res.ok) {
+      throw new Error(body?.error || 'No se pudo cancelar la suscripcion')
+    }
+    set((state) => ({
+      projects: state.projects.map((p) =>
+        p.id === id
+          ? {
+              ...p,
+              billingStatus: 'suspended',
+              suspendedReason: 'cancelled',
+              graceUntil: null,
+              updatedAt: new Date().toISOString(),
+            }
+          : p
+      ),
+    }))
+    return body as { ok: boolean; mpCancelled?: boolean; gifted?: boolean; alreadyCancelled?: boolean }
   },
 
   updateSections: (id, sections) => {

@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   ArrowLeft, Globe, CheckCircle2, Circle, Rocket, ExternalLink,
-  Copy, Twitter, Facebook, Link2, Sparkles, AlertCircle, Lock, Zap, PowerOff,
+  Copy, Twitter, Facebook, Link2, Sparkles, AlertCircle, Lock, Zap, PowerOff, Ban, CreditCard,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -29,7 +29,7 @@ export default function PublishPage() {
   const params = useParams()
   const router = useRouter()
   const id = params.id as string
-  const { projects, publishProject, unpublishProject, setSubdomain } = useProjectStore()
+  const { projects, publishProject, unpublishProject, cancelSubscription, setSubdomain } = useProjectStore()
   const project = projects.find((p) => p.id === id)
 
   const [publishing, setPublishing] = useState(false)
@@ -38,6 +38,8 @@ export default function PublishPage() {
   const [customDomain, setCustomDomain] = useState('')
   const [confirmUnpublish, setConfirmUnpublish] = useState(false)
   const [unpublishing, setUnpublishing] = useState(false)
+  const [confirmCancel, setConfirmCancel] = useState(false)
+  const [cancelling, setCancelling] = useState(false)
 
   if (!project) return <div className="flex items-center justify-center h-screen text-surface-500">Proyecto no encontrado</div>
 
@@ -145,6 +147,32 @@ export default function PublishPage() {
   // Reflect that in the UI so nobody discovers the rule by hitting the error.
   const subdomainLocked = published && !!project.subdomain
 
+  // Billing lifecycle state. A suspended project's public URL 404s (the gate
+  // excludes it), so the "published" banner must not claim the site is online.
+  const isSuspended = project.billingStatus === 'suspended'
+  const isCancelled = isSuspended && project.suspendedReason === 'cancelled'
+
+  async function handleCancel() {
+    setCancelling(true)
+    try {
+      const result = await cancelSubscription(id)
+      setConfirmCancel(false)
+      if (result.alreadyCancelled) {
+        toast.success('Tu suscripción ya estaba cancelada.')
+      } else {
+        toast.success('Suscripción cancelada. Tu sitio ya no está online.')
+      }
+    } catch (err) {
+      toast.error(
+        err instanceof Error && err.message
+          ? err.message
+          : 'No se pudo cancelar la suscripción. Intentá de nuevo.'
+      )
+    } finally {
+      setCancelling(false)
+    }
+  }
+
   async function handlePublish() {
     setPublishing(true)
     try {
@@ -206,7 +234,7 @@ export default function PublishPage() {
       <div className="max-w-2xl mx-auto px-6 py-10 space-y-6">
 
         {/* Already published banner */}
-        {published && !showSuccess && (
+        {published && !showSuccess && !isSuspended && (
           <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-5 space-y-4">
             <div className="flex items-start gap-4">
               <CheckCircle2 className="w-5 h-5 text-emerald-500 mt-0.5 shrink-0" />
@@ -342,6 +370,45 @@ export default function PublishPage() {
             {published ? 'Sitio publicado' : 'Publicar ahora'}
           </Button>
         </div>
+
+        {/* Subscription — cancel. Shown for paid projects (this whole return is
+            gated on hasPaid above). Billing continues even while unpublished, so
+            this is where the owner stops it. */}
+        <div className="bg-white rounded-2xl border border-surface-100 p-6 space-y-4">
+          <div className="flex items-center gap-2">
+            <CreditCard className="w-4 h-4 text-surface-400" />
+            <h2 className="font-semibold text-surface-900">Suscripción</h2>
+          </div>
+
+          {isCancelled ? (
+            <div className="flex items-start gap-2 bg-surface-50 border border-surface-200 rounded-xl p-4 text-sm text-surface-600">
+              <Ban className="w-4 h-4 mt-0.5 shrink-0 text-surface-400" />
+              <div>
+                <p className="font-medium text-surface-800">Suscripción cancelada</p>
+                <p className="text-xs text-surface-500 mt-0.5">
+                  Tu sitio está offline y ya no se te cobra. Tu contenido se conserva: para volver a
+                  publicarlo, contratá un plan nuevamente desde el checkout.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <>
+              <p className="text-sm text-surface-500">
+                Al cancelar, tu sitio queda <strong>offline de inmediato</strong> (la dirección
+                pública devuelve 404) y <strong>dejamos de cobrarte</strong>. Tu contenido se
+                conserva por si querés reactivarlo más adelante.
+              </p>
+              <Button
+                variant="destructive-ghost"
+                size="sm"
+                className="gap-1.5"
+                onClick={() => setConfirmCancel(true)}
+              >
+                <Ban className="w-3.5 h-3.5" /> Cancelar suscripción
+              </Button>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Unpublish confirmation */}
@@ -355,6 +422,19 @@ export default function PublishPage() {
         cancelLabel="Cancelar"
         onConfirm={handleUnpublish}
         loading={unpublishing}
+      />
+
+      {/* Cancel subscription confirmation */}
+      <ConfirmDialog
+        open={confirmCancel}
+        onOpenChange={setConfirmCancel}
+        variant="destructive"
+        title="¿Cancelar la suscripción?"
+        description="Tu sitio quedará offline de inmediato: la dirección pública devolverá 404. Dejamos de cobrarte y cancelamos el pago recurrente en MercadoPago. Tu contenido se conserva, pero para volver a publicarlo tendrás que contratar un plan nuevamente."
+        confirmLabel="Cancelar suscripción"
+        cancelLabel="Volver"
+        onConfirm={handleCancel}
+        loading={cancelling}
       />
 
       {/* Success Modal */}

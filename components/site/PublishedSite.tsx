@@ -2,10 +2,25 @@ import type { Project } from '@prisma/client'
 import { typographyOptions } from '@/config/themes'
 import { parseJSON } from '@/lib/published-site'
 import { publishedSiteUrl } from '@/lib/site-domain'
-import type { BusinessData, SectionConfig } from '@/types'
+import type { BusinessData, SectionConfig, SectionType } from '@/types'
 
-function sectionEnabled(sections: SectionConfig[], id: string) {
-  return sections.some((s) => s.id === id && s.enabled)
+/**
+ * Nav/anchor metadata for the sections a visitor can jump to. Sections absent
+ * from this map (stats, cta, footer) render but are not linkable. The anchor
+ * here is the `id` the section element receives below, so nav links and section
+ * ids are always derived from the same source and can never disagree.
+ */
+const NAV_META: Partial<Record<SectionType, { anchor: string; label: string }>> = {
+  hero: { anchor: 'inicio', label: 'Inicio' },
+  services: { anchor: 'servicios', label: 'Servicios' },
+  features: { anchor: 'caracteristicas', label: 'Características' },
+  about: { anchor: 'nosotros', label: 'Nosotros' },
+  gallery: { anchor: 'galeria', label: 'Galería' },
+  pricing: { anchor: 'precios', label: 'Precios' },
+  testimonials: { anchor: 'testimonios', label: 'Testimonios' },
+  team: { anchor: 'equipo', label: 'Equipo' },
+  faq: { anchor: 'faq', label: 'Preguntas' },
+  contact: { anchor: 'contacto', label: 'Contacto' },
 }
 
 /**
@@ -17,6 +32,12 @@ function sectionEnabled(sections: SectionConfig[], id: string) {
  *
  * Self-contained document (own <html>/<head>) because a client site must not
  * inherit the dashboard shell's fonts, analytics or chrome.
+ *
+ * Rendering mirrors the dashboard preview (app/(dashboard)/projects/[id]/preview
+ * and the editor's live preview): sections render in the owner's chosen `order`,
+ * gated by real content only. A section the owner left empty is omitted — never
+ * back-filled with invented services, sample pricing, placeholder gallery tiles
+ * or stock figures.
  */
 export function PublishedSite({ project: row }: { project: Project }) {
   const bd = parseJSON<BusinessData>(row.businessData as string, {} as BusinessData)
@@ -25,20 +46,56 @@ export function PublishedSite({ project: row }: { project: Project }) {
   const color = /^#[0-9a-fA-F]{3,8}$/.test(rawColor) ? rawColor : '#6366f1'
   const name = bd.name || row.name
 
-  const has = (id: string) => sectionEnabled(sections, id)
+  // A section renders only when the owner actually supplied its content. Nav,
+  // footer links and the section list all read this one predicate so they can
+  // never point at an anchor that was omitted.
+  const dataReady = (id: SectionType): boolean => {
+    switch (id) {
+      case 'about':
+        return !!bd.description
+      case 'services':
+      case 'features':
+        return !!bd.services?.length
+      case 'gallery':
+        return !!bd.galleryImages?.length
+      case 'pricing':
+        // Honesty: only when the owner priced at least one service. We never
+        // render an em-dash "price" card the preview mock uses.
+        return !!bd.services?.some((s) => !!s.price)
+      case 'testimonials':
+        return !!bd.testimonials?.length
+      case 'team':
+        return !!bd.team?.length
+      case 'faq':
+        return !!bd.faqs?.length
+      case 'stats':
+        return !!bd.stats?.length
+      case 'hero':
+      case 'cta':
+      case 'contact':
+        return true
+      default:
+        // 'footer' and anything unknown are handled outside the ordered loop.
+        return false
+    }
+  }
 
-  // A section renders only when the owner actually supplied its content — we
-  // never invent services, reviews or figures to fill an enabled-but-empty
-  // section. Nav and footer links read the same flags so they can't point at
-  // an anchor that was omitted.
-  const showAbout = has('about') && !!bd.description
-  const showServices = has('services') && !!bd.services?.length
-  const showStats = has('stats') && !!bd.stats?.length
-  const showTeam = has('team') && !!bd.team?.length
-  const showTestimonials = has('testimonials') && !!bd.testimonials?.length
-  const showFaq = has('faq') && !!bd.faqs?.length
-  const showCta = has('cta')
-  const showContact = has('contact')
+  // Single ordered source of truth: enabled + has content, sorted by the order
+  // the owner set via drag-and-drop. Footer is always rendered last (below),
+  // so it is excluded here.
+  const rendered = sections
+    .filter((s) => s.enabled && s.id !== 'footer' && dataReady(s.id))
+    .sort((a, b) => a.order - b.order)
+
+  const shows = (id: SectionType) => rendered.some((s) => s.id === id)
+  const showContact = shows('contact')
+
+  // Nav is derived from the rendered list — capped so a long section list can't
+  // overflow the sticky bar on desktop.
+  const navLinks = rendered
+    .filter((s) => NAV_META[s.id])
+    .map((s) => ({ id: s.id, ...NAV_META[s.id]! }))
+    .slice(0, 6)
 
   // Fonts from branding
   const fontHeadingId = bd.branding?.fontHeading || 'inter'
@@ -55,195 +112,83 @@ export function PublishedSite({ project: row }: { project: Project }) {
   const gaId = rawGaId && /^(G|GT|UA)-[A-Za-z0-9-]+$/.test(rawGaId) ? rawGaId : null
   const sitemapEnabled = bd.seo?.sitemapEnabled && row.hasPaid
 
-  return (
-    <html lang="es">
-      <head>
-        <meta charSet="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        {fontUrls.map((url) => (
-          <link key={url} href={url} rel="stylesheet" />
-        ))}
-        {sitemapEnabled && (
-          <link rel="sitemap" type="application/xml" href={`${publishedSiteUrl(row)}/sitemap.xml`} />
-        )}
-        {gaId && (
-          <>
-            <script async src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`} />
-            <script dangerouslySetInnerHTML={{ __html: `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config',${JSON.stringify(gaId)});` }} />
-          </>
-        )}
-        <style>{`
-          *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-          html { scroll-behavior: smooth; }
-          body { font-family: '${bodyFamily}', system-ui, sans-serif; color: #1e293b; background: #fff; }
-          h1, h2, h3, h4, h5, h6 { font-family: '${headingFamily}', system-ui, sans-serif; }
-          a { color: inherit; text-decoration: none; }
-          img { max-width: 100%; display: block; }
-          button { cursor: pointer; font-family: inherit; }
-          input, textarea { font-family: inherit; }
-          .container { max-width: 1100px; margin: 0 auto; padding: 0 1.5rem; }
-          .section-pad { padding: 5rem 0; }
-          .section-pad-sm { padding: 3rem 0; }
-          .label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: ${color}; margin-bottom: 0.75rem; }
-          .heading-xl { font-size: clamp(2rem, 5vw, 3rem); font-weight: 800; color: #0f172a; line-height: 1.1; }
-          .heading-lg { font-size: clamp(1.75rem, 4vw, 2.5rem); font-weight: 800; color: #0f172a; line-height: 1.15; }
-          .subtext { color: #64748b; line-height: 1.7; }
-          .btn-primary { display: inline-flex; align-items: center; gap: 0.5rem; background: ${color}; color: #fff; padding: 0.875rem 2rem; border-radius: 9999px; font-weight: 700; font-size: 0.95rem; border: none; transition: opacity .15s; }
-          .btn-primary:hover { opacity: .88; }
-          .btn-outline { display: inline-flex; align-items: center; gap: 0.5rem; background: transparent; color: #fff; padding: 0.875rem 2rem; border-radius: 9999px; font-weight: 700; font-size: 0.95rem; border: 2px solid rgba(255,255,255,0.55); transition: background .15s; }
-          .btn-outline:hover { background: rgba(255,255,255,0.12); }
-          .card { background: #fff; border: 1px solid #e8edf3; border-radius: 1.25rem; padding: 1.75rem; }
-          .grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 1.5rem; }
-          .grid-2 { display: grid; grid-template-columns: repeat(2,1fr); gap: 1.5rem; }
-          .grid-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 1.5rem; }
-          @media (max-width: 768px) {
-            .grid-3 { grid-template-columns: 1fr; }
-            .grid-2 { grid-template-columns: 1fr; }
-            .grid-4 { grid-template-columns: repeat(2,1fr); }
-            .hide-mobile { display: none !important; }
-            .section-pad { padding: 2.5rem 0; }
-            .section-pad-sm { padding: 2rem 0; }
-            .container { padding: 0 1rem; }
-          }
-          /* Navbar */
-          .navbar { position: sticky; top: 0; background: rgba(255,255,255,0.96); backdrop-filter: blur(12px); border-bottom: 1px solid #e8edf3; z-index: 100; }
-          .navbar-inner { display: flex; align-items: center; justify-content: space-between; height: 64px; }
-          .navbar-logo { font-size: 1.2rem; font-weight: 800; color: ${color}; }
-          .navbar-links { display: flex; gap: 2rem; }
-          .navbar-links a { font-size: 0.875rem; color: #64748b; font-weight: 500; transition: color .15s; }
-          .navbar-links a:hover { color: #0f172a; }
-          .hamburger { display: none; background: none; border: none; padding: 0.25rem; cursor: pointer; }
-          .hamburger span { display: block; width: 22px; height: 2px; background: #334155; margin: 5px 0; border-radius: 2px; transition: .25s; }
-          .mobile-menu { display: none; background: #fff; border-top: 1px solid #e8edf3; padding: 0.75rem 1rem 1rem; }
-          .mobile-menu.open { display: block; }
-          .mobile-menu a { display: block; padding: 0.65rem 0.5rem; font-size: 0.9rem; font-weight: 500; color: #475569; border-bottom: 1px solid #f1f5f9; }
-          .mobile-menu a:last-child { border-bottom: none; }
-          @media (max-width: 768px) {
-            .hamburger { display: block; }
-          }
-          /* Hero */
-          .hero { background: linear-gradient(135deg, ${color}ee 0%, ${color}88 100%); min-height: 88vh; display: flex; align-items: center; position: relative; overflow: hidden; }
-          @media (max-width: 768px) { .hero { min-height: 70vh; } }
-          .hero::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(0,0,0,.28) 0%, rgba(0,0,0,.08) 100%); }
-          .hero-content { position: relative; color: #fff; max-width: 700px; }
-          .hero-badge { display: inline-block; background: rgba(255,255,255,0.2); padding: 0.375rem 1rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; margin-bottom: 1.25rem; backdrop-filter: blur(8px); }
-          .hero h1 { font-size: clamp(2.25rem, 6vw, 4rem); font-weight: 900; line-height: 1.04; margin-bottom: 1rem; }
-          .hero-tagline { font-size: 1.1rem; opacity: 0.9; margin-bottom: 2rem; line-height: 1.7; }
-          .hero-cta { display: flex; gap: 1rem; flex-wrap: wrap; }
-          /* Services */
-          .service-card { border-top: 3px solid ${color}; }
-          .service-emoji { font-size: 2rem; margin-bottom: 1rem; }
-          /* Testimonials */
-          .testi-section { background: #f8fafc; }
-          .testi-card { background: #fff; }
-          .stars { color: #f59e0b; font-size: 1rem; margin-bottom: 0.75rem; }
-          .testi-quote { color: #475569; font-style: italic; margin-bottom: 1.25rem; font-size: 0.9rem; line-height: 1.75; }
-          .testi-avatar { width: 36px; height: 36px; border-radius: 50%; background: ${color}; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 0.85rem; flex-shrink: 0; }
-          /* About */
-          .about-section { background: #f8fafc; }
-          .about-inner { max-width: 720px; }
-          .about-badge { display: inline-flex; align-items: center; gap: 0.5rem; background: ${color}18; color: ${color}; font-size: 0.75rem; font-weight: 700; padding: 0.4rem 0.875rem; border-radius: 9999px; margin-bottom: 1rem; }
-          /* Team */
-          .team-member-card { text-align: center; }
-          .team-avatar { width: 72px; height: 72px; border-radius: 50%; background: ${color}22; display: flex; align-items: center; justify-content: center; font-size: 1.75rem; font-weight: 800; color: ${color}; margin: 0 auto 1rem; }
-          /* FAQ */
-          .faq-item { border-bottom: 1px solid #e8edf3; padding: 1.25rem 0; }
-          .faq-item:last-child { border-bottom: none; }
-          .faq-q { font-weight: 600; color: #0f172a; margin-bottom: 0.5rem; font-size: 0.95rem; }
-          .faq-a { color: #64748b; font-size: 0.9rem; line-height: 1.7; }
-          /* Stats */
-          .stats-section { background: ${color}; color: #fff; }
-          .stat-number { font-size: 2.5rem; font-weight: 900; }
-          .stat-label { font-size: 0.875rem; opacity: 0.85; }
-          /* CTA */
-          .cta-section { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #fff; text-align: center; }
-          /* Contact */
-          .contact-info-item { display: flex; align-items: flex-start; gap: 0.75rem; margin-bottom: 1rem; font-size: 0.9rem; color: #475569; }
-          .contact-info-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
-          .contact-form { background: #f8fafc; border-radius: 1.25rem; padding: 1.75rem; border: 1px solid #e8edf3; }
-          .form-field { width: 100%; padding: 0.65rem 0.875rem; border: 1.5px solid #e8edf3; border-radius: 0.625rem; font-size: 0.9rem; outline: none; margin-bottom: 0.75rem; color: #0f172a; background: #fff; }
-          .form-field:focus { border-color: ${color}; }
-          .form-textarea { height: 100px; resize: vertical; }
-          .btn-submit { width: 100%; background: ${color}; color: #fff; padding: 0.8rem; border-radius: 0.625rem; border: none; font-weight: 700; font-size: 0.9rem; }
-          /* Footer */
-          .footer { background: #0f172a; color: #94a3b8; padding: 2.5rem 0; text-align: center; }
-          .footer-logo { font-size: 1.25rem; font-weight: 800; color: ${color}; margin-bottom: 0.5rem; }
-          .footer-city { font-size: 0.85rem; margin-bottom: 1.5rem; }
-          .footer-socials { display: flex; justify-content: center; gap: 1rem; margin-bottom: 1.5rem; }
-          .footer-social-link { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,0.08); color: #94a3b8; font-size: 0.9rem; transition: background .15s, color .15s; }
-          .footer-social-link:hover { background: ${color}; color: #fff; }
-          .footer-copy { font-size: 0.75rem; color: #475569; }
-          .whatsapp-float { position: fixed; bottom: 1.5rem; right: 1.5rem; background: #25D366; color: #fff; width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; box-shadow: 0 4px 16px rgba(37,211,102,.45); z-index: 200; transition: transform .15s; }
-          .whatsapp-float:hover { transform: scale(1.08); }
-        `}</style>
-      </head>
-      <body>
+  // Only allow real image sources. A non-URL value (or a javascript: scheme)
+  // yields null and the image is simply not rendered. Rendered as a plain `src`
+  // attribute, which React escapes and the browser never executes.
+  const safeImg = (u?: string | null): string | null => {
+    if (!u) return null
+    const t = u.trim()
+    return /^(https?:\/\/|\/|data:image\/)/i.test(t) ? t : null
+  }
+  const heroImg = safeImg(bd.heroImage)
+  const galleryImgs = (bd.galleryImages ?? []).map(safeImg).filter((u): u is string => !!u)
 
-        {/* ── Navbar ── */}
-        <nav className="navbar">
-          <div className="container navbar-inner">
-            <span className="navbar-logo">{name}</span>
-            <div className="navbar-links hide-mobile">
-              <a href="#inicio">Inicio</a>
-              {showServices && <a href="#servicios">Servicios</a>}
-              {showAbout && <a href="#nosotros">Nosotros</a>}
-              {showTestimonials && <a href="#testimonios">Testimonios</a>}
-              {showContact && <a href="#contacto">Contacto</a>}
-            </div>
-            {showContact && (
-              <a href="#contacto" className="btn-primary hide-mobile" style={{ padding: '0.5rem 1.25rem', fontSize: '0.875rem' }}>
-                Contactar
-              </a>
-            )}
-            <button className="hamburger" id="hamburger" aria-label="Menú" type="button">
-              <span /><span /><span />
-            </button>
-          </div>
-          <div className="mobile-menu" id="mobile-menu">
-            <a href="#inicio" onClick={undefined}>Inicio</a>
-            {showServices && <a href="#servicios">Servicios</a>}
-            {showAbout && <a href="#nosotros">Nosotros</a>}
-            {showTestimonials && <a href="#testimonios">Testimonios</a>}
-            {showContact && <a href="#contacto">Contacto</a>}
-          </div>
-        </nav>
-        <script dangerouslySetInnerHTML={{ __html: `
-          var btn = document.getElementById('hamburger');
-          var menu = document.getElementById('mobile-menu');
-          if(btn && menu) {
-            btn.addEventListener('click', function() {
-              menu.classList.toggle('open');
-            });
-            menu.querySelectorAll('a').forEach(function(a) {
-              a.addEventListener('click', function() { menu.classList.remove('open'); });
-            });
-          }
-        `}} />
+  // Social links. Handles (@user) become platform URLs; full URLs are kept but
+  // forced to an http(s) origin so a javascript: value can't produce an
+  // executable href.
+  const normalizeUrl = (v: string) => {
+    const t = v.trim()
+    return /^https?:\/\//i.test(t) ? t : 'https://' + t.replace(/^\/+/, '')
+  }
+  const handle = (v: string) => v.trim().replace(/^@+/, '')
+  const isUrl = (v: string) => /^https?:\/\//i.test(v.trim())
+  const s = bd.socials
+  const socialLinks: { href: string; icon: string; title: string }[] = []
+  if (s?.instagram) socialLinks.push({ href: isUrl(s.instagram) ? normalizeUrl(s.instagram) : `https://instagram.com/${handle(s.instagram)}`, icon: '📸', title: 'Instagram' })
+  if (s?.facebook) socialLinks.push({ href: normalizeUrl(s.facebook), icon: '👤', title: 'Facebook' })
+  if (s?.linkedin) socialLinks.push({ href: normalizeUrl(s.linkedin), icon: '💼', title: 'LinkedIn' })
+  if (s?.twitter) socialLinks.push({ href: isUrl(s.twitter) ? normalizeUrl(s.twitter) : `https://x.com/${handle(s.twitter)}`, icon: '🐦', title: 'X (Twitter)' })
+  if (s?.tiktok) socialLinks.push({ href: isUrl(s.tiktok) ? normalizeUrl(s.tiktok) : `https://tiktok.com/@${handle(s.tiktok)}`, icon: '🎵', title: 'TikTok' })
+  if (s?.youtube) socialLinks.push({ href: normalizeUrl(s.youtube), icon: '▶️', title: 'YouTube' })
 
-        {/* ── Hero ── */}
-        <section className="hero" id="inicio">
-          <div className="container hero-content">
-            {bd.businessType && <div className="hero-badge">✦ {bd.businessType}</div>}
-            <h1>{name}</h1>
-            {(bd.tagline || bd.description) && (
-              <p className="hero-tagline">{bd.tagline || bd.description}</p>
-            )}
-            <div className="hero-cta">
-              {showContact && (
-                <a href="#contacto" className="btn-primary">Contactar ahora</a>
-              )}
-              {showServices && (
-                <a href="#servicios" className="btn-outline">Ver servicios</a>
+  // ── Per-section renderers, keyed by section id ──────────────────────────────
+  const renderServices = (id: SectionType) => (
+    <section key={id} className="section-pad" id={NAV_META[id]!.anchor} style={{ background: '#fff' }}>
+      <div className="container">
+        <p className="label" style={{ textAlign: 'center' }}>Nuestros servicios</p>
+        <h2 className="heading-lg" style={{ textAlign: 'center', marginBottom: '0.75rem' }}>Todo lo que necesitás</h2>
+        <p className="subtext" style={{ textAlign: 'center', marginBottom: '3rem' }}>
+          Soluciones pensadas para tu negocio
+        </p>
+        <div className="grid-3">
+          {bd.services.map((sv) => (
+            <div key={sv.id} className="card service-card">
+              <div className="service-emoji">{sv.emoji || '✨'}</div>
+              <h3 style={{ fontWeight: 700, fontSize: '1.05rem', marginBottom: '0.5rem', color: '#0f172a' }}>{sv.name}</h3>
+              <p className="subtext" style={{ fontSize: '0.9rem' }}>{sv.description}</p>
+              {sv.price && (
+                <p style={{ marginTop: '1rem', fontWeight: 700, color, fontSize: '0.9rem' }}>{sv.price}</p>
               )}
             </div>
-          </div>
-        </section>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
 
-        {/* ── About ── */}
-        {showAbout && (
-          <section className="section-pad about-section" id="nosotros">
+  const renderSection = (section: SectionConfig) => {
+    switch (section.id) {
+      case 'hero':
+        return (
+          <section className="hero" id="inicio" key="hero">
+            {heroImg && <img className="hero-bg" src={heroImg} alt="" />}
+            <div className="container hero-content">
+              {bd.businessType && <div className="hero-badge">✦ {bd.businessType}</div>}
+              <h1>{name}</h1>
+              {(bd.tagline || bd.description) && (
+                <p className="hero-tagline">{bd.tagline || bd.description}</p>
+              )}
+              <div className="hero-cta">
+                {showContact && <a href="#contacto" className="btn-primary">Contactar ahora</a>}
+                {shows('services') && <a href="#servicios" className="btn-outline">Ver servicios</a>}
+              </div>
+            </div>
+          </section>
+        )
+
+      case 'about':
+        return (
+          <section className="section-pad about-section" id="nosotros" key="about">
             <div className="container">
               <div className="about-inner">
                 <div className="about-badge">💡 Sobre nosotros</div>
@@ -257,72 +202,104 @@ export function PublishedSite({ project: row }: { project: Project }) {
               </div>
             </div>
           </section>
-        )}
+        )
 
-        {/* ── Services ── */}
-        {showServices && (
-          <section className="section-pad" id="servicios" style={{ background: '#fff' }}>
+      case 'services':
+      case 'features':
+        return renderServices(section.id)
+
+      case 'gallery':
+        return (
+          <section className="section-pad" id="galeria" key="gallery" style={{ background: '#f8fafc' }}>
             <div className="container">
-              <p className="label" style={{ textAlign: 'center' }}>Nuestros servicios</p>
-              <h2 className="heading-lg" style={{ textAlign: 'center', marginBottom: '0.75rem' }}>Todo lo que necesitás</h2>
-              <p className="subtext" style={{ textAlign: 'center', marginBottom: '3rem' }}>
-                Soluciones pensadas para tu negocio
-              </p>
-              <div className="grid-3">
-                {bd.services.map((s) => (
-                  <div key={s.id} className="card service-card">
-                    <div className="service-emoji">{s.emoji || '✨'}</div>
-                    <h3 style={{ fontWeight: 700, fontSize: '1.05rem', marginBottom: '0.5rem', color: '#0f172a' }}>{s.name}</h3>
-                    <p className="subtext" style={{ fontSize: '0.9rem' }}>{s.description}</p>
-                    {s.price && (
-                      <p style={{ marginTop: '1rem', fontWeight: 700, color, fontSize: '0.9rem' }}>{s.price}</p>
+              <p className="label" style={{ textAlign: 'center' }}>Galería</p>
+              <h2 className="heading-lg" style={{ textAlign: 'center', marginBottom: '3rem' }}>Nuestro trabajo</h2>
+              <div className="gallery-grid">
+                {galleryImgs.map((url, i) => (
+                  <div key={i} className="gallery-item">
+                    <img src={url} alt="" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )
+
+      case 'pricing': {
+        const priced = bd.services.filter((sv) => !!sv.price).slice(0, 3)
+        const highlight = priced.length === 3 ? 1 : -1
+        return (
+          <section className="section-pad pricing-section" id="precios" key="pricing">
+            <div className="container">
+              <p className="label" style={{ textAlign: 'center' }}>Precios</p>
+              <h2 className="heading-lg" style={{ textAlign: 'center', marginBottom: '0.5rem' }}>Nuestros planes</h2>
+              <p className="subtext" style={{ textAlign: 'center', marginBottom: '3rem' }}>Elegí la opción que mejor se adapta a vos</p>
+              <div className="pricing-grid">
+                {priced.map((sv, i) => (
+                  <div key={sv.id} className={i === highlight ? 'price-card popular' : 'price-card'}>
+                    {i === highlight && <span className="price-badge">Popular</span>}
+                    <div>
+                      <p style={{ fontWeight: 700, fontSize: '1.05rem', color: '#0f172a' }}>{sv.name}</p>
+                      <p className="price-amount">{sv.price}</p>
+                    </div>
+                    {sv.description && <p className="subtext" style={{ fontSize: '0.9rem', flex: 1 }}>{sv.description}</p>}
+                    {showContact && (
+                      <a href="#contacto" className="btn-primary" style={{ justifyContent: 'center', padding: '0.7rem', borderRadius: '0.75rem', fontSize: '0.9rem' }}>
+                        Contratar
+                      </a>
                     )}
                   </div>
                 ))}
               </div>
             </div>
           </section>
-        )}
+        )
+      }
 
-        {/* ── Stats ── */}
-        {showStats && bd.stats && (
-          <section className="section-pad-sm stats-section">
+      case 'stats':
+        return (
+          <section className="section-pad-sm stats-section" key="stats">
             <div className="container">
               <div className="grid-4" style={{ textAlign: 'center' }}>
-                {bd.stats.map((s) => (
-                  <div key={s.id}>
-                    <div className="stat-number">{s.number}</div>
-                    <div className="stat-label">{s.label}</div>
+                {bd.stats!.map((st) => (
+                  <div key={st.id}>
+                    <div className="stat-number">{st.number}</div>
+                    <div className="stat-label">{st.label}</div>
                   </div>
                 ))}
               </div>
             </div>
           </section>
-        )}
+        )
 
-        {/* ── Team ── */}
-        {showTeam && (
-          <section className="section-pad" style={{ background: '#f8fafc' }}>
+      case 'team':
+        return (
+          <section className="section-pad" id="equipo" key="team" style={{ background: '#f8fafc' }}>
             <div className="container">
               <p className="label" style={{ textAlign: 'center' }}>El equipo</p>
               <h2 className="heading-lg" style={{ textAlign: 'center', marginBottom: '3rem' }}>Conocé a nuestro equipo</h2>
               <div className="grid-3">
-                {bd.team.map((m) => (
-                  <div key={m.id} className="card team-member-card">
-                    <div className="team-avatar">{m.name?.[0] ?? '?'}</div>
-                    <h3 style={{ fontWeight: 700, fontSize: '1rem', color: '#0f172a', marginBottom: '0.25rem' }}>{m.name}</h3>
-                    <p style={{ fontSize: '0.8rem', color, fontWeight: 600, marginBottom: '0.75rem' }}>{m.role}</p>
-                    {m.bio && <p className="subtext" style={{ fontSize: '0.875rem' }}>{m.bio}</p>}
-                  </div>
-                ))}
+                {bd.team.map((m) => {
+                  const photo = safeImg(m.image)
+                  return (
+                    <div key={m.id} className="card team-member-card">
+                      {photo
+                        ? <img className="team-photo" src={photo} alt={m.name} />
+                        : <div className="team-avatar">{m.name?.[0] ?? '?'}</div>}
+                      <h3 style={{ fontWeight: 700, fontSize: '1rem', color: '#0f172a', marginBottom: '0.25rem' }}>{m.name}</h3>
+                      <p style={{ fontSize: '0.8rem', color, fontWeight: 600, marginBottom: '0.75rem' }}>{m.role}</p>
+                      {m.bio && <p className="subtext" style={{ fontSize: '0.875rem' }}>{m.bio}</p>}
+                    </div>
+                  )
+                })}
               </div>
             </div>
           </section>
-        )}
+        )
 
-        {/* ── Testimonials ── */}
-        {showTestimonials && (
-          <section className="section-pad testi-section" id="testimonios">
+      case 'testimonials':
+        return (
+          <section className="section-pad testi-section" id="testimonios" key="testimonials">
             <div className="container">
               <p className="label" style={{ textAlign: 'center' }}>Testimonios</p>
               <h2 className="heading-lg" style={{ textAlign: 'center', marginBottom: '3rem' }}>Lo que dicen nuestros clientes</h2>
@@ -345,11 +322,11 @@ export function PublishedSite({ project: row }: { project: Project }) {
               </div>
             </div>
           </section>
-        )}
+        )
 
-        {/* ── FAQ ── */}
-        {showFaq && (
-          <section className="section-pad" style={{ background: '#fff' }}>
+      case 'faq':
+        return (
+          <section className="section-pad" id="faq" key="faq" style={{ background: '#fff' }}>
             <div className="container" style={{ maxWidth: '720px' }}>
               <p className="label" style={{ textAlign: 'center' }}>Preguntas frecuentes</p>
               <h2 className="heading-lg" style={{ textAlign: 'center', marginBottom: '3rem' }}>¿Tenés dudas?</h2>
@@ -363,11 +340,11 @@ export function PublishedSite({ project: row }: { project: Project }) {
               </div>
             </div>
           </section>
-        )}
+        )
 
-        {/* ── CTA ── */}
-        {showCta && (
-          <section className="section-pad cta-section">
+      case 'cta':
+        return (
+          <section className="section-pad cta-section" key="cta">
             <div className="container" style={{ textAlign: 'center' }}>
               <h2 style={{ fontSize: 'clamp(1.75rem, 4vw, 2.5rem)', fontWeight: 900, marginBottom: '1rem' }}>
                 ¿Listo para empezar?
@@ -379,11 +356,11 @@ export function PublishedSite({ project: row }: { project: Project }) {
               )}
             </div>
           </section>
-        )}
+        )
 
-        {/* ── Contact ── */}
-        {showContact && (
-          <section className="section-pad" id="contacto" style={{ background: '#fff' }}>
+      case 'contact':
+        return (
+          <section className="section-pad" id="contacto" key="contact" style={{ background: '#fff' }}>
             <div className="container">
               <p className="label" style={{ textAlign: 'center' }}>Contacto</p>
               <h2 className="heading-lg" style={{ textAlign: 'center', marginBottom: '3rem' }}>Contactate con nosotros</h2>
@@ -463,7 +440,193 @@ export function PublishedSite({ project: row }: { project: Project }) {
               </div>
             </div>
           </section>
+        )
+
+      default:
+        return null
+    }
+  }
+
+  return (
+    <html lang="es">
+      <head>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {fontUrls.map((url) => (
+          <link key={url} href={url} rel="stylesheet" />
+        ))}
+        {sitemapEnabled && (
+          <link rel="sitemap" type="application/xml" href={`${publishedSiteUrl(row)}/sitemap.xml`} />
         )}
+        {gaId && (
+          <>
+            <script async src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`} />
+            <script dangerouslySetInnerHTML={{ __html: `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config',${JSON.stringify(gaId)});` }} />
+          </>
+        )}
+        <style>{`
+          *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+          html { scroll-behavior: smooth; }
+          body { font-family: '${bodyFamily}', system-ui, sans-serif; color: #1e293b; background: #fff; }
+          h1, h2, h3, h4, h5, h6 { font-family: '${headingFamily}', system-ui, sans-serif; }
+          a { color: inherit; text-decoration: none; }
+          img { max-width: 100%; display: block; }
+          button { cursor: pointer; font-family: inherit; }
+          input, textarea { font-family: inherit; }
+          .container { max-width: 1100px; margin: 0 auto; padding: 0 1.5rem; }
+          .section-pad { padding: 5rem 0; }
+          .section-pad-sm { padding: 3rem 0; }
+          .label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: ${color}; margin-bottom: 0.75rem; }
+          .heading-xl { font-size: clamp(2rem, 5vw, 3rem); font-weight: 800; color: #0f172a; line-height: 1.1; }
+          .heading-lg { font-size: clamp(1.75rem, 4vw, 2.5rem); font-weight: 800; color: #0f172a; line-height: 1.15; }
+          .subtext { color: #64748b; line-height: 1.7; }
+          .btn-primary { display: inline-flex; align-items: center; gap: 0.5rem; background: ${color}; color: #fff; padding: 0.875rem 2rem; border-radius: 9999px; font-weight: 700; font-size: 0.95rem; border: none; transition: opacity .15s; }
+          .btn-primary:hover { opacity: .88; }
+          .btn-outline { display: inline-flex; align-items: center; gap: 0.5rem; background: transparent; color: #fff; padding: 0.875rem 2rem; border-radius: 9999px; font-weight: 700; font-size: 0.95rem; border: 2px solid rgba(255,255,255,0.55); transition: background .15s; }
+          .btn-outline:hover { background: rgba(255,255,255,0.12); }
+          .card { background: #fff; border: 1px solid #e8edf3; border-radius: 1.25rem; padding: 1.75rem; }
+          .grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 1.5rem; }
+          .grid-2 { display: grid; grid-template-columns: repeat(2,1fr); gap: 1.5rem; }
+          .grid-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 1.5rem; }
+          @media (max-width: 768px) {
+            .grid-3 { grid-template-columns: 1fr; }
+            .grid-2 { grid-template-columns: 1fr; }
+            .grid-4 { grid-template-columns: repeat(2,1fr); }
+            .hide-mobile { display: none !important; }
+            .section-pad { padding: 2.5rem 0; }
+            .section-pad-sm { padding: 2rem 0; }
+            .container { padding: 0 1rem; }
+          }
+          /* Navbar */
+          .navbar { position: sticky; top: 0; background: rgba(255,255,255,0.96); backdrop-filter: blur(12px); border-bottom: 1px solid #e8edf3; z-index: 100; }
+          .navbar-inner { display: flex; align-items: center; justify-content: space-between; height: 64px; }
+          .navbar-logo { font-size: 1.2rem; font-weight: 800; color: ${color}; }
+          .navbar-links { display: flex; gap: 2rem; }
+          .navbar-links a { font-size: 0.875rem; color: #64748b; font-weight: 500; transition: color .15s; }
+          .navbar-links a:hover { color: #0f172a; }
+          .hamburger { display: none; background: none; border: none; padding: 0.25rem; cursor: pointer; }
+          .hamburger span { display: block; width: 22px; height: 2px; background: #334155; margin: 5px 0; border-radius: 2px; transition: .25s; }
+          .mobile-menu { display: none; background: #fff; border-top: 1px solid #e8edf3; padding: 0.75rem 1rem 1rem; }
+          .mobile-menu.open { display: block; }
+          .mobile-menu a { display: block; padding: 0.65rem 0.5rem; font-size: 0.9rem; font-weight: 500; color: #475569; border-bottom: 1px solid #f1f5f9; }
+          .mobile-menu a:last-child { border-bottom: none; }
+          @media (max-width: 768px) {
+            .hamburger { display: block; }
+          }
+          /* Hero */
+          .hero { background: linear-gradient(135deg, ${color}ee 0%, ${color}88 100%); min-height: 88vh; display: flex; align-items: center; position: relative; overflow: hidden; }
+          @media (max-width: 768px) { .hero { min-height: 70vh; } }
+          .hero-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.28; z-index: 0; }
+          .hero::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(0,0,0,.28) 0%, rgba(0,0,0,.08) 100%); z-index: 1; }
+          .hero-content { position: relative; z-index: 2; color: #fff; max-width: 700px; }
+          .hero-badge { display: inline-block; background: rgba(255,255,255,0.2); padding: 0.375rem 1rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; margin-bottom: 1.25rem; backdrop-filter: blur(8px); }
+          .hero h1 { font-size: clamp(2.25rem, 6vw, 4rem); font-weight: 900; line-height: 1.04; margin-bottom: 1rem; }
+          .hero-tagline { font-size: 1.1rem; opacity: 0.9; margin-bottom: 2rem; line-height: 1.7; }
+          .hero-cta { display: flex; gap: 1rem; flex-wrap: wrap; }
+          /* Services */
+          .service-card { border-top: 3px solid ${color}; }
+          .service-emoji { font-size: 2rem; margin-bottom: 1rem; }
+          /* Gallery */
+          .gallery-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 0.75rem; }
+          .gallery-item { aspect-ratio: 1/1; border-radius: 0.75rem; overflow: hidden; background: #e2e8f0; }
+          .gallery-item img { width: 100%; height: 100%; object-fit: cover; }
+          @media (max-width: 768px) { .gallery-grid { grid-template-columns: repeat(2,1fr); } }
+          /* Pricing */
+          .pricing-section { background: #f8fafc; }
+          .pricing-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1.5rem; max-width: 860px; margin: 0 auto; }
+          .price-card { background: #fff; border: 2px solid #e8edf3; border-radius: 1.5rem; padding: 1.75rem; display: flex; flex-direction: column; gap: 1rem; }
+          .price-card.popular { border-color: ${color}; box-shadow: 0 8px 30px ${color}30; }
+          .price-badge { background: ${color}; color: #fff; font-size: 0.7rem; font-weight: 700; padding: 0.25rem 0.75rem; border-radius: 9999px; align-self: flex-start; text-transform: uppercase; letter-spacing: 0.05em; }
+          .price-amount { font-size: 1.75rem; font-weight: 800; color: ${color}; margin-top: 0.25rem; }
+          @media (max-width: 768px) { .pricing-grid { grid-template-columns: 1fr; } }
+          /* Testimonials */
+          .testi-section { background: #f8fafc; }
+          .testi-card { background: #fff; }
+          .stars { color: #f59e0b; font-size: 1rem; margin-bottom: 0.75rem; }
+          .testi-quote { color: #475569; font-style: italic; margin-bottom: 1.25rem; font-size: 0.9rem; line-height: 1.75; }
+          .testi-avatar { width: 36px; height: 36px; border-radius: 50%; background: ${color}; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 0.85rem; flex-shrink: 0; }
+          /* About */
+          .about-section { background: #f8fafc; }
+          .about-inner { max-width: 720px; }
+          .about-badge { display: inline-flex; align-items: center; gap: 0.5rem; background: ${color}18; color: ${color}; font-size: 0.75rem; font-weight: 700; padding: 0.4rem 0.875rem; border-radius: 9999px; margin-bottom: 1rem; }
+          /* Team */
+          .team-member-card { text-align: center; }
+          .team-avatar { width: 72px; height: 72px; border-radius: 50%; background: ${color}22; display: flex; align-items: center; justify-content: center; font-size: 1.75rem; font-weight: 800; color: ${color}; margin: 0 auto 1rem; }
+          .team-photo { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; margin: 0 auto 1rem; }
+          /* FAQ */
+          .faq-item { border-bottom: 1px solid #e8edf3; padding: 1.25rem 0; }
+          .faq-item:last-child { border-bottom: none; }
+          .faq-q { font-weight: 600; color: #0f172a; margin-bottom: 0.5rem; font-size: 0.95rem; }
+          .faq-a { color: #64748b; font-size: 0.9rem; line-height: 1.7; }
+          /* Stats */
+          .stats-section { background: ${color}; color: #fff; }
+          .stat-number { font-size: 2.5rem; font-weight: 900; }
+          .stat-label { font-size: 0.875rem; opacity: 0.85; }
+          /* CTA */
+          .cta-section { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #fff; text-align: center; }
+          /* Contact */
+          .contact-info-item { display: flex; align-items: flex-start; gap: 0.75rem; margin-bottom: 1rem; font-size: 0.9rem; color: #475569; }
+          .contact-info-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
+          .contact-form { background: #f8fafc; border-radius: 1.25rem; padding: 1.75rem; border: 1px solid #e8edf3; }
+          .form-field { width: 100%; padding: 0.65rem 0.875rem; border: 1.5px solid #e8edf3; border-radius: 0.625rem; font-size: 0.9rem; outline: none; margin-bottom: 0.75rem; color: #0f172a; background: #fff; }
+          .form-field:focus { border-color: ${color}; }
+          .form-textarea { height: 100px; resize: vertical; }
+          .btn-submit { width: 100%; background: ${color}; color: #fff; padding: 0.8rem; border-radius: 0.625rem; border: none; font-weight: 700; font-size: 0.9rem; }
+          /* Footer */
+          .footer { background: #0f172a; color: #94a3b8; padding: 2.5rem 0; text-align: center; }
+          .footer-logo { font-size: 1.25rem; font-weight: 800; color: ${color}; margin-bottom: 0.5rem; }
+          .footer-city { font-size: 0.85rem; margin-bottom: 1.5rem; }
+          .footer-socials { display: flex; justify-content: center; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+          .footer-social-link { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,0.08); color: #94a3b8; font-size: 0.9rem; transition: background .15s, color .15s; }
+          .footer-social-link:hover { background: ${color}; color: #fff; }
+          .footer-copy { font-size: 0.75rem; color: #475569; }
+          .whatsapp-float { position: fixed; bottom: 1.5rem; right: 1.5rem; background: #25D366; color: #fff; width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; box-shadow: 0 4px 16px rgba(37,211,102,.45); z-index: 200; transition: transform .15s; }
+          .whatsapp-float:hover { transform: scale(1.08); }
+        `}</style>
+      </head>
+      <body>
+
+        {/* ── Navbar ── */}
+        <nav className="navbar">
+          <div className="container navbar-inner">
+            <span className="navbar-logo">{name}</span>
+            <div className="navbar-links hide-mobile">
+              {navLinks.map((l) => (
+                <a key={l.id} href={`#${l.anchor}`}>{l.label}</a>
+              ))}
+            </div>
+            {showContact && (
+              <a href="#contacto" className="btn-primary hide-mobile" style={{ padding: '0.5rem 1.25rem', fontSize: '0.875rem' }}>
+                Contactar
+              </a>
+            )}
+            <button className="hamburger" id="hamburger" aria-label="Menú" type="button">
+              <span /><span /><span />
+            </button>
+          </div>
+          <div className="mobile-menu" id="mobile-menu">
+            {navLinks.map((l) => (
+              <a key={l.id} href={`#${l.anchor}`}>{l.label}</a>
+            ))}
+          </div>
+        </nav>
+        <script dangerouslySetInnerHTML={{ __html: `
+          var btn = document.getElementById('hamburger');
+          var menu = document.getElementById('mobile-menu');
+          if(btn && menu) {
+            btn.addEventListener('click', function() {
+              menu.classList.toggle('open');
+            });
+            menu.querySelectorAll('a').forEach(function(a) {
+              a.addEventListener('click', function() { menu.classList.remove('open'); });
+            });
+          }
+        `}} />
+
+        {/* ── Ordered sections (owner's drag-and-drop order, content-gated) ── */}
+        {rendered.map((section) => renderSection(section))}
 
         {showContact && (
           <script dangerouslySetInnerHTML={{ __html: `
@@ -538,31 +701,23 @@ export function PublishedSite({ project: row }: { project: Project }) {
             )}
 
             {/* Social links */}
-            {bd.socials && Object.values(bd.socials).some(Boolean) && (
+            {socialLinks.length > 0 && (
               <div className="footer-socials">
-                {bd.socials.instagram && (
-                  <a href={`https://instagram.com/${bd.socials.instagram.replace('@', '')}`} target="_blank" rel="noreferrer" className="footer-social-link" title="Instagram">
-                    📸
+                {socialLinks.map((sl) => (
+                  <a key={sl.title} href={sl.href} target="_blank" rel="noreferrer" className="footer-social-link" title={sl.title}>
+                    {sl.icon}
                   </a>
-                )}
-                {bd.socials.facebook && (
-                  <a href={bd.socials.facebook} target="_blank" rel="noreferrer" className="footer-social-link" title="Facebook">
-                    👤
-                  </a>
-                )}
-                {bd.socials.linkedin && (
-                  <a href={bd.socials.linkedin} target="_blank" rel="noreferrer" className="footer-social-link" title="LinkedIn">
-                    💼
-                  </a>
-                )}
+                ))}
               </div>
             )}
 
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '1.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
-              {showServices && <a href="#servicios" style={{ fontSize: '0.8rem', color: '#64748b' }}>Servicios</a>}
-              {showAbout && <a href="#nosotros" style={{ fontSize: '0.8rem', color: '#64748b' }}>Nosotros</a>}
-              {showContact && <a href="#contacto" style={{ fontSize: '0.8rem', color: '#64748b' }}>Contacto</a>}
-            </div>
+            {navLinks.filter((l) => l.id !== 'hero').length > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '1.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+                {navLinks.filter((l) => l.id !== 'hero').map((l) => (
+                  <a key={l.id} href={`#${l.anchor}`} style={{ fontSize: '0.8rem', color: '#64748b' }}>{l.label}</a>
+                ))}
+              </div>
+            )}
 
             <p className="footer-copy">
               © {new Date().getFullYear()} {name}. Todos los derechos reservados.
