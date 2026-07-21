@@ -351,6 +351,185 @@ export async function sendAdminProvisioningAlert(details: {
   })
 }
 
+/** Argentine-readable date for a billing deadline. */
+function formatBillingDate(value: Date | string): string {
+  const d = value instanceof Date ? value : new Date(value)
+  if (Number.isNaN(d.getTime())) return ''
+  return d.toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' })
+}
+
+/**
+ * A recurring charge for a generated site failed: the site STAYS LIVE until
+ * `graceUntil`, and the owner has that window to fix their payment method.
+ *
+ * Sent from the MP webhook only on the guarded active→grace transition, so a
+ * card that keeps failing during MP's retries does not re-send this email.
+ */
+export async function sendSitePaymentFailedEmail(
+  to: string,
+  details: { siteName: string; siteUrl: string; graceUntil: Date | string; plan?: string }
+) {
+  const deadline = formatBillingDate(details.graceUntil)
+
+  const html = emailWrapper('No pudimos cobrar tu suscripcion', `
+    <p>No pudimos procesar el ultimo pago de la suscripcion de tu sitio <strong>${details.siteName}</strong>.</p>
+    <p style="background:#fef3c7;border-left:4px solid #f59e0b;padding:12px 16px;margin:16px 0;font-size:14px;color:#78350f">
+      Tu sitio <strong>sigue online</strong>${deadline ? ` hasta el <strong>${deadline}</strong>` : ''}. Actualiza tu medio de pago antes de esa fecha para evitar que se suspenda.
+    </p>
+    <table style="width:100%;margin:16px 0;font-size:14px">
+      <tr>
+        <td style="padding:8px 0;color:#666">Sitio</td>
+        <td style="padding:8px 0;font-weight:600;text-align:right"><a href="${details.siteUrl}" style="color:#0099ff">${details.siteUrl}</a></td>
+      </tr>
+      ${details.plan ? `<tr><td style="padding:8px 0;color:#666">Plan</td><td style="padding:8px 0;font-weight:600;text-align:right">${details.plan}</td></tr>` : ''}
+      ${deadline ? `<tr><td style="padding:8px 0;color:#666">Fecha limite</td><td style="padding:8px 0;font-weight:600;text-align:right;color:#b45309">${deadline}</td></tr>` : ''}
+    </table>
+    <div style="text-align:center;margin:24px 0">
+      <a href="${APP_URL}/dashboard" style="display:inline-block;padding:12px 32px;background:#0099ff;color:white;text-decoration:none;border-radius:8px;font-weight:bold;font-size:14px">
+        Actualizar medio de pago
+      </a>
+    </div>
+    <p style="font-size:13px;color:#666">
+      Si ya lo resolviste, ignora este email. Ante cualquier duda escribinos a <a href="mailto:automaticialab@gmail.com" style="color:#0099ff">automaticialab@gmail.com</a>.
+    </p>
+  `)
+
+  await transporter.sendMail({
+    from: FROM,
+    to,
+    subject: `Accion requerida: no pudimos cobrar tu sitio ${details.siteName} — Automatic IA Lab`,
+    html,
+  })
+}
+
+/**
+ * The grace window elapsed without a successful charge: the site is now down.
+ * Reactivating it only requires a successful payment — the content is intact.
+ */
+export async function sendSiteSuspendedEmail(
+  to: string,
+  details: { siteName: string; siteUrl: string; plan?: string }
+) {
+  const html = emailWrapper('Tu sitio fue suspendido', `
+    <p>Tu sitio <strong>${details.siteName}</strong> fue <strong>suspendido por falta de pago</strong> y ya no esta online.</p>
+    <p style="background:#fee2e2;border-left:4px solid #ef4444;padding:12px 16px;margin:16px 0;font-size:14px;color:#7f1d1d">
+      Tu contenido esta guardado. Podes reactivar el sitio en cualquier momento poniendo la suscripcion al dia — vuelve online tal como estaba.
+    </p>
+    <table style="width:100%;margin:16px 0;font-size:14px">
+      <tr>
+        <td style="padding:8px 0;color:#666">Sitio</td>
+        <td style="padding:8px 0;font-weight:600;text-align:right">${details.siteUrl}</td>
+      </tr>
+      ${details.plan ? `<tr><td style="padding:8px 0;color:#666">Plan</td><td style="padding:8px 0;font-weight:600;text-align:right">${details.plan}</td></tr>` : ''}
+    </table>
+    <div style="text-align:center;margin:24px 0">
+      <a href="${APP_URL}/dashboard" style="display:inline-block;padding:12px 32px;background:#0099ff;color:white;text-decoration:none;border-radius:8px;font-weight:bold;font-size:14px">
+        Reactivar mi sitio
+      </a>
+    </div>
+    <p style="font-size:13px;color:#666">
+      Si necesitas ayuda, escribinos a <a href="mailto:automaticialab@gmail.com" style="color:#0099ff">automaticialab@gmail.com</a>.
+    </p>
+  `)
+
+  await transporter.sendMail({
+    from: FROM,
+    to,
+    subject: `Tu sitio ${details.siteName} fue suspendido — Automatic IA Lab`,
+    html,
+  })
+}
+
+/**
+ * A previously failing/suspended site's payment came through: it is back online.
+ * Sent from the MP webhook only on the guarded grace|suspended→active transition.
+ */
+export async function sendSiteRecoveredEmail(
+  to: string,
+  details: { siteName: string; siteUrl: string; plan?: string }
+) {
+  const html = emailWrapper('Tu sitio esta online de nuevo', `
+    <p>Recibimos tu pago y reactivamos la suscripcion de <strong>${details.siteName}</strong>. Tu sitio ya esta online otra vez.</p>
+    <table style="width:100%;margin:16px 0;font-size:14px">
+      <tr>
+        <td style="padding:8px 0;color:#666">Sitio</td>
+        <td style="padding:8px 0;font-weight:600;text-align:right"><a href="${details.siteUrl}" style="color:#0099ff">${details.siteUrl}</a></td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0;color:#666">Estado</td>
+        <td style="padding:8px 0;font-weight:600;text-align:right;color:#16a34a">Activo</td>
+      </tr>
+    </table>
+    <div style="text-align:center;margin:24px 0">
+      <a href="${details.siteUrl}" style="display:inline-block;padding:12px 32px;background:#0099ff;color:white;text-decoration:none;border-radius:8px;font-weight:bold;font-size:14px">
+        Ver mi sitio
+      </a>
+    </div>
+    <p style="font-size:13px;color:#666">Gracias por seguir con nosotros.</p>
+  `)
+
+  await transporter.sendMail({
+    from: FROM,
+    to,
+    subject: `Tu sitio ${details.siteName} esta online de nuevo — Automatic IA Lab`,
+    html,
+  })
+}
+
+/**
+ * Operator alert on a generator billing incident (grace or suspension) so the
+ * business can react. Goes to ADMIN_NOTIFY_EMAIL, the same address pattern as
+ * sendAdminProvisioningAlert / sendInquiryNotificationEmail.
+ */
+export async function sendAdminSiteBillingAlert(details: {
+  event: 'grace' | 'suspended'
+  projectId: string
+  siteName: string
+  siteUrl: string
+  ownerEmail: string
+  plan?: string
+  graceUntil?: Date | string | null
+}) {
+  const adminEmail = process.env.ADMIN_NOTIFY_EMAIL ?? 'automaticialab@gmail.com'
+
+  const eventLabel =
+    details.event === 'grace' ? 'Pago fallido — sitio en periodo de gracia' : 'Sitio suspendido por falta de pago'
+
+  const rows: Array<[string, string]> = [
+    ['Evento', eventLabel],
+    ['Sitio', details.siteName],
+    ['URL', details.siteUrl],
+    ['Project ID', details.projectId],
+    ['Email dueno', details.ownerEmail],
+  ]
+  if (details.plan) rows.push(['Plan', details.plan])
+  if (details.event === 'grace' && details.graceUntil) {
+    rows.push(['Sigue online hasta', formatBillingDate(details.graceUntil)])
+  }
+
+  const rowsHtml = rows
+    .map(([k, v]) => `<tr><td style="padding:6px 12px;color:#666;font-size:13px">${k}</td><td style="padding:6px 12px;font-weight:600;font-size:13px">${v}</td></tr>`)
+    .join('')
+
+  const accent = details.event === 'grace' ? '#f59e0b' : '#ef4444'
+
+  const html = emailWrapper(`Billing sitio generado: ${eventLabel}`, `
+    <p style="background:#fef3c7;border-left:4px solid ${accent};padding:12px 16px;margin:0 0 16px;font-size:14px;color:#78350f">
+      Incidente de cobro en un sitio generado. Revisalo por si conviene contactar al cliente.
+    </p>
+    <table style="width:100%;border-collapse:collapse;background:white;border-radius:8px;overflow:hidden;margin:16px 0">
+      ${rowsHtml}
+    </table>
+  `)
+
+  await transporter.sendMail({
+    from: FROM,
+    to: adminEmail,
+    subject: `[Billing sitio] ${eventLabel} — ${details.siteName}`,
+    html,
+  })
+}
+
 export async function sendSubscriptionCancelledEmail(
   to: string,
   details: { type: 'monitoring' | 'project' | 'reviews' | 'linkedin' | 'trading' | 'leads' | 'email-marketing' | 'prospeccion' | 'facturacion' | 'causas' | 'turnos' | 'suite-juridica' | 'lexpost'; plan: string }
