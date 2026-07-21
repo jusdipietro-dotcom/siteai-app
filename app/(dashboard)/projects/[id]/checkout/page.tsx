@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   ArrowLeft, Check, Lock, Shield, Sparkles,
-  Star, Zap, Mail, RefreshCw, Clock,
+  Star, Zap, Mail, RefreshCw, Clock, Tag, AlertCircle,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -62,6 +62,19 @@ function CheckoutContent() {
   const [step, setStep] = useState<'plan' | 'payment' | 'verifying' | 'pending' | 'success'>('plan')
   const [processing, setProcessing] = useState(false)
   const [payerEmail, setPayerEmail] = useState('')
+
+  // ─── Coupon redemption ──────────────────────────────────────────────────────
+  // Only 100%-discount ("free access") coupons are accepted by the server; a
+  // partial one comes back as an error, never as a reduced price. The three
+  // states below are kept separate on purpose: `couponError` is what makes a
+  // rejection visible instead of a silently dead button, and `redeemedCode` is
+  // only ever set from a 200 response — the success screen must never be
+  // reachable without the server confirming the grant.
+  const [couponOpen, setCouponOpen] = useState(false)
+  const [couponCode, setCouponCode] = useState('')
+  const [redeeming, setRedeeming] = useState(false)
+  const [couponError, setCouponError] = useState<string | null>(null)
+  const [redeemedCode, setRedeemedCode] = useState<string | null>(null)
 
   const PLANS = PLAN_META.map(p => ({
     ...p,
@@ -221,6 +234,63 @@ function CheckoutContent() {
     }
   }
 
+  /**
+   * Redeems a free-access coupon on this project.
+   *
+   * Success here is not a payment: the server marks the project paid directly
+   * and never opens a MercadoPago subscription, so nothing will be debited
+   * later. We only flip to the success screen after the server answers 200 AND
+   * the project re-read confirms hasPaid — a 200 with a stale store would send
+   * the user to /publish, which re-checks payment and would show the paywall
+   * again.
+   */
+  const handleRedeemCoupon = async () => {
+    const code = couponCode.trim()
+    if (!code) {
+      setCouponError('Ingresá un código')
+      return
+    }
+    setRedeeming(true)
+    setCouponError(null)
+    try {
+      const res = await fetch(`/api/projects/${id}/redeem-coupon`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, plan: selectedPlan }),
+      })
+      const data = await res.json()
+
+      if (!res.ok) {
+        setCouponError(data.error ?? 'No pudimos canjear el código. Intentá de nuevo.')
+        return
+      }
+
+      const fresh = await refreshProject(id)
+      if (!fresh?.hasPaid) {
+        // The grant is committed server-side but this client cannot confirm it.
+        // Claiming success would be a lie we cannot back up, so we say exactly
+        // what happened and let them retry the read.
+        setCouponError(
+          'Canjeamos el código pero no pudimos confirmar el estado del sitio. Recargá la página en un momento.'
+        )
+        return
+      }
+
+      if (PLAN_META.some((p) => p.id === fresh.plan)) setSelectedPlan(fresh.plan)
+      setRedeemedCode(data.code ?? code.toUpperCase())
+      setStep('success')
+      toast.success(
+        data.alreadyRedeemed
+          ? 'Ese código ya estaba aplicado a este sitio.'
+          : '¡Código aplicado! Tu sitio quedó activo sin costo.'
+      )
+    } catch {
+      setCouponError('Error de conexión. Intentá de nuevo.')
+    } finally {
+      setRedeeming(false)
+    }
+  }
+
   if (!project) {
     return (
       <div className="flex items-center justify-center h-screen text-surface-500">
@@ -255,6 +325,8 @@ function CheckoutContent() {
                 ? 'Verificando pago...'
                 : step === 'pending'
                 ? 'Confirmando tu pago...'
+                : redeemedCode
+                ? '¡Sitio activado!'
                 : '¡Suscripción activada!'}
             </h1>
             <p className="text-sm text-surface-500">{project.name}</p>
@@ -468,6 +540,82 @@ function CheckoutContent() {
                   <Shield className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                   Pago procesado por MercadoPago. No almacenamos datos de tarjeta.
                 </div>
+
+                {/* ─── Coupon ───────────────────────────────────────────────
+                    Collapsed by default so the paid flow above stays the
+                    default path: most people have no code, and an open field
+                    invites hunting for one. */}
+                <div className="border-t border-surface-100 pt-4">
+                  {!couponOpen ? (
+                    <button
+                      type="button"
+                      onClick={() => setCouponOpen(true)}
+                      className="flex items-center gap-1.5 text-xs font-medium text-brand-600 hover:text-brand-700 transition-colors"
+                    >
+                      <Tag className="w-3.5 h-3.5" />
+                      ¿Tenés un código?
+                    </button>
+                  ) : (
+                    <div className="space-y-2">
+                      <label
+                        htmlFor="coupon-code"
+                        className="text-xs font-medium text-surface-600 flex items-center gap-1.5"
+                      >
+                        <Tag className="w-3.5 h-3.5 text-brand-500" />
+                        Código de acceso gratuito
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          id="coupon-code"
+                          type="text"
+                          value={couponCode}
+                          onChange={(e) => {
+                            setCouponCode(e.target.value.toUpperCase())
+                            if (couponError) setCouponError(null)
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !redeeming) handleRedeemCoupon()
+                          }}
+                          placeholder="PROMO2026"
+                          disabled={redeeming}
+                          autoComplete="off"
+                          className="field-input font-mono uppercase flex-1 disabled:opacity-60"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={handleRedeemCoupon}
+                          disabled={redeeming || !couponCode.trim()}
+                          className="shrink-0 h-11"
+                        >
+                          {redeeming ? (
+                            <span className="flex items-center gap-2">
+                              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                              Validando
+                            </span>
+                          ) : (
+                            'Aplicar'
+                          )}
+                        </Button>
+                      </div>
+
+                      {couponError ? (
+                        <p
+                          role="alert"
+                          className="text-xs text-red-600 flex items-start gap-1.5"
+                        >
+                          <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-px" />
+                          {couponError}
+                        </p>
+                      ) : (
+                        <p className="text-xs text-surface-400">
+                          Sólo válido para códigos de acceso gratuito. Si el tuyo es un
+                          descuento parcial, no aplica al creador de sitios.
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Sidebar */}
@@ -603,15 +751,32 @@ function CheckoutContent() {
                 <Sparkles className="w-12 h-12 text-white" />
               </motion.div>
 
-              <h2 className="text-2xl font-extrabold text-surface-900 mb-2">¡Suscripción activa!</h2>
+              <h2 className="text-2xl font-extrabold text-surface-900 mb-2">
+                {redeemedCode ? '¡Sitio activo sin costo!' : '¡Suscripción activa!'}
+              </h2>
               <p className="text-surface-500 text-sm mb-2">
                 Plan <strong className="text-surface-700">{plan.name}</strong> activado para{' '}
-                <strong className="text-surface-700">{project.name}</strong>.
+                <strong className="text-surface-700">{project.name}</strong>
+                {redeemedCode ? (
+                  <>
+                    {' '}con el código{' '}
+                    <strong className="font-mono text-brand-600">{redeemedCode}</strong>.
+                  </>
+                ) : (
+                  '.'
+                )}
               </p>
-              <p className="text-surface-400 text-xs mb-8">
-                MercadoPago debitará {plan.price} automáticamente cada mes.
-                Podés gestionar o cancelar desde tu cuenta MP.
-              </p>
+              {redeemedCode ? (
+                <p className="text-surface-400 text-xs mb-8">
+                  No se generó ninguna suscripción de MercadoPago y no se te va a cobrar
+                  nada. Ya podés publicar tu sitio.
+                </p>
+              ) : (
+                <p className="text-surface-400 text-xs mb-8">
+                  MercadoPago debitará {plan.price} automáticamente cada mes.
+                  Podés gestionar o cancelar desde tu cuenta MP.
+                </p>
+              )}
 
               <div className="flex flex-col gap-3">
                 <Link href={`/projects/${id}/publish`}>
