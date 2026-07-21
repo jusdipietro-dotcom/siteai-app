@@ -3,12 +3,52 @@ import { createHmac, timingSafeEqual } from 'crypto'
 import { prisma } from '@/lib/prisma'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 import { sendPaymentConfirmationEmail, sendSubscriptionCancelledEmail, sendAdminProvisioningAlert, sendSitePaymentFailedEmail, sendSiteSuspendedEmail, sendSiteRecoveredEmail, sendAdminSiteBillingAlert } from '@/lib/email'
-import { getGraceEndDate, GRACE_PERIOD_MS } from '@/lib/project-billing'
+import { getGraceEndDate, GRACE_PERIOD_MS, effectiveBillingStatus } from '@/lib/project-billing'
 import { parseJSON } from '@/lib/published-site'
 import { publishedSiteUrl } from '@/lib/site-domain'
 
 const ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN!
 const MP_WEBHOOK_SECRET = process.env.MP_WEBHOOK_SECRET
+
+// Plan precedence for the site generator (Project model). A user who owns
+// several projects reflects the HIGHEST plan they still hold — see
+// syncUserPlanFromProjects.
+const WEBSITE_PLAN_RANK: Record<string, number> = { free: 0, essential: 1, professional: 2 }
+
+/**
+ * Recomputes and persists User.plan from the projects the user still holds.
+ *
+ * "Still holds" = a paid project whose EFFECTIVE billing status is not suspended
+ * (active, or grace while the site is still live). The account plan becomes the
+ * highest such plan, or 'free' when none remain.
+ *
+ * Recompute-and-set is what makes this both idempotent under MP retries and
+ * correct across multiple projects: activating one project can only RAISE the
+ * account plan, and cancelling or suspending one can only LOWER it to whatever
+ * the user still holds elsewhere — it can never strip a plan another live
+ * project still grants. Effective status is derived at read time because a row
+ * can sit at 'grace' past its deadline with no scheduler to fix it.
+ *
+ * Best-effort: the billing transition that called this has already committed, so
+ * a failure here is logged and swallowed rather than allowed to 500 the webhook.
+ */
+async function syncUserPlanFromProjects(userId: string, now: Date = new Date()): Promise<void> {
+  try {
+    const owned = await prisma.project.findMany({
+      where: { userId, hasPaid: true, billingStatus: { in: ['active', 'grace'] } },
+      select: { plan: true, billingStatus: true, graceUntil: true },
+    })
+    let best = 'free'
+    for (const p of owned) {
+      if (effectiveBillingStatus(p, now) === 'suspended') continue
+      const plan = p.plan ?? 'free'
+      if ((WEBSITE_PLAN_RANK[plan] ?? 0) > (WEBSITE_PLAN_RANK[best] ?? 0)) best = plan
+    }
+    await prisma.user.update({ where: { id: userId }, data: { plan: best } })
+  } catch (err) {
+    console.error(`[MP Webhook] User.plan sync failed for user ${userId}:`, err)
+  }
+}
 
 /**
  * Verify MercadoPago webhook signature (HMAC-SHA256).
@@ -1260,6 +1300,16 @@ export async function POST(req: NextRequest) {
         })
         console.log(`[MP Webhook] Project ${projectId} activated — plan: ${plan}`)
 
+        // Reflect the paid plan on the owner's account. Previously this
+        // transition set Project.hasPaid/plan but left User.plan alone, so a
+        // paying customer still saw "Gratuito". Sync to the HIGHEST plan the
+        // user holds across their projects — not blindly this project's plan.
+        const activated = await prisma.project.findUnique({
+          where: { id: projectId },
+          select: { userId: true },
+        })
+        if (activated) await syncUserPlanFromProjects(activated.userId)
+
         // Send payment confirmation email
         try {
           const project = await prisma.project.findUnique({
@@ -1300,6 +1350,13 @@ export async function POST(req: NextRequest) {
           console.log(`[MP Webhook] Project ${projectId} already suspended — skipping (${status})`)
         } else {
           console.log(`[MP Webhook] Project ${projectId} suspended (${status})`)
+          // Reconcile the owner's account plan downward. Recompute rather than
+          // force 'free': the user may still hold a plan on another live project.
+          const suspendedProj = await prisma.project.findUnique({
+            where: { id: projectId },
+            select: { userId: true },
+          })
+          if (suspendedProj) await syncUserPlanFromProjects(suspendedProj.userId)
         }
       }
     }
@@ -1389,6 +1446,8 @@ export async function POST(req: NextRequest) {
           // Notify only on the real transition. The guard makes count>0 fire
           // once even if MP re-delivers this approved notification.
           await notifySiteBillingEvent(project, 'recovered')
+          // The site is live again — restore the owner's account plan.
+          await syncUserPlanFromProjects(project.userId)
         }
       } else if (payStatus && FAILED.includes(payStatus)) {
         // Enter grace: the site STAYS LIVE until graceUntil. Guarding on
@@ -1427,6 +1486,9 @@ export async function POST(req: NextRequest) {
               `[MP Webhook] Project ${project.id} → suspended (grace elapsed, payment ${payStatus})`
             )
             await notifySiteBillingEvent(project, 'suspended')
+            // Site is down for non-payment — reconcile the owner's account plan
+            // down to whatever they still hold on other live projects.
+            await syncUserPlanFromProjects(project.userId)
           } else {
             console.log(
               `[MP Webhook] Project ${project.id} already in grace/suspended — deadline unchanged`
