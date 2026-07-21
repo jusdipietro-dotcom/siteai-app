@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard, BookTemplate, Settings, HelpCircle,
   Plus, LogOut, Search as SearchIcon, Image, ChevronLeft, ChevronRight,
-  Scale, Tag, Users, MessageSquare, Linkedin, TrendingUp, Send, Target, Receipt, FileSearch, CalendarDays, Briefcase, Shield, Gift, FileText, Globe,
+  Scale, Tag, Users, MessageSquare, Linkedin, TrendingUp, Send, Target, Receipt, FileSearch, CalendarDays, Briefcase, Shield, Gift, FileText, Globe, BarChart3,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useUIStore } from '@/store/useUIStore'
@@ -34,6 +34,7 @@ const NAV_ITEMS = [
 ]
 
 const ADMIN_ITEMS = [
+  { href: '/admin/negocio',        label: 'Negocio',        icon: BarChart3 },
   { href: '/admin/sitios',         label: 'Sitios',         icon: Globe },
   { href: '/admin/suscripciones',  label: 'Suscripciones',  icon: Users },
   { href: '/admin/cupones',        label: 'Cupones',        icon: Tag },
