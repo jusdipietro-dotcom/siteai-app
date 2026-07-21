@@ -2,8 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createHmac, timingSafeEqual } from 'crypto'
 import { prisma } from '@/lib/prisma'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
-import { sendPaymentConfirmationEmail, sendSubscriptionCancelledEmail, sendAdminProvisioningAlert } from '@/lib/email'
+import { sendPaymentConfirmationEmail, sendSubscriptionCancelledEmail, sendAdminProvisioningAlert, sendSitePaymentFailedEmail, sendSiteSuspendedEmail, sendSiteRecoveredEmail, sendAdminSiteBillingAlert } from '@/lib/email'
 import { getGraceEndDate, GRACE_PERIOD_MS } from '@/lib/project-billing'
+import { parseJSON } from '@/lib/published-site'
+import { publishedSiteUrl } from '@/lib/site-domain'
 
 const ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN!
 const MP_WEBHOOK_SECRET = process.env.MP_WEBHOOK_SECRET
@@ -1384,23 +1386,52 @@ export async function POST(req: NextRequest) {
         })
         if (count > 0) {
           console.log(`[MP Webhook] Project ${project.id} recovered — payment approved`)
+          // Notify only on the real transition. The guard makes count>0 fire
+          // once even if MP re-delivers this approved notification.
+          await notifySiteBillingEvent(project, 'recovered')
         }
       } else if (payStatus && FAILED.includes(payStatus)) {
         // Enter grace: the site STAYS LIVE until graceUntil. Guarding on
         // 'active' is what makes MP's retries idempotent — a second failed
         // charge must not slide the deadline forward and grant a fresh 7 days.
+        const graceUntil = getGraceEndDate()
         const { count } = await prisma.project.updateMany({
           where: { id: project.id, billingStatus: 'active' },
-          data: { billingStatus: 'grace', graceUntil: getGraceEndDate() },
+          data: { billingStatus: 'grace', graceUntil },
         })
-        if (count === 0) {
-          console.log(
-            `[MP Webhook] Project ${project.id} already in grace/suspended — deadline unchanged`
-          )
-        } else {
+        if (count > 0) {
           console.log(
             `[MP Webhook] Project ${project.id} → grace (payment ${payStatus}), ${GRACE_PERIOD_MS / 86400000}d to recover`
           )
+          // count>0 means we just moved active→grace, so the owner/operator
+          // emails fire exactly once for this transition.
+          await notifySiteBillingEvent({ ...project, graceUntil }, 'grace')
+        } else {
+          // Already in grace or suspended. If the grace window has ALREADY
+          // elapsed, this failed retry is the single webhook event on which the
+          // grace→suspended transition can be observed and the owner notified —
+          // that transition is otherwise read-time only (effectiveBillingStatus,
+          // no cron; see the suspension-email gap). The guard (still 'grace' AND
+          // graceUntil past) makes this fire at most once.
+          const now = new Date()
+          const { count: suspended } = await prisma.project.updateMany({
+            where: { id: project.id, billingStatus: 'grace', graceUntil: { lte: now } },
+            data: {
+              billingStatus: 'suspended',
+              suspendedAt: now,
+              suspendedReason: 'payment_failed',
+            },
+          })
+          if (suspended > 0) {
+            console.log(
+              `[MP Webhook] Project ${project.id} → suspended (grace elapsed, payment ${payStatus})`
+            )
+            await notifySiteBillingEvent(project, 'suspended')
+          } else {
+            console.log(
+              `[MP Webhook] Project ${project.id} already in grace/suspended — deadline unchanged`
+            )
+          }
         }
       }
     }
@@ -1409,6 +1440,87 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     console.error('[MP Webhook] Error:', err)
     return NextResponse.json({ error: 'Webhook error' }, { status: 500 })
+  }
+}
+
+/**
+ * Best-effort owner + operator notification for a generated-site billing event.
+ *
+ * Never throws: a mail failure must not break the webhook or undo the DB
+ * transition that already committed (state is persisted BEFORE this runs). Call
+ * this ONLY after a guarded update actually changed a row (count > 0), so it
+ * fires exactly once per transition even when MP re-delivers the same
+ * notification.
+ *
+ * The owner is the site owner: prefer the public contact email set on the site,
+ * fall back to the account email — the same resolution as the site-leads
+ * notification. The operator alert always goes to ADMIN_NOTIFY_EMAIL.
+ */
+async function notifySiteBillingEvent(
+  project: {
+    id: string
+    userId: string
+    name: string
+    slug: string
+    subdomain: string | null
+    plan: string | null
+    businessData: string
+    graceUntil?: Date | null
+  },
+  event: 'grace' | 'suspended' | 'recovered'
+): Promise<void> {
+  try {
+    const bd = parseJSON<{ name?: string; contact?: { email?: string } }>(project.businessData, {})
+    let ownerEmail = bd.contact?.email?.trim() || ''
+    if (!ownerEmail) {
+      const user = await prisma.user.findUnique({
+        where: { id: project.userId },
+        select: { email: true },
+      })
+      ownerEmail = user?.email ?? ''
+    }
+    const siteName = bd.name || project.name
+    const siteUrl = publishedSiteUrl({ slug: project.slug, subdomain: project.subdomain })
+    const plan = project.plan ?? undefined
+
+    if (event === 'grace') {
+      if (ownerEmail) {
+        await sendSitePaymentFailedEmail(ownerEmail, {
+          siteName,
+          siteUrl,
+          graceUntil: project.graceUntil ?? getGraceEndDate(),
+          plan,
+        })
+      }
+      await sendAdminSiteBillingAlert({
+        event: 'grace',
+        projectId: project.id,
+        siteName,
+        siteUrl,
+        ownerEmail: ownerEmail || '(desconocido)',
+        plan,
+        graceUntil: project.graceUntil ?? null,
+      })
+    } else if (event === 'suspended') {
+      if (ownerEmail) {
+        await sendSiteSuspendedEmail(ownerEmail, { siteName, siteUrl, plan })
+      }
+      await sendAdminSiteBillingAlert({
+        event: 'suspended',
+        projectId: project.id,
+        siteName,
+        siteUrl,
+        ownerEmail: ownerEmail || '(desconocido)',
+        plan,
+      })
+    } else if (ownerEmail) {
+      await sendSiteRecoveredEmail(ownerEmail, { siteName, siteUrl, plan })
+    }
+  } catch (err) {
+    console.error(
+      `[MP Webhook] site billing notification (${event}) failed for project ${project.id}:`,
+      err
+    )
   }
 }
 
