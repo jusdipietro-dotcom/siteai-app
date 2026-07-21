@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { timingSafeEqual } from 'crypto'
 import { prisma } from '@/lib/prisma'
 import { requireAdmin } from '@/lib/admin'
+import { expireStaleGrace } from '@/lib/project-billing'
 
 /**
  * Constant-time comparison of the cron shared secret.
@@ -76,7 +77,19 @@ export async function POST(req: NextRequest) {
   const total = Object.values(results).reduce((a, b) => a + b, 0)
   console.log(`[Expire Trials] Expired ${total} trials:`, results)
 
-  return NextResponse.json({ expired: total, details: results })
+  // Persist generator grace expiry too. Access control never depended on this
+  // (publishedGate derives expiry from graceUntil on every read), but the
+  // stored row is what the suspension email and the operator reports read, so
+  // without this pass a customer can go dark without ever being told.
+  let gracePersisted = 0
+  try {
+    gracePersisted = await expireStaleGrace(prisma.project, {}, now)
+    if (gracePersisted > 0) console.log(`[Expire Trials] Suspended ${gracePersisted} projects past grace`)
+  } catch (e) {
+    console.error('[Expire Trials] Error expiring project grace:', e)
+  }
+
+  return NextResponse.json({ expired: total, details: results, graceSuspended: gracePersisted })
 }
 
 // Also allow GET for easy cron/health check (same authorization as POST)
