@@ -102,7 +102,9 @@ export async function POST(req: NextRequest) {
       ? colorPrimario.trim()
       : '#2563eb'
 
-    // Validate coupon atomically (increment usedCount in a transaction)
+    // Validate coupon only — do NOT increment usedCount here. The MP webhook is
+    // the sole incrementer on `authorized`. Counting at subscribe time would
+    // double-count every paid use and never refund an abandoned checkout.
     let couponId: string | null = null
     let discountApplied = 0
 
@@ -110,27 +112,15 @@ export async function POST(req: NextRequest) {
       const code = couponCode.toUpperCase().trim()
       const now = new Date()
 
-      // Atomic: find and increment in one step to prevent race conditions
-      try {
-        const updated = await prisma.coupon.update({
-          where: {
-            code,
-            active: true,
-            validFrom: { lte: now },
-            validUntil: { gte: now },
-          },
-          data: { usedCount: { increment: 1 } },
-        })
-        // Check if we exceeded maxUses (rollback if so)
-        if (updated.usedCount > updated.maxUses) {
-          await prisma.coupon.update({ where: { code }, data: { usedCount: { decrement: 1 } } })
-          return NextResponse.json({ error: 'Cupon agotado' }, { status: 400 })
-        }
-        couponId = updated.id
-        discountApplied = Math.min(Math.max(updated.discount, 0), 100)
-      } catch {
+      const coupon = await prisma.coupon.findUnique({ where: { code } })
+      if (!coupon || !coupon.active || now < coupon.validFrom || now > coupon.validUntil) {
         return NextResponse.json({ error: 'Cupon invalido o expirado' }, { status: 400 })
       }
+      if (coupon.usedCount >= coupon.maxUses) {
+        return NextResponse.json({ error: 'Cupon agotado' }, { status: 400 })
+      }
+      couponId = coupon.id
+      discountApplied = Math.min(Math.max(coupon.discount, 0), 100)
     } else if (couponCode) {
       return NextResponse.json({ error: 'Codigo de cupon invalido' }, { status: 400 })
     }
