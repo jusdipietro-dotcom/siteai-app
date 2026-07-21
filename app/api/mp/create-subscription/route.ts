@@ -11,6 +11,37 @@ const ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN!
 // Precios y límites viven en lib/website-plans.ts (única fuente de verdad,
 // compartida con el checkout y la página pública del producto).
 
+/**
+ * Best-effort cancellation of a prior MercadoPago preapproval.
+ *
+ * Time-bounded with an AbortController: MP can hang, and a stale preapproval
+ * must not hold up a new checkout. A failure here never blocks the new
+ * subscription — we log and proceed. Mirrors cancelMpPreapproval() in the
+ * project cancel route.
+ */
+async function cancelMpPreapproval(preapprovalId: string): Promise<boolean> {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 8000)
+  try {
+    const res = await fetch(`https://api.mercadopago.com/preapproval/${preapprovalId}`, {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${ACCESS_TOKEN}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'cancelled' }),
+      signal: controller.signal,
+      cache: 'no-store',
+    })
+    if (!res.ok) {
+      console.error(`[MP] prior preapproval ${preapprovalId} cancel failed — status ${res.status}`)
+    }
+    return res.ok
+  } catch (err) {
+    console.error(`[MP] prior preapproval ${preapprovalId} cancel errored:`, err)
+    return false
+  } finally {
+    clearTimeout(timeout)
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     if (!ACCESS_TOKEN) {
@@ -42,7 +73,7 @@ export async function POST(req: NextRequest) {
     // plan-limit count below would be scoped against the wrong project.
     const project = await prisma.project.findFirst({
       where: { id: projectId, userId: session.user.id },
-      select: { id: true },
+      select: { id: true, preapprovalId: true },
     })
     if (!project) {
       return NextResponse.json({ error: 'Proyecto no encontrado' }, { status: 404 })
@@ -86,6 +117,20 @@ export async function POST(req: NextRequest) {
       status: 'pending',
     }
 
+    // If this project already has a preapproval on file, cancel it at MP before
+    // opening a new one. Otherwise a second checkout leaves two live
+    // preapprovals and the customer is charged twice. Best-effort and
+    // time-bounded: a failure here is logged and we proceed anyway — the new
+    // checkout must not be blocked by MP being slow or the old id being stale.
+    if (project.preapprovalId) {
+      const cancelled = await cancelMpPreapproval(project.preapprovalId)
+      if (!cancelled) {
+        console.warn(
+          `[MP] proceeding with new checkout for project ${projectId} despite failing to cancel prior preapproval ${project.preapprovalId} — it may keep charging until cancelled by other means`
+        )
+      }
+    }
+
     console.log('[MP] creating preapproval for', { plan, projectId, payerEmail: payerEmail.toLowerCase() })
 
     const res = await fetch('https://api.mercadopago.com/preapproval', {
@@ -118,6 +163,18 @@ export async function POST(req: NextRequest) {
     }
 
     console.log('[MP] preapproval created, id:', data.id)
+
+    // Persist the preapproval id NOW, at creation — not only when the authorized
+    // webhook lands. The double-checkout guard above and the project cancel flow
+    // both key off Project.preapprovalId; leaving it null until the webhook is
+    // exactly the Fase-2 gap documented in the cancel route. The webhook later
+    // writes the same id on `authorized`, so the two writes are idempotent.
+    // Scoped by owner and written server-side only; never client-writable.
+    await prisma.project.updateMany({
+      where: { id: projectId, userId: session.user.id },
+      data: { preapprovalId: data.id },
+    })
+
     return NextResponse.json({ init_point: initPoint, id: data.id })
   } catch (err) {
     console.error('[MP] create-subscription exception:', err)
