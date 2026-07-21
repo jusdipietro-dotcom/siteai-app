@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { FLASK_BACKEND_TIMEOUT_MS, MP_API_TIMEOUT_MS } from '@/lib/fetch-timeouts'
 
 const MP_ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN
 const FLASK_BACKEND_URL = process.env.FLASK_BACKEND_URL
@@ -41,6 +42,7 @@ export async function POST(req: NextRequest) {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({ status: 'cancelled' }),
+          signal: AbortSignal.timeout(MP_API_TIMEOUT_MS),
         })
         const mpData = await mpRes.json()
         console.log(`[Facturacion Cancel] MP preapproval ${sub.preapprovalId}: ${mpRes.status} - ${mpData.status}`)
@@ -59,6 +61,7 @@ export async function POST(req: NextRequest) {
             'X-Portal-Secret': FLASK_PROVISION_SECRET,
           },
           body: JSON.stringify({ tenantId: sub.flaskTenantId }),
+          signal: AbortSignal.timeout(FLASK_BACKEND_TIMEOUT_MS),
         })
         console.log(`[Facturacion Cancel] Flask tenant ${sub.flaskTenantId} deactivated`)
       } catch (err) {

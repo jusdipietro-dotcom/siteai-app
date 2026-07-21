@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { MP_API_TIMEOUT_MS, SCRAPER_CONTROL_TIMEOUT_MS } from '@/lib/fetch-timeouts'
 
 export async function POST(req: NextRequest) {
   try {
@@ -37,6 +38,7 @@ export async function POST(req: NextRequest) {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({ status: 'cancelled' }),
+            signal: AbortSignal.timeout(MP_API_TIMEOUT_MS),
           })
         }
       } catch (mpErr) {
@@ -56,6 +58,7 @@ export async function POST(req: NextRequest) {
               'Authorization': `Bearer ${scraperKey}`,
               'Content-Type': 'application/json',
             },
+            signal: AbortSignal.timeout(SCRAPER_CONTROL_TIMEOUT_MS),
           })
         }
       } catch (scraperErr) {

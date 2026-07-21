@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { MP_API_TIMEOUT_MS, N8N_WEBHOOK_TIMEOUT_MS } from '@/lib/fetch-timeouts'
 
 const MP_ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN
 const SCRAPER_API_KEY = process.env.SCRAPER_API_KEY
@@ -40,6 +41,7 @@ export async function POST(req: NextRequest) {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({ status: 'cancelled' }),
+          signal: AbortSignal.timeout(MP_API_TIMEOUT_MS),
         })
         const mpData = await mpRes.json()
         console.log(`[Cancel] MP preapproval ${sub.preapprovalId}: ${mpRes.status} - ${mpData.status}`)
@@ -57,6 +59,7 @@ export async function POST(req: NextRequest) {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'x-api-key': SCRAPER_API_KEY },
           body: JSON.stringify({ tenantId: sub.n8nTenantId }),
+          signal: AbortSignal.timeout(N8N_WEBHOOK_TIMEOUT_MS),
         })
         console.log(`[Cancel] Tenant ${sub.n8nTenantId} removed`)
       } catch (err) {

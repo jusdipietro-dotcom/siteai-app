@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { MP_API_TIMEOUT_MS, N8N_ADMIN_API_TIMEOUT_MS } from '@/lib/fetch-timeouts'
 
 export async function POST(req: NextRequest) {
   try {
@@ -30,6 +31,7 @@ export async function POST(req: NextRequest) {
             method: 'PUT',
             headers: { 'Authorization': `Bearer ${mpToken}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({ status: 'cancelled' }),
+            signal: AbortSignal.timeout(MP_API_TIMEOUT_MS),
           })
         }
       } catch (e) { console.error('[Turnos Cancel] MP error:', e) }
@@ -44,6 +46,7 @@ export async function POST(req: NextRequest) {
           await fetch(`${n8nUrl}/api/v1/workflows/${sub.n8nWorkflowId}/deactivate`, {
             method: 'POST',
             headers: { 'X-N8N-API-KEY': n8nKey },
+            signal: AbortSignal.timeout(N8N_ADMIN_API_TIMEOUT_MS),
           })
         }
       } catch (e) { console.error('[Turnos Cancel] n8n error:', e) }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { MP_API_TIMEOUT_MS } from '@/lib/fetch-timeouts'
 
 const MP_ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN
 
@@ -39,6 +40,7 @@ export async function POST(req: NextRequest) {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({ status: 'cancelled' }),
+          signal: AbortSignal.timeout(MP_API_TIMEOUT_MS),
         })
         const mpData = await mpRes.json()
         console.log(`[LinkedIn Cancel] MP preapproval ${sub.preapprovalId}: ${mpRes.status} - ${mpData.status}`)

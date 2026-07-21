@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { MP_API_TIMEOUT_MS } from '@/lib/fetch-timeouts'
 
 const ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN
 
@@ -30,6 +31,7 @@ export async function POST(req: NextRequest) {
           method: 'PUT',
           headers: { Authorization: `Bearer ${ACCESS_TOKEN}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({ status: 'cancelled' }),
+          signal: AbortSignal.timeout(MP_API_TIMEOUT_MS),
         })
       } catch (e) {
         console.error('[Suite Juridica Cancel] MP error:', e)

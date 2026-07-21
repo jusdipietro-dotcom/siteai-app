@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { MP_API_TIMEOUT_MS, N8N_WEBHOOK_TIMEOUT_MS } from '@/lib/fetch-timeouts'
 
 const MP_ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN
 
@@ -39,6 +40,7 @@ export async function POST(req: NextRequest) {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({ status: 'cancelled' }),
+          signal: AbortSignal.timeout(MP_API_TIMEOUT_MS),
         })
       } catch (err) {
         console.error('[Leads Cancel] Error cancelling MP preapproval:', err)
@@ -62,6 +64,7 @@ export async function POST(req: NextRequest) {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ subscriptionId, workflowId: sub.n8nWorkflowId }),
+          signal: AbortSignal.timeout(N8N_WEBHOOK_TIMEOUT_MS),
         })
         console.log(`[Leads Cancel] Deprovision workflow ${sub.n8nWorkflowId}: ${dpRes.status}`)
       }
