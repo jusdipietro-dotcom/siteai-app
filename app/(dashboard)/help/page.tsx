@@ -4,6 +4,12 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronDown, MessageCircle, BookOpen, Zap, LifeBuoy } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
+// Reuses the support mailbox already published elsewhere in the app
+// (see app/alertajudicial/*). A mailto keeps the flow reliable with zero new
+// backend surface: there is nothing to persist, no endpoint to fail, and the
+// message lands in the same inbox the rest of the site already directs users to.
+const SUPPORT_MAILTO = 'mailto:contacto@automaticialab.com?subject=Soporte%20-%20Automatic%20IA%20Lab'
+
 const FAQS = [
   {
     q: '¿Cómo creo mi primer sitio web?',
@@ -70,26 +76,26 @@ export default function HelpPage() {
         {/* Quick links */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-10">
           {[
-            { icon: Zap,           label: 'Primeros pasos' },
-            { icon: BookOpen,      label: 'Guías' },
-            { icon: LifeBuoy,      label: 'Soporte' },
-            { icon: MessageCircle, label: 'Contacto' },
-          ].map(({ icon: Icon, label }) => (
-            <button
+            { icon: Zap,           label: 'Primeros pasos', href: '#faq' },
+            { icon: BookOpen,      label: 'Guías',          href: '#faq' },
+            { icon: LifeBuoy,      label: 'Soporte',        href: SUPPORT_MAILTO },
+            { icon: MessageCircle, label: 'Contacto',       href: SUPPORT_MAILTO },
+          ].map(({ icon: Icon, label, href }) => (
+            <a
               key={label}
-              type="button"
+              href={href}
               className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-white border border-surface-200 hover:border-brand-200 hover:bg-brand-50 transition-all group"
             >
               <div className="h-9 w-9 rounded-xl bg-brand-50 group-hover:bg-brand-100 flex items-center justify-center text-brand-500 transition-colors">
                 <Icon className="h-4 w-4" />
               </div>
               <span className="text-xs font-medium text-surface-700">{label}</span>
-            </button>
+            </a>
           ))}
         </div>
 
         {/* FAQ */}
-        <div className="bg-white rounded-2xl border border-surface-200 p-6">
+        <div id="faq" className="bg-white rounded-2xl border border-surface-200 p-6">
           <h2 className="text-base font-semibold text-surface-900 mb-4">Preguntas frecuentes</h2>
           <div>
             {FAQS.map(({ q, a }) => (
@@ -107,12 +113,12 @@ export default function HelpPage() {
             <div>
               <p className="font-semibold mb-1">¿No encontraste lo que buscabas?</p>
               <p className="text-sm text-white/80 mb-3">Nuestro equipo responde en menos de 24 horas.</p>
-              <button
-                type="button"
-                className="h-9 px-4 rounded-xl bg-white text-brand-700 text-sm font-semibold hover:bg-white/90 transition-colors"
+              <a
+                href={SUPPORT_MAILTO}
+                className="inline-flex items-center h-9 px-4 rounded-xl bg-white text-brand-700 text-sm font-semibold hover:bg-white/90 transition-colors"
               >
                 Contactar soporte
-              </button>
+              </a>
             </div>
           </div>
         </div>
