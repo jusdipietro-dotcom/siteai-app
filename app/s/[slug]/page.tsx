@@ -5,6 +5,7 @@ import {
   SITE_NOT_FOUND_METADATA,
   buildPublishedSiteMetadata,
   findPublishedProjectBySlug,
+  recordPublishedSiteVisit,
 } from '@/lib/published-site'
 
 // ─── Path-addressed public site: {SITES_DOMAIN}/{slug} ───────────────────────
@@ -27,6 +28,10 @@ export async function generateMetadata(
 export default async function PublicSitePage({ params }: { params: { slug: string } }) {
   const row = await findPublishedProjectBySlug(params.slug)
   if (!row) notFound()
+
+  // Count the visit here, in the render path only — never in generateMetadata —
+  // so each visit counts once even though the loader runs in both.
+  recordPublishedSiteVisit(row.id)
 
   return <PublishedSite project={row} />
 }

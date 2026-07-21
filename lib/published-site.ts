@@ -92,6 +92,26 @@ export async function findPublishedProjectBySubdomain(
   })
 }
 
+/**
+ * Records one anonymous visit to a published project by bumping `Project.views`.
+ *
+ * Fire-and-forget by design: telemetry must never delay or break rendering, so
+ * the update is not awaited and any error is swallowed (logged only). Losing a
+ * count under load is acceptable; blocking a public page render is not.
+ *
+ * MUST be called exactly ONCE per request, and only from the page component —
+ * never from the shared loaders. Both public routes call their loader twice per
+ * request (once in `generateMetadata`, once in the component), so incrementing
+ * inside a loader would count every visit twice.
+ */
+export function recordPublishedSiteVisit(projectId: string): void {
+  prisma.project
+    .update({ where: { id: projectId }, data: { views: { increment: 1 } } })
+    .catch((err) => {
+      console.error(`[recordPublishedSiteVisit] ${projectId}: failed to count visit`, err)
+    })
+}
+
 /** Metadata returned when the gate rejects the request. */
 export const SITE_NOT_FOUND_METADATA: Metadata = { title: 'Sitio no encontrado' }
 

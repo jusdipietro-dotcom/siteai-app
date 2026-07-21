@@ -5,6 +5,7 @@ import {
   SITE_NOT_FOUND_METADATA,
   buildPublishedSiteMetadata,
   findPublishedProjectBySubdomain,
+  recordPublishedSiteVisit,
 } from '@/lib/published-site'
 
 // ─── Subdomain-addressed public site: {subdomain}.{SITES_SUBDOMAIN_BASE} ─────
@@ -26,6 +27,10 @@ export async function generateMetadata(
 export default async function SubdomainSitePage({ params }: { params: { subdomain: string } }) {
   const row = await findPublishedProjectBySubdomain(params.subdomain)
   if (!row) notFound()
+
+  // Count the visit here, in the render path only — never in generateMetadata —
+  // so each visit counts once even though the loader runs in both.
+  recordPublishedSiteVisit(row.id)
 
   return <PublishedSite project={row} />
 }
