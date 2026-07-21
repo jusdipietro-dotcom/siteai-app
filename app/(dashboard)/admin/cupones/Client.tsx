@@ -15,7 +15,7 @@ type Coupon = {
   validUntil: string
   active: boolean
   createdAt: string
-  _count: { subscriptions: number }
+  _count: { subscriptions: number; projects: number }
 }
 
 export default function AdminCouponsClient() {
@@ -116,19 +116,24 @@ export default function AdminCouponsClient() {
         </Button>
       </div>
 
-      {/* Scope warning. The Coupon model relates only to the 12 subscription
-          products — there is no relation to Project, and the website checkout
-          (app/api/mp/create-subscription) never reads a coupon code. Without
-          this note it is easy to create a coupon for a site sale and only find
-          out at checkout that it does nothing. */}
+      {/* Scope note. The generator now accepts coupons, but only at 100%: a
+          partial discount would have to change the MercadoPago subscription
+          amount, which the site checkout does not do, so it is rejected there
+          with an explicit message. Without this note it is easy to create a
+          30% coupon for a site sale and only find out at checkout that the
+          product refuses it. */}
       <div className="flex gap-3 bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-6">
         <Info className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
         <div className="text-sm text-amber-900">
-          <p className="font-semibold mb-0.5">Los cupones NO aplican al generador de sitios web</p>
+          <p className="font-semibold mb-0.5">
+            En el generador de sitios sólo funcionan los cupones del 100%
+          </p>
           <p className="text-amber-800">
-            Sólo funcionan en los 12 productos de suscripción (Monitoreo, Reseñas, LinkedIn,
+            Un cupón del 100% marca el sitio como pago directo, sin crear ninguna suscripción
+            de MercadoPago. Los de descuento parcial se rechazan en el checkout del generador
+            (sí funcionan en los 12 productos de suscripción: Monitoreo, Reseñas, LinkedIn,
             Trading, Leads, Email Marketing, Prospección, Facturación, Causas, Turnos,
-            Suite Jurídica y LexPost). Para regalar un sitio web usá{' '}
+            Suite Jurídica y LexPost). Para regalar un sitio sin cupón usá{' '}
             <span className="font-medium">Admin → Sitios → Regalar</span>.
           </p>
         </div>
@@ -216,7 +221,18 @@ export default function AdminCouponsClient() {
                   </button>
                 </td>
                 <td className="py-3 px-4 text-center font-medium">{c.discount}%</td>
-                <td className="py-3 px-4 text-center">{c.usedCount}/{c.maxUses}</td>
+                {/* usedCount already includes generator redemptions — the
+                    redeem route increments the same counter the MP webhook
+                    does. The breakdown below only says how many of those uses
+                    landed on a website, which the counter alone cannot tell. */}
+                <td className="py-3 px-4 text-center">
+                  {c.usedCount}/{c.maxUses}
+                  {c._count.projects > 0 && (
+                    <p className="text-[10px] text-brand-600 mt-0.5">
+                      {c._count.projects} en sitios
+                    </p>
+                  )}
+                </td>
                 <td className="py-3 px-4 text-center text-surface-500">{new Date(c.validUntil).toLocaleDateString('es-AR')}</td>
                 <td className="py-3 px-4 text-center">
                   <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${c.active ? 'bg-emerald-100 text-emerald-700' : 'bg-surface-100 text-surface-500'}`}>

@@ -6,8 +6,13 @@ export async function GET() {
   const session = await requireAdmin()
   if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 403 })
 
+  // `projects` counts website-generator redemptions. It is a separate relation
+  // from `subscriptions` (monitoring) — folding them into one number would hide
+  // which product a coupon is actually being used on. `usedCount` on the row
+  // already covers both, since redemption increments the same counter the MP
+  // webhook does.
   const coupons = await prisma.coupon.findMany({
-    include: { _count: { select: { subscriptions: true } } },
+    include: { _count: { select: { subscriptions: true, projects: true } } },
     orderBy: { createdAt: 'desc' },
   })
 

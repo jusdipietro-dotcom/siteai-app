@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Globe, Search, Loader2, Gift, RotateCcw, ExternalLink } from 'lucide-react'
+import { Globe, Search, Loader2, Gift, RotateCcw, ExternalLink, Tag } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
 import { toast } from 'sonner'
@@ -20,6 +20,8 @@ type AdminProject = {
   suspendedReason: string | null
   grantedBy: string | null
   grantedAt: string | null
+  couponRedeemedAt: string | null
+  coupon: { id: string; code: string; discount: number } | null
   createdAt: string
   user: { id: string; email: string; name: string | null }
 }
@@ -28,6 +30,7 @@ const FILTERS = [
   { value: 'all',       label: 'Todos' },
   { value: 'paid',      label: 'Pagos' },
   { value: 'gifted',    label: 'Regalados' },
+  { value: 'coupon',    label: 'Con cupón' },
   { value: 'free',      label: 'Gratuitos' },
   { value: 'suspended', label: 'Suspendidos' },
 ]
@@ -45,6 +48,56 @@ function BillingBadge({ p }: { p: AdminProject }) {
     <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${tone}`}>
       {p.billingStatus}
     </span>
+  )
+}
+
+/**
+ * Why this site is paid — the question `hasPaid` on its own cannot answer.
+ *
+ * Three provenances, read from three independent sources so they never collide:
+ *   grantedBy/grantedAt   → an admin comped it from this panel;
+ *   coupon/couponRedeemedAt → the owner redeemed a 100% coupon at checkout;
+ *   neither, but hasPaid  → a real MercadoPago sale.
+ *
+ * Both badges can appear at once (a site that redeemed a coupon and was later
+ * also gifted). Showing both is the honest reading — collapsing them would pick
+ * a winner arbitrarily.
+ */
+function OriginCell({ p }: { p: AdminProject }) {
+  const gifted = !!p.grantedAt
+  const couponed = !!p.coupon
+
+  if (!gifted && !couponed) {
+    return p.hasPaid ? (
+      <span className="text-xs text-surface-500">Venta</span>
+    ) : (
+      <span className="text-xs text-surface-300">-</span>
+    )
+  }
+
+  return (
+    <div className="space-y-1">
+      {gifted && (
+        <div className="flex items-center gap-1.5">
+          <Gift className="w-3.5 h-3.5 text-violet-500 shrink-0" />
+          <div>
+            <p className="text-xs text-violet-700 font-medium">{fmtDate(p.grantedAt)}</p>
+            <p className="text-[10px] text-surface-400">{p.grantedBy}</p>
+          </div>
+        </div>
+      )}
+      {couponed && (
+        <div className="flex items-center gap-1.5">
+          <Tag className="w-3.5 h-3.5 text-brand-500 shrink-0" />
+          <div>
+            <p className="text-xs font-mono font-medium text-brand-700">{p.coupon!.code}</p>
+            <p className="text-[10px] text-surface-400">
+              {p.coupon!.discount}% · {fmtDate(p.couponRedeemedAt)}
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -130,6 +183,12 @@ export default function AdminSitesClient() {
         suspensión. Queda registrado quién lo regaló y cuándo, así se distingue de una venta real.
         Regalar no publica el sitio: el dueño sigue teniendo que publicarlo.
       </p>
+      <p className="text-sm text-surface-500 mb-6 max-w-3xl">
+        La columna <span className="font-medium">Origen</span> muestra por qué el sitio está pago:
+        regalo del panel, cupón de acceso gratuito canjeado por el dueño en el checkout, o{' '}
+        <span className="font-medium">Venta</span> cuando es una suscripción real de MercadoPago.
+        Quitar el regalo no borra el canje del cupón: el uso ya se consumió y queda como registro.
+      </p>
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
@@ -182,7 +241,7 @@ export default function AdminSitesClient() {
                   <th className="text-center py-3 px-4 font-medium text-surface-500">Plan</th>
                   <th className="text-center py-3 px-4 font-medium text-surface-500">Pago</th>
                   <th className="text-center py-3 px-4 font-medium text-surface-500">Facturación</th>
-                  <th className="text-left py-3 px-4 font-medium text-surface-500">Regalo</th>
+                  <th className="text-left py-3 px-4 font-medium text-surface-500">Origen</th>
                   <th className="text-center py-3 px-4 font-medium text-surface-500">Creado</th>
                   <th className="text-right py-3 px-4 font-medium text-surface-500">Acciones</th>
                 </tr>
@@ -227,17 +286,7 @@ export default function AdminSitesClient() {
                       )}
                     </td>
                     <td className="py-3 px-4">
-                      {p.grantedAt ? (
-                        <div className="flex items-center gap-1.5">
-                          <Gift className="w-3.5 h-3.5 text-violet-500 shrink-0" />
-                          <div>
-                            <p className="text-xs text-violet-700 font-medium">{fmtDate(p.grantedAt)}</p>
-                            <p className="text-[10px] text-surface-400">{p.grantedBy}</p>
-                          </div>
-                        </div>
-                      ) : (
-                        <span className="text-xs text-surface-300">-</span>
-                      )}
+                      <OriginCell p={p} />
                     </td>
                     <td className="py-3 px-4 text-center text-surface-500 text-xs">
                       {fmtDate(p.createdAt)}

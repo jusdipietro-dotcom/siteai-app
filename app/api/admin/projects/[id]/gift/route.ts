@@ -19,6 +19,12 @@ const PROJECT_SELECT = {
   suspendedReason: true,
   grantedBy: true,
   grantedAt: true,
+  // Returned so the panel row keeps its coupon provenance after a gift or a
+  // revoke patches it in place. Neither handler writes these columns: a
+  // redemption is a historical fact (the coupon use was already consumed and is
+  // not refunded), unlike grantedBy, which means "currently comped".
+  couponRedeemedAt: true,
+  coupon: { select: { id: true, code: true, discount: true } },
   createdAt: true,
   user: { select: { id: true, email: true, name: true } },
 } as const

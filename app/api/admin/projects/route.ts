@@ -16,7 +16,7 @@ const MAX_LIMIT = 200
  *
  * Query params:
  *   q      — case-insensitive match on owner email, project name, slug or subdomain
- *   filter — 'all' (default) | 'paid' | 'free' | 'gifted' | 'suspended'
+ *   filter — 'all' (default) | 'paid' | 'free' | 'gifted' | 'coupon' | 'suspended'
  *   limit  — page size, capped at MAX_LIMIT
  *   cursor — id of the last row from the previous page
  */
@@ -50,6 +50,9 @@ export async function GET(req: NextRequest) {
     paid: { hasPaid: true },
     free: { hasPaid: false },
     gifted: { grantedAt: { not: null } },
+    // Redeemed a free-access coupon. Distinct from `gifted`: nobody comped
+    // this one from the panel, the owner applied a code at checkout.
+    coupon: { couponId: { not: null } },
     suspended: { billingStatus: 'suspended' },
   }
   const statusWhere = filters[filter] ?? {}
@@ -73,6 +76,11 @@ export async function GET(req: NextRequest) {
         suspendedReason: true,
         grantedBy: true,
         grantedAt: true,
+        // Coupon provenance, alongside the gift columns. `preapprovalId` is not
+        // returned (it is an MP identifier, not panel data), so the panel reads
+        // "real sale" as: hasPaid and neither grantedAt nor couponRedeemedAt.
+        couponRedeemedAt: true,
+        coupon: { select: { id: true, code: true, discount: true } },
         createdAt: true,
         user: { select: { id: true, email: true, name: true } },
       },
