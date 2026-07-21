@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { timingSafeEqual } from 'crypto'
 import { prisma } from '@/lib/prisma'
+import { FLASK_BACKEND_TIMEOUT_MS } from '@/lib/fetch-timeouts'
 
 const FLASK_BACKEND_URL = process.env.FLASK_BACKEND_URL
 const FLASK_PROVISION_SECRET = process.env.FLASK_PROVISION_SECRET
@@ -62,6 +63,7 @@ export async function POST(req: NextRequest) {
         nombre: sub.user.name || sub.razonSocial,
         plan: sub.plan,
       }),
+      signal: AbortSignal.timeout(FLASK_BACKEND_TIMEOUT_MS),
     })
 
     if (!provisionRes.ok) {

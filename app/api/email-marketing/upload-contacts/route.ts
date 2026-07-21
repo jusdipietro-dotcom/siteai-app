@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 import { getPlanConfig } from '@/lib/email-marketing-plans'
 import * as XLSX from 'xlsx'
+import { N8N_WEBHOOK_TIMEOUT_MS } from '@/lib/fetch-timeouts'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10 MB
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
@@ -169,6 +170,7 @@ export async function POST(req: NextRequest) {
           contacts: uniqueContacts,
           contactCount: uniqueContacts.length,
         }),
+        signal: AbortSignal.timeout(N8N_WEBHOOK_TIMEOUT_MS),
       })
 
       if (provRes.ok) {

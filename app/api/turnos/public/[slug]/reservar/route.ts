@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 import nodemailer from 'nodemailer'
+import { N8N_WEBHOOK_TIMEOUT_MS } from '@/lib/fetch-timeouts'
 
 function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
@@ -52,6 +53,7 @@ export async function POST(
             slug: sub.slug,
             businessName: sub.businessName,
           }),
+          signal: AbortSignal.timeout(N8N_WEBHOOK_TIMEOUT_MS),
         })
         const data = await resp.json()
         if (!resp.ok) {

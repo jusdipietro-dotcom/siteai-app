@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { SCRAPER_CONTROL_TIMEOUT_MS } from '@/lib/fetch-timeouts'
 
 /**
  * Trigger an on-demand scrape for the user's active subscription.
@@ -54,6 +55,7 @@ export async function POST(req: NextRequest) {
         'Authorization': `Bearer ${scraperKey}`,
         'Content-Type': 'application/json',
       },
+      signal: AbortSignal.timeout(SCRAPER_CONTROL_TIMEOUT_MS),
     })
 
     if (!resp.ok) {

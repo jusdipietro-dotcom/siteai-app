@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { timingSafeEqual } from 'crypto'
 import { prisma } from '@/lib/prisma'
 import { decryptCredentials } from '@/lib/encryption'
+import { SCRAPER_REGISTER_TIMEOUT_MS } from '@/lib/fetch-timeouts'
 
 function safeCompare(a: string, b: string): boolean {
   if (a.length !== b.length) return false
@@ -68,6 +69,7 @@ export async function POST(req: NextRequest) {
         userEmail: sub.user.email,
         userName: sub.user.name,
       }),
+      signal: AbortSignal.timeout(SCRAPER_REGISTER_TIMEOUT_MS),
     })
 
     if (!scraperResp.ok) {

@@ -1,4 +1,5 @@
 import { prisma } from './prisma'
+import { FLASK_BACKEND_TIMEOUT_MS } from './fetch-timeouts'
 
 /**
  * Provision a facturacion subscription in the Flask backend.
@@ -44,6 +45,7 @@ export async function provisionFacturacion(
           nombre: sub.user.name || sub.razonSocial,
           plan: sub.plan,
         }),
+        signal: AbortSignal.timeout(FLASK_BACKEND_TIMEOUT_MS),
       })
 
       if (res.ok) {

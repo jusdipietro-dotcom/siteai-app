@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { N8N_WEBHOOK_TIMEOUT_MS } from '@/lib/fetch-timeouts'
 
 /**
  * Public endpoint: GET /api/turnos/public/{slug}/disponibilidad?fecha=YYYY-MM-DD
@@ -28,7 +29,7 @@ export async function GET(
       try {
         const resp = await fetch(
           `${n8nUrl}/webhook/turnos-disponibilidad-${sub.slug}?fecha=${fecha}`,
-          { cache: 'no-store' }
+          { cache: 'no-store', signal: AbortSignal.timeout(N8N_WEBHOOK_TIMEOUT_MS) }
         )
         if (resp.ok) {
           const data = await resp.json()
