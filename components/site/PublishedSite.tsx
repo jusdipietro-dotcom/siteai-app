@@ -1,5 +1,6 @@
 import type { Project } from '@prisma/client'
 import { AboutSection } from '@/components/site/sections/AboutSection'
+import { GallerySection } from '@/components/site/sections/GallerySection'
 import { HeroSection } from '@/components/site/sections/HeroSection'
 import { ServicesSection } from '@/components/site/sections/ServicesSection'
 import { typographyOptions } from '@/config/themes'
@@ -172,21 +173,7 @@ export function PublishedSite({ project: row }: { project: Project }) {
         )
 
       case 'gallery':
-        return (
-          <section className="section-pad" id="galeria" key="gallery" style={{ background: '#f8fafc' }}>
-            <div className="container">
-              <p className="label" style={{ textAlign: 'center' }}>Galería</p>
-              <h2 className="heading-lg" style={{ textAlign: 'center', marginBottom: '3rem' }}>Nuestro trabajo</h2>
-              <div className="gallery-grid">
-                {galleryImgs.map((url, i) => (
-                  <div key={i} className="gallery-item">
-                    <img src={url} alt="" />
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-        )
+        return <GallerySection key="gallery" images={galleryImgs} />
 
       case 'pricing': {
         const priced = bd.services.filter((sv) => !!sv.price).slice(0, 3)
