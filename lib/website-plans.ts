@@ -43,6 +43,13 @@ export const WEBSITE_PLANS: Record<WebsitePlanId, WebsitePlanConfig> = {
       'Editor visual: ediciones ilimitadas',
       'Boton de WhatsApp integrado',
       'SEO basico (titulo, descripcion, keywords)',
+      // Moved up from the Professional list, where it was listed as a paid
+      // differentiator it never was: the sitemap gates on `seo.sitemapEnabled`
+      // + `hasPaid`, never on plan, so every paid site has always had one.
+      // Advertising it as Professional-only was the inaccuracy; taking it away
+      // from Essential to make the old copy true would be a regression for
+      // customers who already have a working sitemap.
+      'Sitemap.xml automatico',
       'Soporte por email',
     ],
   },
@@ -55,11 +62,30 @@ export const WEBSITE_PLANS: Record<WebsitePlanId, WebsitePlanConfig> = {
     description: 'Todo lo que necesitas para destacarte',
     maxProjects: 3,
     popular: true,
+    /*
+      Every line here must name something the code actually does, and point at
+      where it does it. This list previously advertised "SEO avanzado +
+      sitemap.xml" and "Soporte prioritario"; neither existed. The sitemap was
+      never plan-gated (it moved to the Essential list, where it is true), and
+      the SEO differentiators below were built to make the rest of the sentence
+      real rather than deleted to make it honest.
+
+      "Soporte prioritario" is kept deliberately and is the one entry NOT backed
+      by code — it is a human commitment, so honouring it or dropping it is the
+      owner's call, not a code change. It is the only unverifiable claim left on
+      this plan.
+    */
     features: [
       'Todo lo de Essential',
       'Hasta 3 proyectos activos',
-      'SEO avanzado + sitemap.xml',
+      // components/site/PublishedSite.tsx — gated on row.plan
       'Google Analytics integrado',
+      // lib/site-seo.ts — LocalBusiness JSON-LD built from real owner data only
+      'Datos estructurados para Google (JSON-LD)',
+      // lib/published-site.ts — og:image / twitter:image from the hero image
+      'Vista previa con imagen al compartir (OpenGraph + Twitter)',
+      // app/s/[slug]/robots.txt + app/sub/[subdomain]/robots.txt
+      'robots.txt propio apuntando a tu sitemap',
       'Soporte prioritario',
     ],
   },
