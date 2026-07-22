@@ -227,3 +227,81 @@ describe('PublishedSite — assembled document', () => {
     }
   })
 })
+
+/**
+ * Structured data is the paid differentiator, so the plan boundary is asserted
+ * on the ASSEMBLED document — not only on the builder. The builder can be
+ * correct while the renderer forgets to gate it, and that mistake ships a
+ * Professional feature to every Essential customer.
+ */
+describe('PublishedSite — JSON-LD is Professional only', () => {
+  const renderAs = (
+    overrides: Record<string, unknown>,
+    bdOverrides: Partial<BusinessData> = {}
+  ) =>
+    renderToStaticMarkup(
+      <PublishedSite
+        project={
+          {
+            ...project,
+            ...overrides,
+            businessData: JSON.stringify({ ...businessData, ...bdOverrides }),
+          } as unknown as Project
+        }
+      />
+    )
+
+  // `[\s\S]` rather than `.` + the `s` flag: tsconfig targets below es2018, and
+  // `npx tsc --noEmit` rejects the dotAll flag outright (TS1501).
+  const jsonLdOf = (html: string) => {
+    const match = html.match(
+      /<script type="application\/ld\+json">([\s\S]*?)<\/script>/
+    )
+    return match ? match[1] : null
+  }
+
+  it('emits a LocalBusiness subtype for a paid Professional site', () => {
+    const raw = jsonLdOf(renderAs({ plan: 'professional', hasPaid: true }))
+    expect(raw).not.toBeNull()
+    const data = JSON.parse(raw!)
+    expect(data['@context']).toBe('https://schema.org')
+    expect(data['@type']).toBe('LocalBusiness')
+    expect(data.name).toBe('Panadería La Espiga')
+    expect(data.address).toMatchObject({ '@type': 'PostalAddress', addressLocality: 'Quilmes' })
+    // sameAs mirrors the footer links exactly — one normalisation, not two.
+    expect(data.sameAs).toContain('https://instagram.com/laespiga')
+  })
+
+  it.each([
+    ['an Essential site', { plan: 'essential', hasPaid: true }],
+    ['a free site', { plan: 'free', hasPaid: true }],
+    ['an unpaid Professional site', { plan: 'professional', hasPaid: false }],
+  ])('emits no JSON-LD at all for %s', (_label, overrides) => {
+    const html = renderAs(overrides)
+    expect(html).not.toContain('application/ld+json')
+    expect(jsonLdOf(html)).toBeNull()
+  })
+
+  it('still emits the Essential-tier document — the gate removes only the paid tags', () => {
+    const html = renderAs({ plan: 'essential', hasPaid: true })
+    expect(html).toContain('Panadería La Espiga')
+    expect(html).toContain('rel="sitemap"')
+  })
+
+  it('does not let a business name break out of the script element', () => {
+    const hostile = 'Bar </script><script>alert(1)</script>'
+    const html = renderAs({ plan: 'professional', hasPaid: true }, { name: hostile })
+
+    // Exactly the scripts the document already had (hamburger + lead form + GA
+    // inline + GA src) plus the one ld+json block — no injected extra.
+    const openers = html.match(/<script/g) ?? []
+    const closers = html.match(/<\/script>/g) ?? []
+    expect(openers).toHaveLength(closers.length)
+
+    const raw = jsonLdOf(html)!
+    expect(raw).not.toContain('</script>')
+    expect(raw).not.toContain('<')
+    // The value survives intact once parsed — escaping is presentation only.
+    expect(JSON.parse(raw).name).toBe(hostile)
+  })
+})
