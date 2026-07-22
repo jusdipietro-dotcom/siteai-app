@@ -218,7 +218,12 @@ function EmailMarketingDashboard() {
 
   // Check if user can create a new campaign
   const canCreateCampaign = !limits || (usage && usage.activeCampaigns < limits.maxCampaigns)
-  const campaignsAtLimit = limits && usage && usage.activeCampaigns >= limits.maxCampaigns
+  // Explicit null checks so this stays a real boolean: `limits && usage && …`
+  // evaluates to `null` while the status request is still in flight (or when the
+  // user has no active plan and the API returns `limits: null`), and that null
+  // leaked into <Button disabled={…}>, which only accepts boolean | undefined.
+  // "Not loaded yet" is not "at the limit", so false is the honest answer.
+  const campaignsAtLimit = limits !== null && usage !== null && usage.activeCampaigns >= limits.maxCampaigns
 
   const [uploadingSub, setUploadingSub] = useState<string | null>(null)
   const [uploadFile, setUploadFile] = useState<File | null>(null)
