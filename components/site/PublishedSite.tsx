@@ -1,6 +1,7 @@
 import type { Project } from '@prisma/client'
 import { AboutSection } from '@/components/site/sections/AboutSection'
 import { HeroSection } from '@/components/site/sections/HeroSection'
+import { ServicesSection } from '@/components/site/sections/ServicesSection'
 import { typographyOptions } from '@/config/themes'
 import { parseJSON } from '@/lib/published-site'
 import { publishedSiteUrl } from '@/lib/site-domain'
@@ -144,30 +145,6 @@ export function PublishedSite({ project: row }: { project: Project }) {
   if (s?.youtube) socialLinks.push({ href: normalizeUrl(s.youtube), icon: '▶️', title: 'YouTube' })
 
   // ── Per-section renderers, keyed by section id ──────────────────────────────
-  const renderServices = (id: SectionType) => (
-    <section key={id} className="section-pad" id={NAV_META[id]!.anchor} style={{ background: '#fff' }}>
-      <div className="container">
-        <p className="label" style={{ textAlign: 'center' }}>Nuestros servicios</p>
-        <h2 className="heading-lg" style={{ textAlign: 'center', marginBottom: '0.75rem' }}>Todo lo que necesitás</h2>
-        <p className="subtext" style={{ textAlign: 'center', marginBottom: '3rem' }}>
-          Soluciones pensadas para tu negocio
-        </p>
-        <div className="grid-3">
-          {bd.services.map((sv) => (
-            <div key={sv.id} className="card service-card">
-              <div className="service-emoji">{sv.emoji || '✨'}</div>
-              <h3 style={{ fontWeight: 700, fontSize: '1.05rem', marginBottom: '0.5rem', color: '#0f172a' }}>{sv.name}</h3>
-              <p className="subtext" style={{ fontSize: '0.9rem' }}>{sv.description}</p>
-              {sv.price && (
-                <p style={{ marginTop: '1rem', fontWeight: 700, color, fontSize: '0.9rem' }}>{sv.price}</p>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  )
-
   const renderSection = (section: SectionConfig) => {
     switch (section.id) {
       case 'hero':
@@ -190,7 +167,9 @@ export function PublishedSite({ project: row }: { project: Project }) {
 
       case 'services':
       case 'features':
-        return renderServices(section.id)
+        return (
+          <ServicesSection key={section.id} anchor={NAV_META[section.id]!.anchor} services={bd.services} color={color} />
+        )
 
       case 'gallery':
         return (
