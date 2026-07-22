@@ -1,5 +1,6 @@
 import type { Project } from '@prisma/client'
 import { AboutSection } from '@/components/site/sections/AboutSection'
+import { CtaSection } from '@/components/site/sections/CtaSection'
 import { FaqSection } from '@/components/site/sections/FaqSection'
 import { GallerySection } from '@/components/site/sections/GallerySection'
 import { HeroSection } from '@/components/site/sections/HeroSection'
@@ -208,20 +209,7 @@ export function PublishedSite({ project: row }: { project: Project }) {
         return <FaqSection key="faq" faqs={bd.faqs} />
 
       case 'cta':
-        return (
-          <section className="section-pad cta-section" key="cta">
-            <div className="container" style={{ textAlign: 'center' }}>
-              <h2 style={{ fontSize: 'clamp(1.75rem, 4vw, 2.5rem)', fontWeight: 900, marginBottom: '1rem' }}>
-                ¿Listo para empezar?
-              </h2>
-              {showContact && (
-                <a href="#contacto" className="btn-primary" style={{ fontSize: '1rem' }}>
-                  Quiero más información →
-                </a>
-              )}
-            </div>
-          </section>
-        )
+        return <CtaSection key="cta" showContact={showContact} />
 
       case 'contact':
         return (
