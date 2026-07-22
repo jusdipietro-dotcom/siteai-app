@@ -1044,9 +1044,19 @@ function PreviewSection({ section, bd, name, color, galleryImages, device }: { s
           <div className={cn('grid gap-4', isMobile ? 'grid-cols-1' : 'grid-cols-3')}>
             {bd.testimonials.slice(0, 3).map((t: any) => (
               <div key={t.id} className="p-4 rounded-xl border border-surface-100">
-                <div className="flex mb-2">
-                  {[...Array(t.rating)].map((_, i) => <Star key={i} className="h-3 w-3 fill-warning-400 text-warning-400" />)}
-                </div>
+                {/*
+                  Same guard as PublishedSite/TestimonialsSection and the preview
+                  page. `rating` is free-form owner input, and `Array(n)` throws
+                  `RangeError: Invalid array length` for NaN, negatives and
+                  fractions alike — inside the live preview that throw unmounts
+                  the WHOLE preview, not just this card. Clamped to five so a
+                  runaway value can't allocate a huge array either.
+                */}
+                {typeof t.rating === 'number' && t.rating > 0 && (
+                  <div className="flex mb-2">
+                    {[...Array(Math.min(5, Math.round(t.rating)))].map((_, i) => <Star key={i} className="h-3 w-3 fill-warning-400 text-warning-400" />)}
+                  </div>
+                )}
                 <p className="text-xs text-surface-600 italic mb-3">"{t.content}"</p>
                 <p className="text-xs font-semibold">{t.author}</p>
                 <p className="text-xs text-surface-400">{t.role}</p>
