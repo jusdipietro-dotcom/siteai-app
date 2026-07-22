@@ -6,7 +6,7 @@ import { motion } from 'framer-motion'
 import { ArrowLeft, Monitor, Tablet, Smartphone, ExternalLink, Edit3, Lock, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useProjectStore } from '@/store/useProjectStore'
-import { typographyOptions } from '@/config/themes'
+import { resolveSiteFonts } from '@/lib/site-fonts'
 import { cn } from '@/lib/utils'
 import type { DevicePreview } from '@/types'
 
@@ -17,14 +17,9 @@ function SiteFullPreview({ project, device, color }: { project: any; device: Dev
   const px = isMobile ? '1rem' : '3rem'
   const py = isMobile ? '2.5rem' : '5rem'
 
-  // Fonts from branding
-  const fontHeadingId: string = bd.branding?.fontHeading || 'inter'
-  const fontBodyId: string = bd.branding?.fontBody || 'inter'
-  const headingFont = typographyOptions.find((f) => f.id === fontHeadingId)
-  const bodyFont = typographyOptions.find((f) => f.id === fontBodyId)
-  const headingFamily = headingFont?.cssFamily || 'Inter'
-  const bodyFamily = bodyFont?.cssFamily || 'Inter'
-  const uniqueUrls = Array.from(new Set([headingFont?.googleUrl, bodyFont?.googleUrl].filter((u): u is string => !!u)))
+  // Fonts from branding — resolved by the same helper the published renderer
+  // uses, so a font added to the catalogue reaches the preview too.
+  const { headingFamily, bodyFamily, urls: uniqueUrls } = resolveSiteFonts(bd.branding)
 
   // Sections sorted by order, only enabled ones (plus always show hero/footer)
   const ordered = [...project.sections].sort((a: any, b: any) => a.order - b.order)

@@ -10,8 +10,8 @@ import { ServicesSection } from '@/components/site/sections/ServicesSection'
 import { StatsSection } from '@/components/site/sections/StatsSection'
 import { TeamSection } from '@/components/site/sections/TeamSection'
 import { TestimonialsSection } from '@/components/site/sections/TestimonialsSection'
-import { typographyOptions } from '@/config/themes'
 import { parseJSON } from '@/lib/published-site'
+import { resolveSiteFonts } from '@/lib/site-fonts'
 import { publishedSiteUrl } from '@/lib/site-domain'
 import type { BusinessData, SectionConfig, SectionType } from '@/types'
 
@@ -108,15 +108,14 @@ export function PublishedSite({ project: row }: { project: Project }) {
     .map((s) => ({ id: s.id, ...NAV_META[s.id]! }))
     .slice(0, 6)
 
-  // Fonts from branding
-  const fontHeadingId = bd.branding?.fontHeading || 'inter'
-  const fontBodyId = bd.branding?.fontBody || 'inter'
-  const headingFont = typographyOptions.find((f) => f.id === fontHeadingId)
-  const bodyFont = typographyOptions.find((f) => f.id === fontBodyId)
+  // Fonts from branding. Resolution is shared with both dashboard previews;
+  // the escaping below is not, because only this renderer writes the family
+  // into a raw CSS string it emits into its own <head>.
+  const fonts = resolveSiteFonts(bd.branding)
   const sanitizeFont = (f: string) => f.replace(/[^a-zA-Z0-9\s-]/g, '')
-  const headingFamily = sanitizeFont(headingFont?.cssFamily || 'Inter')
-  const bodyFamily = sanitizeFont(bodyFont?.cssFamily || 'Inter')
-  const fontUrls = Array.from(new Set([headingFont?.googleUrl, bodyFont?.googleUrl].filter((u): u is string => !!u)))
+  const headingFamily = sanitizeFont(fonts.headingFamily)
+  const bodyFamily = sanitizeFont(fonts.bodyFamily)
+  const fontUrls = fonts.urls
 
   const whatsappNum = bd.contact?.whatsapp?.replace(/\D/g, '')
   const rawGaId = row.plan === 'professional' && bd.gaId ? (bd.gaId as string).trim() : null

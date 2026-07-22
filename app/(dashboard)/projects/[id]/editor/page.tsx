@@ -18,7 +18,7 @@ import { useEditorStore } from '@/store/useEditorStore'
 import { useMediaStore } from '@/store/useMediaStore'
 import { ColorPresetSelector } from '@/components/shared/ColorPresetSelector'
 import { cn } from '@/lib/utils'
-import { typographyOptions } from '@/config/themes'
+import { resolveSiteFonts } from '@/lib/site-fonts'
 import type { SectionConfig, SectionType, DevicePreview, ColorTheme } from '@/types'
 
 // Section icons map
@@ -934,14 +934,9 @@ function SitePreview({ project, sections, primaryColor, name, selectedSection, o
   const bd = project.businessData
   const enabled = sections.filter((s) => s.enabled).sort((a, b) => a.order - b.order)
 
-  // Fonts from branding
-  const fontHeadingId: string = bd.branding?.fontHeading || 'inter'
-  const fontBodyId: string = bd.branding?.fontBody || 'inter'
-  const headingFont = typographyOptions.find((f) => f.id === fontHeadingId)
-  const bodyFont = typographyOptions.find((f) => f.id === fontBodyId)
-  const headingFamily = headingFont?.cssFamily || 'Inter'
-  const bodyFamily = bodyFont?.cssFamily || 'Inter'
-  const uniqueUrls = Array.from(new Set([headingFont?.googleUrl, bodyFont?.googleUrl].filter((u): u is string => !!u)))
+  // Fonts from branding — resolved by the same helper the published renderer
+  // uses, so a font added to the catalogue reaches the live preview too.
+  const { headingFamily, bodyFamily, urls: uniqueUrls } = resolveSiteFonts(bd.branding)
 
   return (
     <div style={{ fontFamily: `'${bodyFamily}', system-ui, sans-serif` }} className="text-surface-900 min-h-[600px]">
