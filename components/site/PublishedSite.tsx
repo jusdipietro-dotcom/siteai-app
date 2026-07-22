@@ -1,4 +1,5 @@
 import type { Project } from '@prisma/client'
+import { AboutSection } from '@/components/site/sections/AboutSection'
 import { HeroSection } from '@/components/site/sections/HeroSection'
 import { typographyOptions } from '@/config/themes'
 import { parseJSON } from '@/lib/published-site'
@@ -184,20 +185,7 @@ export function PublishedSite({ project: row }: { project: Project }) {
 
       case 'about':
         return (
-          <section className="section-pad about-section" id="nosotros" key="about">
-            <div className="container">
-              <div className="about-inner">
-                <div className="about-badge">💡 Sobre nosotros</div>
-                <h2 className="heading-lg" style={{ marginBottom: '1rem' }}>¿Quiénes somos?</h2>
-                <p className="subtext" style={{ marginBottom: '1.5rem' }}>{bd.description}</p>
-                {showContact && (
-                  <a href="#contacto" className="btn-primary" style={{ background: 'transparent', color: color, border: `2px solid ${color}`, borderRadius: '9999px', padding: '0.75rem 1.5rem', fontWeight: 700, fontSize: '0.875rem', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
-                    Contactanos →
-                  </a>
-                )}
-              </div>
-            </div>
-          </section>
+          <AboutSection key="about" description={bd.description} color={color} showContact={showContact} />
         )
 
       case 'services':
