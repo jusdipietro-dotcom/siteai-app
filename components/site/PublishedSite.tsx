@@ -109,14 +109,10 @@ export function PublishedSite({ project: row }: { project: Project }) {
     .map((s) => ({ id: s.id, ...NAV_META[s.id]! }))
     .slice(0, 6)
 
-  // Fonts from branding. Resolution is shared with both dashboard previews;
-  // the escaping below is not, because only this renderer writes the family
-  // into a raw CSS string it emits into its own <head>.
-  const fonts = resolveSiteFonts(bd.branding)
-  const sanitizeFont = (f: string) => f.replace(/[^a-zA-Z0-9\s-]/g, '')
-  const headingFamily = sanitizeFont(fonts.headingFamily)
-  const bodyFamily = sanitizeFont(fonts.bodyFamily)
-  const fontUrls = fonts.urls
+  // Fonts from branding. Resolution AND the family scrub are both shared with
+  // the two dashboard previews now — all three write the family into a raw CSS
+  // string, so the guard lives in the resolver rather than in one renderer.
+  const { headingFamily, bodyFamily, urls: fontUrls } = resolveSiteFonts(bd.branding)
 
   const whatsappNum = bd.contact?.whatsapp?.replace(/\D/g, '')
   const rawGaId = row.plan === 'professional' && bd.gaId ? (bd.gaId as string).trim() : null

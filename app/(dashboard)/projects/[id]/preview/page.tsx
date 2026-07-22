@@ -19,7 +19,9 @@ function SiteFullPreview({ project, device, color }: { project: any; device: Dev
   const py = isMobile ? '2.5rem' : '5rem'
 
   // Fonts from branding — resolved by the same helper the published renderer
-  // uses, so a font added to the catalogue reaches the preview too.
+  // uses, so a font added to the catalogue reaches the preview too. The families
+  // come back scrubbed, which matters here: they are interpolated into the raw
+  // <style> string below, not into a React style attribute.
   const { headingFamily, bodyFamily, urls: uniqueUrls } = resolveSiteFonts(bd.branding)
 
   // Image URLs are owner input, so they go through the same validation the

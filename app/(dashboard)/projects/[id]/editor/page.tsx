@@ -936,7 +936,9 @@ function SitePreview({ project, sections, primaryColor, name, selectedSection, o
   const enabled = sections.filter((s) => s.enabled).sort((a, b) => a.order - b.order)
 
   // Fonts from branding — resolved by the same helper the published renderer
-  // uses, so a font added to the catalogue reaches the live preview too.
+  // uses, so a font added to the catalogue reaches the live preview too. The
+  // families come back scrubbed, which matters here: they are interpolated into
+  // the raw <style> string below, not into a React style attribute.
   const { headingFamily, bodyFamily, urls: uniqueUrls } = resolveSiteFonts(bd.branding)
 
   return (
