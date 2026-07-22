@@ -3,10 +3,13 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { MP_API_TIMEOUT_MS, N8N_WEBHOOK_TIMEOUT_MS } from '@/lib/fetch-timeouts'
+import { isResenasPlanId, type ResenasPlanId } from '@/lib/resenas-plans'
 
 const ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN!
 
-const REVIEWS_PLANS: Record<string, { monthly: number; title: string }> = {
+// Keyed by the canonical plan-id union so this route-local title override
+// cannot drift from lib/resenas-plans.ts.
+const REVIEWS_PLANS: Record<ResenasPlanId, { monthly: number; title: string }> = {
   basico:      { monthly: 15000, title: 'Reseñas Google IA Básico — Automatic IA Lab' },
   profesional: { monthly: 25000, title: 'Reseñas Google IA Profesional — Automatic IA Lab' },
   premium:     { monthly: 45000, title: 'Reseñas Google IA Premium — Automatic IA Lab' },
@@ -43,7 +46,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Ya se generó un link de pago para esta suscripción.' }, { status: 409 })
     }
 
-    const planConfig = REVIEWS_PLANS[sub.plan]
+    // Membership check first: the map is a plain object, so a stored plan of
+    // 'toString' would resolve through Object.prototype to a truthy function,
+    // pass the guard below, and price the preapproval at NaN.
+    const planConfig = isResenasPlanId(sub.plan) ? REVIEWS_PLANS[sub.plan] : undefined
     if (!planConfig) {
       return NextResponse.json({ error: 'Plan inválido' }, { status: 400 })
     }

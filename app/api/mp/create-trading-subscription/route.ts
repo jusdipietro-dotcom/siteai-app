@@ -3,10 +3,13 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { MP_API_TIMEOUT_MS } from '@/lib/fetch-timeouts'
+import { isTradingPlanId, type TradingPlanId } from '@/lib/trading-plans'
 
 const ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN!
 
-const TRADING_PLANS: Record<string, { monthly: number; title: string }> = {
+// Keyed by the canonical plan-id union so this route-local title override
+// cannot drift from lib/trading-plans.ts.
+const TRADING_PLANS: Record<TradingPlanId, { monthly: number; title: string }> = {
   basico:      { monthly: 20000, title: 'Señales Crypto IA Básico — Automatic IA Lab' },
   profesional: { monthly: 35000, title: 'Señales Crypto IA Profesional — Automatic IA Lab' },
 }
@@ -42,7 +45,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Ya se generó un link de pago para esta suscripción.' }, { status: 409 })
     }
 
-    const planConfig = TRADING_PLANS[sub.plan]
+    // Membership check first: the map is a plain object, so a stored plan of
+    // 'toString' would resolve through Object.prototype to a truthy function,
+    // pass the guard below, and price the preapproval at NaN.
+    const planConfig = isTradingPlanId(sub.plan) ? TRADING_PLANS[sub.plan] : undefined
     if (!planConfig) {
       return NextResponse.json({ error: 'Plan inválido' }, { status: 400 })
     }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { timingSafeEqual } from 'crypto'
 import { prisma } from '@/lib/prisma'
+import { isLinkedInPlanId, type LinkedInPlanId } from '@/lib/linkedin-plans'
 
 function safeCompare(a: string, b: string): boolean {
   try {
@@ -22,7 +23,7 @@ function safeCompare(a: string, b: string): boolean {
  * Returns: { active: boolean, plan: string, postsPerMonth: number, postsGenerated: number }
  */
 
-const PLAN_LIMITS: Record<string, number> = {
+const PLAN_LIMITS: Record<LinkedInPlanId, number> = {
   basico: 20,
   profesional: 60,
   agencia: 200,
@@ -100,7 +101,10 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     active: true,
     plan: sub.plan,
-    postsPerMonth: PLAN_LIMITS[sub.plan] ?? 20,
+    // Membership check, not a raw index: PLAN_LIMITS is a plain object, so a
+    // stored plan of 'toString' would return a function rather than a number
+    // and the `?? 20` fallback would never fire.
+    postsPerMonth: isLinkedInPlanId(sub.plan) ? PLAN_LIMITS[sub.plan] : 20,
     postsGenerated,
     subscriptionId: sub.id,
   })

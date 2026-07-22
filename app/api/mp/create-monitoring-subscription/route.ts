@@ -3,10 +3,13 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { MP_API_TIMEOUT_MS } from '@/lib/fetch-timeouts'
+import { isMonitoreoPlanId, type MonitoreoPlanId } from '@/lib/monitoreo-plans'
 
 const ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN!
 
-const MONITORING_PLANS: Record<string, { monthly: number; title: string }> = {
+// Keyed by the canonical plan-id union so this route-local title override
+// cannot drift from lib/monitoreo-plans.ts.
+const MONITORING_PLANS: Record<MonitoreoPlanId, { monthly: number; title: string }> = {
   basico:      { monthly: 19000, title: 'Monitoreo Judicial Básico — Automatic IA Lab' },
   profesional: { monthly: 35000, title: 'Monitoreo Judicial Profesional — Automatic IA Lab' },
   estudio:     { monthly: 75000, title: 'Monitoreo Judicial Estudio — Automatic IA Lab' },
@@ -47,7 +50,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Ya se generó un link de pago para esta suscripción. Refrescá la página.' }, { status: 409 })
     }
 
-    const planConfig = MONITORING_PLANS[sub.plan]
+    // Membership check first: the map is a plain object, so a stored plan of
+    // 'toString' would resolve through Object.prototype to a truthy function,
+    // pass the guard below, and price the preapproval at NaN.
+    const planConfig = isMonitoreoPlanId(sub.plan) ? MONITORING_PLANS[sub.plan] : undefined
     if (!planConfig) {
       return NextResponse.json({ error: 'Plan inválido' }, { status: 400 })
     }

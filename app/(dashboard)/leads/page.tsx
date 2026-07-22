@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
+import { isLeadsPlanId, type LeadsPlanId } from '@/lib/leads-plans'
 
 const NICHOS = [
   'Hoteles', 'Restaurantes', 'Clinicas', 'Inmobiliarias', 'Estudios contables',
@@ -33,7 +34,7 @@ const CIUDADES = [
   'Avellaneda', 'Lanus',
 ]
 
-const PLAN_LIMITS = {
+const PLAN_LIMITS: Record<LeadsPlanId, { maxNichos: number; maxCiudades: number; allowCustom: boolean }> = {
   basico: { maxNichos: 10, maxCiudades: 5, allowCustom: false },
   profesional: { maxNichos: Infinity, maxCiudades: Infinity, allowCustom: true },
 }
@@ -228,7 +229,10 @@ function LeadsPage() {
 
   const isValidEmail = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)
   const planConfig = PLANS.find(p => p.id === selectedPlan)
-  const limits = PLAN_LIMITS[selectedPlan as keyof typeof PLAN_LIMITS] ?? PLAN_LIMITS.basico
+  // Membership check rather than a cast: PLAN_LIMITS is a plain object, so a
+  // key like 'toString' would resolve through Object.prototype and the `??`
+  // fallback would never fire.
+  const limits = isLeadsPlanId(selectedPlan) ? PLAN_LIMITS[selectedPlan] : PLAN_LIMITS.basico
   const discount = couponValid?.valid ? couponValid.discount : 0
   const finalPrice = planConfig ? Math.round(planConfig.price * (1 - discount / 100)) : 0
 

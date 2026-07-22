@@ -3,10 +3,13 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { MP_API_TIMEOUT_MS } from '@/lib/fetch-timeouts'
+import { isLinkedInPlanId, type LinkedInPlanId } from '@/lib/linkedin-plans'
 
 const ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN!
 
-const LINKEDIN_PLANS: Record<string, { monthly: number; title: string }> = {
+// Keyed by the canonical plan-id union so this route-local title override
+// cannot drift from lib/linkedin-plans.ts.
+const LINKEDIN_PLANS: Record<LinkedInPlanId, { monthly: number; title: string }> = {
   basico:      { monthly: 12000, title: 'LinkedIn IA Básico — Automatic IA Lab' },
   profesional: { monthly: 20000, title: 'LinkedIn IA Profesional — Automatic IA Lab' },
   agencia:     { monthly: 45000, title: 'LinkedIn IA Agencia — Automatic IA Lab' },
@@ -45,7 +48,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Ya se generó un link de pago para esta suscripción. Refrescá la página.' }, { status: 409 })
     }
 
-    const planConfig = LINKEDIN_PLANS[sub.plan]
+    // Membership check first: the map is a plain object, so a stored plan of
+    // 'toString' would resolve through Object.prototype to a truthy function,
+    // pass the guard below, and price the preapproval at NaN.
+    const planConfig = isLinkedInPlanId(sub.plan) ? LINKEDIN_PLANS[sub.plan] : undefined
     if (!planConfig) {
       return NextResponse.json({ error: 'Plan inválido' }, { status: 400 })
     }
