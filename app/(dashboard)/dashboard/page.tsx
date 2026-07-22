@@ -24,6 +24,7 @@ import {
   DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel
 } from '@/components/ui/dropdown-menu'
 import { Edit, Copy, Trash2, ExternalLink, Eye as EyeIcon, Settings, Rocket, MoreHorizontal, Inbox } from 'lucide-react'
+import { primaryColorOf } from '@/lib/project-branding'
 
 const STATUS_FILTERS: { value: ProjectStatus | 'all'; label: string }[] = [
   { value: 'all',       label: 'Todos' },
@@ -291,7 +292,7 @@ function ProjectCard({ project, onEdit, onPreview, onDuplicate, onDelete, onPubl
   onSettings: () => void
   onLeads: () => void
 }) {
-  const colorHex = project.businessData.branding.primaryColor
+  const colorHex = primaryColorOf(project.businessData)
   // `project.publishedUrl` is a relative path (`/s/{slug}`); window.open() on it
   // opened the dashboard host, not the site. publishedSiteUrl() resolves the
   // absolute URL for both addressing modes (path and subdomain).

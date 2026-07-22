@@ -14,6 +14,7 @@ import { useProjectStore } from '@/store/useProjectStore'
 import { Avatar } from '@/components/ui/avatar'
 import { toast } from 'sonner'
 import { useSession, signOut } from 'next-auth/react'
+import { primaryColorOf } from '@/lib/project-branding'
 
 const NAV_ITEMS = [
   { href: '/dashboard',  label: 'Dashboard',  icon: LayoutDashboard },
@@ -176,7 +177,7 @@ export function DashboardSidebar() {
               >
                 <span
                   className="h-2 w-2 rounded-full shrink-0"
-                  ref={(el) => { if (el) el.style.backgroundColor = project.businessData.branding.primaryColor }}
+                  ref={(el) => { if (el) el.style.backgroundColor = primaryColorOf(project.businessData) }}
                 />
                 <span className="truncate">{project.name}</span>
               </Link>

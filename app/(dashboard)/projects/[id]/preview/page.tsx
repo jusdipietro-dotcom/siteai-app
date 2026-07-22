@@ -10,6 +10,7 @@ import { resolveSiteFonts } from '@/lib/site-fonts'
 import { safeImg } from '@/lib/site-images'
 import { cn } from '@/lib/utils'
 import type { DevicePreview } from '@/types'
+import { primaryColorOf } from '@/lib/project-branding'
 
 // ── Full site preview with all sections using real project data ────────────────
 function SiteFullPreview({ project, device, color }: { project: any; device: DevicePreview; color: string }) {
@@ -315,7 +316,7 @@ export default function PreviewPage() {
     return <div className="flex items-center justify-center h-screen text-surface-500">Proyecto no encontrado</div>
   }
 
-  const color = project.businessData.branding.primaryColor
+  const color = primaryColorOf(project.businessData)
 
   return (
     <div className="flex flex-col h-screen bg-surface-900">

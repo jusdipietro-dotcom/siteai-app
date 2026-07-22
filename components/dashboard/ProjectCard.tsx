@@ -10,6 +10,7 @@ import {
 import { formatRelativeDate } from '@/lib/utils'
 import { publishedSiteUrl } from '@/lib/site-domain'
 import type { Project, ProjectStatus } from '@/types'
+import { primaryColorOf } from '@/lib/project-branding'
 
 const statusConfig: Record<ProjectStatus, { label: string; variant: 'draft' | 'generating' | 'ready' | 'published' | 'error'; dot: string }> = {
   draft: { label: 'Borrador', variant: 'draft', dot: 'bg-surface-400' },
@@ -47,9 +48,9 @@ export function ProjectCard({ project, onDelete, onDuplicate }: ProjectCardProps
         ) : (
           <div
             className="w-full h-full flex items-center justify-center text-5xl"
-            style={{ background: `linear-gradient(135deg, ${project.businessData.branding.primaryColor}20, ${project.businessData.branding.primaryColor}08)` }}
+            style={{ background: `linear-gradient(135deg, ${primaryColorOf(project.businessData)}20, ${primaryColorOf(project.businessData)}08)` }}
           >
-            <Globe className="w-12 h-12" style={{ color: project.businessData.branding.primaryColor }} />
+            <Globe className="w-12 h-12" style={{ color: primaryColorOf(project.businessData) }} />
           </div>
         )}
 
@@ -125,7 +126,7 @@ export function ProjectCard({ project, onDelete, onDuplicate }: ProjectCardProps
         <div className="mt-3 flex items-center gap-1.5">
           <div
             className="w-3 h-3 rounded-full border border-white shadow-sm"
-            ref={(el) => { if (el) el.style.backgroundColor = project.businessData.branding.primaryColor }}
+            ref={(el) => { if (el) el.style.backgroundColor = primaryColorOf(project.businessData) }}
           />
           <span className="text-xs text-surface-400 capitalize">{project.plan}</span>
           <span className="text-surface-200">·</span>

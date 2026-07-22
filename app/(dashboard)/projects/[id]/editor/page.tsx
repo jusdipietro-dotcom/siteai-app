@@ -21,6 +21,7 @@ import { cn } from '@/lib/utils'
 import { resolveSiteFonts } from '@/lib/site-fonts'
 import { safeImg } from '@/lib/site-images'
 import type { SectionConfig, SectionType, DevicePreview, ColorTheme } from '@/types'
+import { primaryColorOf } from '@/lib/project-branding'
 
 // Section icons map
 const SECTION_ICONS: Record<SectionType, React.ReactNode> = {
@@ -64,7 +65,7 @@ export default function EditorPage() {
   const project = projects.find((p) => p.id === id)
   const [sections, setSections] = useState<SectionConfig[]>(project?.sections ?? [])
   const [localName, setLocalName] = useState(project?.businessData.name ?? '')
-  const [localColor, setLocalColor] = useState(project?.businessData.branding.primaryColor ?? '#6366f1')
+  const [localColor, setLocalColor] = useState(primaryColorOf(project?.businessData))
   const [localTheme, setLocalTheme] = useState<ColorTheme>(project?.businessData.branding.colorTheme ?? 'indigo')
   const [previewKey, setPreviewKey] = useState(0)
 
@@ -72,7 +73,7 @@ export default function EditorPage() {
     if (project) {
       setSections(project.sections)
       setLocalName(project.businessData.name)
-      setLocalColor(project.businessData.branding.primaryColor)
+      setLocalColor(primaryColorOf(project.businessData))
       setLocalTheme(project.businessData.branding.colorTheme)
     }
   }, [project?.id])
