@@ -141,8 +141,15 @@ export const authOptions: NextAuthOptions = {
         // this codebase gates on `if (!session?.user?.id)`, so an empty string
         // — falsy, and still a `string` for the type system — turns all of them
         // into 401s at once, with no route needing to learn about deletion.
+        //
+        // `email` is cleared too, and that is NOT cosmetic: requireAdmin()
+        // authorizes on the session email, not on the id, so leaving it in
+        // place would let an admin who deleted their own account keep every
+        // admin route. Clearing both closes the id-gated and the email-gated
+        // halves of the surface together.
         if (!account || isAccountAccessBlocked(account)) {
           session.user.id = ''
+          session.user.email = null
           session.user.plan = 'free'
           session.user.isAdmin = false
           return session
