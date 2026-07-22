@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { TURNOS_PLANS, type TurnosPlanId } from '@/lib/turnos-plans'
+import { getTurnosPlanConfig } from '@/lib/turnos-plans'
 
 /** Allowed day numbers per plan. L-V = Mon-Fri (1-5), L-S = Mon-Sat (1-6) */
 function getAllowedDays(diasPermitidos: string): number[] {
@@ -83,7 +83,7 @@ export async function PUT(req: NextRequest) {
     const updateData: Record<string, unknown> = {}
 
     // Load plan config for limit enforcement
-    const planConfig = TURNOS_PLANS[sub.plan as TurnosPlanId]
+    const planConfig = getTurnosPlanConfig(sub.plan)
 
     // Validate and sanitize inputs
     const colorRegex = /^#[0-9a-fA-F]{6}$/

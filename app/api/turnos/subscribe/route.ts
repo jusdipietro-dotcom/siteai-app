@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
-import { TURNOS_PLANS } from '@/lib/turnos-plans'
+import { getTurnosPlanConfig } from '@/lib/turnos-plans'
 import { isUserFreeAccount } from '@/lib/free-account'
 import { getTrialEndDate, expireStaleTrials, hasUsedTrial } from '@/lib/trial'
 
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
       notificationEmail, payerEmail, couponCode,
     } = body
 
-    const planConfig = TURNOS_PLANS[plan as keyof typeof TURNOS_PLANS]
+    const planConfig = getTurnosPlanConfig(plan)
     if (!planConfig) {
       return NextResponse.json({ error: 'Plan invalido' }, { status: 400 })
     }

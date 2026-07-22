@@ -2,7 +2,11 @@
  * Configuracion centralizada de planes de Turnos Online.
  */
 
-export type TurnosPlanId = 'basico' | 'profesional' | 'estudio'
+/** Source of truth for the valid plan ids. `TurnosPlanId` is derived from it so
+ * the list and the type can never drift apart. */
+export const TURNOS_PLAN_IDS = ['basico', 'profesional', 'estudio'] as const
+
+export type TurnosPlanId = (typeof TURNOS_PLAN_IDS)[number]
 
 export interface TurnosPlanConfig {
   id: TurnosPlanId
@@ -92,8 +96,20 @@ export const TURNOS_PLANS_LIST = [
   TURNOS_PLANS.estudio,
 ]
 
-export function getTurnosPlanConfig(planId: string): TurnosPlanConfig | undefined {
-  return TURNOS_PLANS[planId as TurnosPlanId]
+/**
+ * Narrows an untrusted value (request body, DB column) to a known plan id.
+ *
+ * Checks the id list instead of indexing TURNOS_PLANS directly: the map is a
+ * plain object, so `TURNOS_PLANS['toString']` resolves through Object.prototype
+ * and returns a truthy function — enough to slip past an `if (!planConfig)`
+ * guard and reach the pricing math with an undefined `monthly`.
+ */
+export function isTurnosPlanId(value: unknown): value is TurnosPlanId {
+  return typeof value === 'string' && TURNOS_PLAN_IDS.some((id) => id === value)
+}
+
+export function getTurnosPlanConfig(planId: unknown): TurnosPlanConfig | undefined {
+  return isTurnosPlanId(planId) ? TURNOS_PLANS[planId] : undefined
 }
 
 /** Default practice areas for law firms */

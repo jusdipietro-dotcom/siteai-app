@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { TURNOS_PLANS } from '@/lib/turnos-plans'
+import { getTurnosPlanConfig } from '@/lib/turnos-plans'
 import { MP_API_TIMEOUT_MS } from '@/lib/fetch-timeouts'
 
 const ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN!
@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
     if (sub.status !== 'pending_payment') return NextResponse.json({ error: 'Ya procesada' }, { status: 400 })
     if (sub.preapprovalId) return NextResponse.json({ error: 'Ya se genero un link de pago.' }, { status: 409 })
 
-    const planConfig = TURNOS_PLANS[sub.plan as keyof typeof TURNOS_PLANS]
+    const planConfig = getTurnosPlanConfig(sub.plan)
     if (!planConfig) return NextResponse.json({ error: 'Plan invalido' }, { status: 400 })
 
     const isFreeTrial = sub.discountApplied >= 100
