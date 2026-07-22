@@ -1,5 +1,5 @@
 'use client'
-import { useState, Suspense } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
@@ -12,6 +12,8 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { resolveNextRoute } from '@/lib/next-routes'
+import { rememberWebsitePlanPreference } from '@/lib/plan-preference'
+import { getWebsitePlanConfig } from '@/lib/website-plans'
 
 const registerSchema = z.object({
   name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
@@ -35,11 +37,34 @@ const passwordChecks = [
 function RegisterForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const plan = searchParams.get('plan') ?? 'free'
+  const planParam = searchParams.get('plan')
   const next = searchParams.get('next')
   const redirectTo = resolveNextRoute(next, '/wizard')
   const [showPassword, setShowPassword] = useState(false)
   const [passwordValue, setPasswordValue] = useState('')
+
+  /**
+   * The plan chosen on the pricing page used to reach this screen, get rendered
+   * as a badge, and then die at submit — so a customer who picked Professional
+   * had to pick it again at checkout, at the moment of highest purchase intent.
+   *
+   * `getWebsitePlanConfig` returns undefined for anything that is not a real
+   * plan id, which is what makes `?plan=<junk>` a no-op instead of an error: no
+   * badge, no preference, and the raw param never reaches the DOM — the label
+   * below comes from the plan config, not from the query string.
+   */
+  const chosenPlan = getWebsitePlanConfig(planParam)
+
+  /**
+   * Written on mount rather than at submit so it survives BOTH ways off this
+   * page: the credentials form (same document) and the Google button, which
+   * navigates to Google's origin and back. sessionStorage is per-tab and per
+   * origin, so the round trip preserves it; a value written only in `onSubmit`
+   * would never exist for the OAuth path.
+   */
+  useEffect(() => {
+    rememberWebsitePlanPreference(planParam)
+  }, [planParam])
 
   const {
     register,
@@ -96,9 +121,9 @@ function RegisterForm() {
       className="space-y-6"
     >
       <div>
-        {plan !== 'free' && (
+        {chosenPlan && (
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-500/15 border border-brand-500/25 text-brand-300 text-xs font-medium mb-4">
-            Plan {plan} seleccionado
+            Plan {chosenPlan.name} seleccionado
           </div>
         )}
         <h1 className="text-2xl font-extrabold text-white mb-1.5">Crear cuenta gratis</h1>

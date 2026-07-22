@@ -17,6 +17,7 @@ import {
   formatARS,
   type WebsitePlanId,
 } from '@/lib/website-plans'
+import { takeWebsitePlanPreference } from '@/lib/plan-preference'
 import type { Plan } from '@/types'
 
 // ─── Plan definitions ─────────────────────────────────────────────────────────
@@ -59,6 +60,13 @@ function CheckoutContent() {
   const isAnnual = billingParam === 'annual'
 
   const [selectedPlan, setSelectedPlan] = useState<Plan>('essential')
+  /**
+   * Set only when the plan came from the pricing page the customer started on,
+   * so the UI can SAY it is preselected. Cleared the moment they pick something
+   * else — a "preseleccionado" note next to a card they chose themselves would
+   * be a lie.
+   */
+  const [preselectedPlan, setPreselectedPlan] = useState<WebsitePlanId | null>(null)
   const [step, setStep] = useState<'plan' | 'payment' | 'verifying' | 'pending' | 'success'>('plan')
   const [processing, setProcessing] = useState(false)
   const [payerEmail, setPayerEmail] = useState('')
@@ -81,6 +89,28 @@ function CheckoutContent() {
     price: formatARS(websitePlanPrice(p.id, isAnnual)),
     period: isAnnual ? '/mes · facturación anual' : '/mes',
   }))
+
+  /**
+   * Picks up the plan chosen back on the public pricing page.
+   *
+   * This is a PRESELECTION and nothing more. The value is a validated plan id
+   * (`takeWebsitePlanPreference` re-checks it with `isWebsitePlanId` on the way
+   * out of sessionStorage), and all it does is decide which card starts
+   * highlighted. The amount charged is never read from here: `handleSubscribe`
+   * posts only the plan id, and `/api/mp/create-subscription` looks the price up
+   * with `getWebsitePlanConfig` server-side. A tampered value can change which
+   * card is preselected; it cannot change what is charged.
+   *
+   * Mount-only, and consuming: applying it on every render would fight the
+   * customer's own clicks, and re-applying after a reload would silently undo a
+   * change they made on purpose.
+   */
+  useEffect(() => {
+    const preference = takeWebsitePlanPreference()
+    if (!preference) return
+    setSelectedPlan(preference)
+    setPreselectedPlan(preference)
+  }, [])
 
   // Si ya tiene plan pago, redirigir directo a publicar
   useEffect(() => {
@@ -388,15 +418,37 @@ function CheckoutContent() {
                 La vista previa es gratuita. Para publicar tu sitio, elegí el plan que mejor se adapta.
               </p>
 
+              {/* Says out loud that the choice was carried over, and that it is
+                  still the customer's to change. Nothing is auto-submitted: this
+                  is still step 1 of 2 and they confirm on the next screen. */}
+              {preselectedPlan && (
+                <div className="max-w-xl mx-auto mb-6 flex items-start gap-2.5 rounded-xl border border-brand-200 bg-brand-50 px-4 py-3">
+                  <Sparkles className="w-4 h-4 text-brand-600 shrink-0 mt-0.5" />
+                  <p className="text-xs text-brand-900">
+                    Dejamos preseleccionado el plan{' '}
+                    <span className="font-bold">
+                      {PLANS.find((p) => p.id === preselectedPlan)?.name ?? preselectedPlan}
+                    </span>
+                    , el que elegiste antes de crear tu cuenta. Podés cambiarlo acá abajo.
+                  </p>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
                 {PLANS.map((p) => {
                   const Icon = p.icon
                   const isSelected = selectedPlan === p.id
+                  const isPreselected = preselectedPlan === p.id
                   return (
                     <button
                       key={p.id}
                       type="button"
-                      onClick={() => setSelectedPlan(p.id)}
+                      onClick={() => {
+                        setSelectedPlan(p.id)
+                        // Any manual pick ends the "we chose this for you" story,
+                        // including re-clicking the preselected card.
+                        setPreselectedPlan(null)
+                      }}
                       className={cn(
                         'relative text-left bg-white rounded-2xl border-2 p-6 transition-all',
                         isSelected
@@ -404,11 +456,15 @@ function CheckoutContent() {
                           : 'border-surface-200 hover:border-surface-300 hover:shadow-sm'
                       )}
                     >
-                      {p.popular && (
+                      {isPreselected ? (
+                        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-brand-600 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-brand whitespace-nowrap">
+                          TU ELECCIÓN · PODÉS CAMBIARLO
+                        </div>
+                      ) : p.popular ? (
                         <div className="absolute -top-3 left-1/2 -translate-x-1/2 gradient-brand text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-brand">
                           MÁS POPULAR
                         </div>
-                      )}
+                      ) : null}
                       <div className="flex items-start justify-between mb-4">
                         <div>
                           <div className="flex items-center gap-2 mb-1">
