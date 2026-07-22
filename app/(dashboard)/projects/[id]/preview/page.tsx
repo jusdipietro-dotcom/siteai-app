@@ -7,6 +7,7 @@ import { ArrowLeft, Monitor, Tablet, Smartphone, ExternalLink, Edit3, Lock, Spar
 import { Button } from '@/components/ui/button'
 import { useProjectStore } from '@/store/useProjectStore'
 import { resolveSiteFonts } from '@/lib/site-fonts'
+import { safeImg } from '@/lib/site-images'
 import { cn } from '@/lib/utils'
 import type { DevicePreview } from '@/types'
 
@@ -20,6 +21,12 @@ function SiteFullPreview({ project, device, color }: { project: any; device: Dev
   // Fonts from branding — resolved by the same helper the published renderer
   // uses, so a font added to the catalogue reaches the preview too.
   const { headingFamily, bodyFamily, urls: uniqueUrls } = resolveSiteFonts(bd.branding)
+
+  // Image URLs are owner input, so they go through the same validation the
+  // published renderer applies — a `javascript:` value yields null and the
+  // image is skipped rather than handed to the browser.
+  const heroImg = safeImg(bd.heroImage)
+  const galleryImgs = ((bd.galleryImages ?? []) as string[]).map(safeImg).filter((u): u is string => !!u)
 
   // Sections sorted by order, only enabled ones (plus always show hero/footer)
   const ordered = [...project.sections].sort((a: any, b: any) => a.order - b.order)
@@ -51,8 +58,8 @@ function SiteFullPreview({ project, device, color }: { project: any; device: Dev
         switch (section.id) {
           case 'hero':
             return (
-              <section key="hero" style={{ background: bd.heroImage ? undefined : `linear-gradient(135deg, ${color}ee, ${color}99)`, minHeight: '80vh', display: 'flex', alignItems: 'center', position: 'relative', overflow: 'hidden' }}>
-                {bd.heroImage && <img src={bd.heroImage} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.25 }} />}
+              <section key="hero" style={{ background: heroImg ? undefined : `linear-gradient(135deg, ${color}ee, ${color}99)`, minHeight: '80vh', display: 'flex', alignItems: 'center', position: 'relative', overflow: 'hidden' }}>
+                {heroImg && <img src={heroImg} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.25 }} />}
                 <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, rgba(0,0,0,0.3), rgba(0,0,0,0.1))' }} />
                 <div style={{ position: 'relative', padding: `4rem ${px}`, color: '#fff', maxWidth: '700px' }}>
                   {bd.businessType && (
@@ -157,8 +164,8 @@ function SiteFullPreview({ project, device, color }: { project: any; device: Dev
                 <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '2rem' }}>
                   {bd.team.slice(0, 4).map((m: any) => (
                     <div key={m.id} style={{ textAlign: 'center', maxWidth: '160px' }}>
-                      {m.image
-                        ? <img src={m.image} alt={m.name} style={{ width: '80px', height: '80px', borderRadius: '1rem', objectFit: 'cover', margin: '0 auto 0.75rem' }} />
+                      {safeImg(m.image)
+                        ? <img src={safeImg(m.image)!} alt={m.name} style={{ width: '80px', height: '80px', borderRadius: '1rem', objectFit: 'cover', margin: '0 auto 0.75rem' }} />
                         : <div style={{ width: '80px', height: '80px', borderRadius: '1rem', background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: '700', fontSize: '1.5rem', margin: '0 auto 0.75rem' }}>{(m.name || 'N')[0]}</div>
                       }
                       <p style={{ fontWeight: '700', fontSize: '0.95rem' }}>{m.name}</p>
@@ -174,8 +181,8 @@ function SiteFullPreview({ project, device, color }: { project: any; device: Dev
               <section key="gallery" style={{ padding: `${py} ${px}`, background: '#f8fafc' }}>
                 <h2 style={{ textAlign: 'center', fontSize: isMobile ? '1.75rem' : '2.25rem', fontWeight: '800', marginBottom: '3rem' }}>Galería</h2>
                 <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: '0.75rem' }}>
-                  {(bd.galleryImages ?? []).length > 0
-                    ? (bd.galleryImages as string[]).map((url, i) => (
+                  {galleryImgs.length > 0
+                    ? galleryImgs.map((url, i) => (
                         <div key={i} style={{ aspectRatio: '1/1', borderRadius: '0.75rem', overflow: 'hidden' }}>
                           <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         </div>

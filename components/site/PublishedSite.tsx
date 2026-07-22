@@ -12,6 +12,7 @@ import { TeamSection } from '@/components/site/sections/TeamSection'
 import { TestimonialsSection } from '@/components/site/sections/TestimonialsSection'
 import { parseJSON } from '@/lib/published-site'
 import { resolveSiteFonts } from '@/lib/site-fonts'
+import { safeImg } from '@/lib/site-images'
 import { publishedSiteUrl } from '@/lib/site-domain'
 import type { BusinessData, SectionConfig, SectionType } from '@/types'
 
@@ -125,11 +126,6 @@ export function PublishedSite({ project: row }: { project: Project }) {
   // Only allow real image sources. A non-URL value (or a javascript: scheme)
   // yields null and the image is simply not rendered. Rendered as a plain `src`
   // attribute, which React escapes and the browser never executes.
-  const safeImg = (u?: string | null): string | null => {
-    if (!u) return null
-    const t = u.trim()
-    return /^(https?:\/\/|\/|data:image\/)/i.test(t) ? t : null
-  }
   const heroImg = safeImg(bd.heroImage)
   const galleryImgs = (bd.galleryImages ?? []).map(safeImg).filter((u): u is string => !!u)
 

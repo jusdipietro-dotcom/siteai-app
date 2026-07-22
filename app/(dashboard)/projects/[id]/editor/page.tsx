@@ -19,6 +19,7 @@ import { useMediaStore } from '@/store/useMediaStore'
 import { ColorPresetSelector } from '@/components/shared/ColorPresetSelector'
 import { cn } from '@/lib/utils'
 import { resolveSiteFonts } from '@/lib/site-fonts'
+import { safeImg } from '@/lib/site-images'
 import type { SectionConfig, SectionType, DevicePreview, ColorTheme } from '@/types'
 
 // Section icons map
@@ -991,14 +992,17 @@ function SitePreview({ project, sections, primaryColor, name, selectedSection, o
 function PreviewSection({ section, bd, name, color, galleryImages, device }: { section: SectionConfig; bd: any; name: string; color: string; galleryImages: any[]; device: DevicePreview }) {
   const isMobile = device === 'mobile'
   switch (section.id) {
-    case 'hero':
+    case 'hero': {
+      // Same validation the published renderer applies: a `javascript:` value
+      // yields null and the image is skipped rather than handed to the browser.
+      const heroImg = safeImg(bd.heroImage)
       return (
         <div
           className={cn('text-center relative overflow-hidden', isMobile ? 'px-4 py-12' : 'px-8 py-16')}
-          style={bd.heroImage ? undefined : { background: `linear-gradient(135deg, ${color}12, ${color}06)` }}
+          style={heroImg ? undefined : { background: `linear-gradient(135deg, ${color}12, ${color}06)` }}
         >
-          {bd.heroImage && (
-            <img src={bd.heroImage} alt="" className="absolute inset-0 w-full h-full object-cover opacity-20" />
+          {heroImg && (
+            <img src={heroImg} alt="" className="absolute inset-0 w-full h-full object-cover opacity-20" />
           )}
           <div className="relative z-10">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium mb-4 border" style={{ color, borderColor: `${color}40`, backgroundColor: `${color}10` }}>
@@ -1013,6 +1017,7 @@ function PreviewSection({ section, bd, name, color, galleryImages, device }: { s
           </div>
         </div>
       )
+    }
     case 'services':
       return (
         <div className="px-8 py-12">
@@ -1083,8 +1088,8 @@ function PreviewSection({ section, bd, name, color, galleryImages, device }: { s
           <div className="flex flex-wrap justify-center gap-6">
             {bd.team.slice(0, 4).map((m: any) => (
               <div key={m.id} className="text-center">
-                {m.image
-                  ? <img src={m.image} alt={m.name} className="h-16 w-16 rounded-2xl object-cover mx-auto mb-2" />
+                {safeImg(m.image)
+                  ? <img src={safeImg(m.image)!} alt={m.name} className="h-16 w-16 rounded-2xl object-cover mx-auto mb-2" />
                   : <div className="h-16 w-16 rounded-2xl gradient-brand mx-auto mb-2 flex items-center justify-center text-white font-bold">{m.name.charAt(0)}</div>
                 }
                 <p className="text-sm font-semibold">{m.name}</p>
@@ -1109,7 +1114,9 @@ function PreviewSection({ section, bd, name, color, galleryImages, device }: { s
         </div>
       )
     case 'gallery': {
-      const imgs: string[] = bd.galleryImages ?? []
+      const imgs: string[] = ((bd.galleryImages ?? []) as string[])
+        .map(safeImg)
+        .filter((u): u is string => !!u)
       return (
         <div className="px-8 py-12 bg-surface-50">
           <h2 className="text-xl font-bold text-center mb-8">Galería</h2>
