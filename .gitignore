@@ -38,3 +38,4 @@ npm-debug.log*
 *-DESKTOP-*.ts
 *-DESKTOP-*.toml
 *-DESKTOP-*.json
+tsconfig.tsbuildinfo
