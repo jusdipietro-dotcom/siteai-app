@@ -4,6 +4,7 @@ import { GallerySection } from '@/components/site/sections/GallerySection'
 import { HeroSection } from '@/components/site/sections/HeroSection'
 import { PricingSection } from '@/components/site/sections/PricingSection'
 import { ServicesSection } from '@/components/site/sections/ServicesSection'
+import { StatsSection } from '@/components/site/sections/StatsSection'
 import { typographyOptions } from '@/config/themes'
 import { parseJSON } from '@/lib/published-site'
 import { publishedSiteUrl } from '@/lib/site-domain'
@@ -186,20 +187,7 @@ export function PublishedSite({ project: row }: { project: Project }) {
         )
 
       case 'stats':
-        return (
-          <section className="section-pad-sm stats-section" key="stats">
-            <div className="container">
-              <div className="grid-4" style={{ textAlign: 'center' }}>
-                {bd.stats!.map((st) => (
-                  <div key={st.id}>
-                    <div className="stat-number">{st.number}</div>
-                    <div className="stat-label">{st.label}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-        )
+        return <StatsSection key="stats" stats={bd.stats!} />
 
       case 'team':
         return (
