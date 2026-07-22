@@ -31,9 +31,13 @@ export const dynamic = 'force-dynamic'
  * BOUNDS. Thirteen `findMany` with `include` would not scale, so the shape is:
  * thirteen `count` aggregates for the tab counters, and ONE page of rows for
  * ONE product per request — cursor-paginated, capped at
- * ADMIN_SUBSCRIPTIONS_MAX_LIMIT rows. Fourteen queries per request regardless
- * of how many products exist, plus Prisma's two batched relation reads for the
- * page (user, coupon) — batched per request, not per row, so there is no N+1.
+ * ADMIN_SUBSCRIPTIONS_MAX_LIMIT rows.
+ *
+ * Measured against Postgres with log_statement='all': 16 statements per
+ * request — 1 admin session check, 13 counts, 1 page of rows, 1 batched read of
+ * the owners for that whole page (plus 1 more when any row carries a coupon).
+ * Constant in the number of products and constant in the page size: fifty rows
+ * cost one owner query, not fifty.
  *
  * Query params:
  *   product — one of ADMIN_PRODUCT_IDS. Defaults to the first.

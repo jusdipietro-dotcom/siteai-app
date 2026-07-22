@@ -47,16 +47,29 @@ import { countTrialsExpiringSoon } from '@/lib/admin-queries'
  * that rather than implying it covers every product.
  * ───────────────────────────────────────────────────────────────────────────
  *
- * QUERY BUDGET — 19 per load, all bounded, none of them N+1:
- *   1   paying projects, capped, 12 scalar columns  (MRR, live split, problems,
- *       attention rows and the roster all derive from this one read)
- *   2   leads per project        — groupBy, scoped to those project ids
- *   3   unread per project       — groupBy, same scope
- *   4   unread leads overall     — count
- *   5   accounts past their purge deadline — count
- *   6   sign-ups this month      — count
- *   7   site cancellations this month — count
- *   8-19 trials expiring in 7 days — 12 counts, one per subscription product
+ * QUERY BUDGET — 22 statements per load, measured against Postgres with
+ * log_statement='all', not estimated. All bounded, none of them N+1:
+ *
+ *   1    paying projects, capped, 13 scalar columns. MRR, the live split, the
+ *        payment problems, the attention rows AND the roster all derive from
+ *        this ONE read — which is why the page costs 22 and not one per section.
+ *   2    owner emails for those projects. Prisma batches the relation into a
+ *        single query for the whole page; it is not one per row.
+ *   3    leads per project        — groupBy, scoped to the ids already in hand
+ *   4    unread per project       — groupBy, same scope
+ *   5    unread leads overall     — count
+ *   6    accounts past their purge deadline — count
+ *   7    sign-ups this month      — count
+ *   8    site cancellations this month — count
+ *   9-20 trials expiring in 7 days — 12 counts, one per subscription product
+ *   21-22 the session/deletion check behind requireAdmin(), once for the layout
+ *        gate and once for this page's own. The redundancy is deliberate.
+ *
+ * Twelve of those twenty-two produce a single number, which is the one part
+ * worth revisiting: a `$queryRaw` UNION ALL across the twelve tables would make
+ * it eleven statements total. It was NOT taken, because raw SQL hardcodes
+ * twelve table names that `tsc` cannot check, and 22 is inside budget. Revisit
+ * if the tile ever needs a per-product breakdown.
  */
 export const dynamic = 'force-dynamic'
 
