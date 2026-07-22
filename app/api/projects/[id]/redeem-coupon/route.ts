@@ -88,14 +88,43 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   // used to probe for other people's project ids.
   const project = await prisma.project.findFirst({
     where: { id: params.id, userId: session.user.id },
-    select: { id: true, name: true, slug: true, hasPaid: true, couponId: true },
+    select: { id: true, name: true, slug: true, plan: true, hasPaid: true, couponId: true },
   })
   if (!project) {
     return NextResponse.json({ error: 'Proyecto no encontrado' }, { status: 404 })
   }
 
   const coupon = await prisma.coupon.findUnique({ where: { code } })
-  if (!coupon || !coupon.active) {
+  if (!coupon) {
+    return NextResponse.json({ error: 'Cupón inválido' }, { status: 404 })
+  }
+
+  // Idempotency, checked BEFORE every validity rule below, on purpose.
+  //
+  // Re-sending the same code on a project this same code already paid for is a
+  // no-op success: the grant exists and no second use may be consumed. Running
+  // the validity checks first made this branch unreachable in the most common
+  // case — a maxUses:1 coupon is exhausted the instant it is redeemed, so the
+  // retry answered "Cupón agotado" and told the user their own successful
+  // redemption had failed. Deactivation and expiry would do the same. A past
+  // success must not become an error because the coupon has since changed.
+  //
+  // The `hasPaid` half matters: if the grant was later revoked from the admin
+  // panel the project keeps its couponId (the provenance is historical), and
+  // re-redeeming then legitimately costs a fresh use.
+  if (project.couponId === coupon.id && project.hasPaid) {
+    return NextResponse.json({
+      ok: true,
+      alreadyRedeemed: true,
+      code: coupon.code,
+      // The plan actually in force, not the one this request asked for — a
+      // replay grants nothing, so echoing the requested plan could describe a
+      // state that does not exist.
+      plan: project.plan,
+    })
+  }
+
+  if (!coupon.active) {
     return NextResponse.json({ error: 'Cupón inválido' }, { status: 404 })
   }
 
@@ -115,21 +144,6 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       },
       { status: 400 }
     )
-  }
-
-  // Idempotency. Re-sending the same code on a project this same code already
-  // paid for is a no-op success — it must not consume a second use.
-  //
-  // The `hasPaid` half matters: if the grant was later revoked from the admin
-  // panel the project keeps its couponId (the provenance is historical), and
-  // re-redeeming then legitimately costs a fresh use.
-  if (project.couponId === coupon.id && project.hasPaid) {
-    return NextResponse.json({
-      ok: true,
-      alreadyRedeemed: true,
-      code: coupon.code,
-      plan: planConfig.id,
-    })
   }
 
   // A project that is already paid has nothing left to grant, so a *different*
