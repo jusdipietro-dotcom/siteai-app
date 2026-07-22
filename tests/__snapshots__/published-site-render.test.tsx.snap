@@ -10,6 +10,7 @@ exports[`PublishedSite — assembled document > matches the recorded markup for 
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
 <link rel="sitemap" type="application/xml" href="https://sites.automaticialab.com/la-espiga/sitemap.xml"/>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"LocalBusiness","name":"Panadería La Espiga","url":"https://sites.automaticialab.com/la-espiga","description":"Pan de masa madre en Quilmes.","telephone":"+54 11 4444-5555","email":"hola@laespiga.test","address":{"@type":"PostalAddress","streetAddress":"Av. Mitre 1200","addressLocality":"Quilmes","addressRegion":"Buenos Aires","addressCountry":"Argentina"},"image":"https://cdn.example.com/hero.jpg","sameAs":["https://instagram.com/laespiga","https://facebook.com/laespiga","https://linkedin.com/company/laespiga","https://x.com/laespiga","https://tiktok.com/@laespiga","https://youtube.com/@laespiga"]}</script>
 <script async="" src="https://www.googletagmanager.com/gtag/js?id=G-TEST12345">
 </script>
 <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config',"G-TEST12345");</script>

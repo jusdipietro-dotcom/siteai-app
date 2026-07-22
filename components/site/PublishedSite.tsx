@@ -14,6 +14,12 @@ import { parseJSON } from '@/lib/published-site'
 import { resolveSiteFonts } from '@/lib/site-fonts'
 import { safeImg } from '@/lib/site-images'
 import { publishedSiteUrl } from '@/lib/site-domain'
+import {
+  absoluteSiteImageUrl,
+  buildSiteStructuredData,
+  hasProfessionalSeo,
+  serializeJsonLd,
+} from '@/lib/site-seo'
 import type { BusinessData, SectionConfig, SectionType } from '@/types'
 
 /**
@@ -118,6 +124,7 @@ export function PublishedSite({ project: row }: { project: Project }) {
   const rawGaId = row.plan === 'professional' && bd.gaId ? (bd.gaId as string).trim() : null
   const gaId = rawGaId && /^(G|GT|UA)-[A-Za-z0-9-]+$/.test(rawGaId) ? rawGaId : null
   const sitemapEnabled = bd.seo?.sitemapEnabled && row.hasPaid
+  const canonical = publishedSiteUrl(row)
 
   // Only allow real image sources. A non-URL value (or a javascript: scheme)
   // yields null and the image is simply not rendered. Rendered as a plain `src`
@@ -142,6 +149,32 @@ export function PublishedSite({ project: row }: { project: Project }) {
   if (s?.twitter) socialLinks.push({ href: isUrl(s.twitter) ? normalizeUrl(s.twitter) : `https://x.com/${handle(s.twitter)}`, icon: '🐦', title: 'X (Twitter)' })
   if (s?.tiktok) socialLinks.push({ href: isUrl(s.tiktok) ? normalizeUrl(s.tiktok) : `https://tiktok.com/@${handle(s.tiktok)}`, icon: '🎵', title: 'TikTok' })
   if (s?.youtube) socialLinks.push({ href: normalizeUrl(s.youtube), icon: '▶️', title: 'YouTube' })
+
+  /*
+    Structured data (JSON-LD) — Professional plan only.
+
+    Gated exactly like Google Analytics above: on `row.plan`, read off the
+    project row the server loaded. `plan` is not in CLIENT_WRITABLE_FIELDS, so
+    no request body can escalate into it, and an Essential site emits nothing
+    here at all.
+
+    `sameAs` reuses the already-normalised social hrefs rather than re-deriving
+    them, so what we tell Google and what the footer links to can never disagree.
+
+    Everything about WHICH fields may be emitted lives in lib/site-seo.ts —
+    including the fields that are deliberately never emitted (no aggregateRating
+    from owner-typed testimonials, no guessed opening hours). Read the header
+    there before adding a field.
+  */
+  const structuredData = hasProfessionalSeo(row)
+    ? buildSiteStructuredData({
+        name,
+        businessData: bd,
+        canonical,
+        image: absoluteSiteImageUrl(bd.heroImage, canonical),
+        sameAs: socialLinks.map((l) => l.href),
+      })
+    : null
 
   // ── Per-section renderers, keyed by section id ──────────────────────────────
   const renderSection = (section: SectionConfig) => {
@@ -267,7 +300,20 @@ export function PublishedSite({ project: row }: { project: Project }) {
           <link key={url} href={url} rel="stylesheet" />
         ))}
         {sitemapEnabled && (
-          <link rel="sitemap" type="application/xml" href={`${publishedSiteUrl(row)}/sitemap.xml`} />
+          <link rel="sitemap" type="application/xml" href={`${canonical}/sitemap.xml`} />
+        )}
+        {structuredData && (
+          /*
+            serializeJsonLd — NOT a bare JSON.stringify. The GA snippet below
+            gets away with JSON.stringify because gaId is regex-narrowed first
+            and can never hold a `<`; these are free-form owner fields, so a
+            business named `Bar </script><script>…` would otherwise close this
+            element. See lib/site-seo.ts.
+          */
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: serializeJsonLd(structuredData) }}
+          />
         )}
         {gaId && (
           <>
