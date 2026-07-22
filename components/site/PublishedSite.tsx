@@ -1,5 +1,6 @@
 import type { Project } from '@prisma/client'
 import { AboutSection } from '@/components/site/sections/AboutSection'
+import { FaqSection } from '@/components/site/sections/FaqSection'
 import { GallerySection } from '@/components/site/sections/GallerySection'
 import { HeroSection } from '@/components/site/sections/HeroSection'
 import { PricingSection } from '@/components/site/sections/PricingSection'
@@ -204,22 +205,7 @@ export function PublishedSite({ project: row }: { project: Project }) {
         return <TestimonialsSection key="testimonials" testimonials={bd.testimonials} />
 
       case 'faq':
-        return (
-          <section className="section-pad" id="faq" key="faq" style={{ background: '#fff' }}>
-            <div className="container" style={{ maxWidth: '720px' }}>
-              <p className="label" style={{ textAlign: 'center' }}>Preguntas frecuentes</p>
-              <h2 className="heading-lg" style={{ textAlign: 'center', marginBottom: '3rem' }}>¿Tenés dudas?</h2>
-              <div>
-                {bd.faqs.map((f) => (
-                  <div key={f.id} className="faq-item">
-                    <p className="faq-q">{f.question}</p>
-                    <p className="faq-a">{f.answer}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-        )
+        return <FaqSection key="faq" faqs={bd.faqs} />
 
       case 'cta':
         return (
