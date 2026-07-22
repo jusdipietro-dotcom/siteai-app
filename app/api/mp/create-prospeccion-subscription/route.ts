@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { PROSPECCION_PLANS } from '@/lib/prospeccion-plans'
+import { getPlanConfig as getProspeccionPlanConfig } from '@/lib/prospeccion-plans'
 import { MP_API_TIMEOUT_MS, N8N_WEBHOOK_TIMEOUT_MS } from '@/lib/fetch-timeouts'
 
 const ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN!
@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Ya se genero un link de pago para esta suscripcion.' }, { status: 409 })
     }
 
-    const planConfig = PROSPECCION_PLANS[sub.plan as keyof typeof PROSPECCION_PLANS]
+    const planConfig = getProspeccionPlanConfig(sub.plan)
     if (!planConfig) {
       return NextResponse.json({ error: 'Plan invalido' }, { status: 400 })
     }

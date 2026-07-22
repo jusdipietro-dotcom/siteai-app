@@ -3,7 +3,11 @@
  * Usada por backend (subscribe, webhook) y frontend (dashboard, landing).
  */
 
-export type ProspeccionPlanId = 'starter' | 'profesional' | 'enterprise'
+/** Source of truth for the valid plan ids. `ProspeccionPlanId` is derived from it
+ * so the list and the type can never drift apart. */
+export const PROSPECCION_PLAN_IDS = ['starter', 'profesional', 'enterprise'] as const
+
+export type ProspeccionPlanId = (typeof PROSPECCION_PLAN_IDS)[number]
 
 export interface ProspeccionPlanConfig {
   id: ProspeccionPlanId
@@ -100,9 +104,22 @@ export const PROSPECCION_PLANS_LIST = [
   PROSPECCION_PLANS.enterprise,
 ]
 
+/**
+ * Narrows an untrusted value (request body, DB column) to a known plan id.
+ *
+ * Checks the id list instead of indexing PROSPECCION_PLANS directly: the map is
+ * a plain object, so `PROSPECCION_PLANS['toString']` resolves through
+ * Object.prototype and returns a truthy function — enough to slip past an
+ * `if (!planConfig)` guard and reach the pricing math with an undefined
+ * `monthly`.
+ */
+export function isProspeccionPlanId(value: unknown): value is ProspeccionPlanId {
+  return typeof value === 'string' && PROSPECCION_PLAN_IDS.some((id) => id === value)
+}
+
 /** Helpers */
-export function getPlanConfig(planId: string): ProspeccionPlanConfig | undefined {
-  return PROSPECCION_PLANS[planId as ProspeccionPlanId]
+export function getPlanConfig(planId: unknown): ProspeccionPlanConfig | undefined {
+  return isProspeccionPlanId(planId) ? PROSPECCION_PLANS[planId] : undefined
 }
 
 export function formatNichoLimit(n: number): string {

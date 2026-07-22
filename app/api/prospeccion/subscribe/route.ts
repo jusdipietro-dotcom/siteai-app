@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
-import { PROSPECCION_PLANS } from '@/lib/prospeccion-plans'
+import { getPlanConfig as getProspeccionPlanConfig } from '@/lib/prospeccion-plans'
 import { isUserFreeAccount } from '@/lib/free-account'
 import { getTrialEndDate, expireStaleTrials, hasUsedTrial } from '@/lib/trial'
 
@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Validate plan
-    const planConfig = PROSPECCION_PLANS[plan as keyof typeof PROSPECCION_PLANS]
+    const planConfig = getProspeccionPlanConfig(plan)
     if (!planConfig) {
       return NextResponse.json({ error: 'Plan invalido' }, { status: 400 })
     }
