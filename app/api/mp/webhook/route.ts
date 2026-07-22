@@ -8,9 +8,25 @@ import { parseJSON } from '@/lib/published-site'
 import { publishedSiteUrl } from '@/lib/site-domain'
 import { FLASK_BACKEND_TIMEOUT_MS, INTERNAL_PROVISION_TIMEOUT_MS, MP_API_TIMEOUT_MS, N8N_ADMIN_API_TIMEOUT_MS, N8N_WEBHOOK_TIMEOUT_MS, SCRAPER_CONTROL_TIMEOUT_MS } from '@/lib/fetch-timeouts'
 import { isWebsitePlanId, type WebsitePlanId } from '@/lib/website-plans'
+import { requestLogger } from '@/lib/request-log'
 
 const ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN!
 const MP_WEBHOOK_SECRET = process.env.MP_WEBHOOK_SECRET
+
+/**
+ * This is the money path, so it is the file an operator opens first during an
+ * incident — every line here is now structured JSON carrying the request's
+ * `requestId`, and every value goes through redaction on the way out.
+ *
+ * One module-level binding, resolved lazily per call (see lib/request-log.ts),
+ * so the twenty-odd provisioning helpers below log under the same request
+ * without anyone passing them a logger.
+ *
+ * Correlation with MercadoPago is free here: MP sends its own `x-request-id`,
+ * middleware adopts it rather than replacing it, so `requestId` in these lines
+ * IS the id MP shows in its notification history.
+ */
+const log = requestLogger({ route: 'api/mp/webhook' })
 
 // Plan precedence for the site generator (Project model). A user who owns
 // several projects reflects the HIGHEST plan they still hold — see
@@ -60,7 +76,7 @@ async function syncUserPlanFromProjects(userId: string, now: Date = new Date()):
     }
     await prisma.user.update({ where: { id: userId }, data: { plan: best } })
   } catch (err) {
-    console.error(`[MP Webhook] User.plan sync failed for user ${userId}:`, err)
+    log.error(`User.plan sync failed for user ${userId}`, { err })
   }
 }
 
@@ -71,14 +87,14 @@ async function syncUserPlanFromProjects(userId: string, now: Date = new Date()):
  */
 function verifyMPSignature(req: NextRequest, body: Record<string, unknown>): boolean {
   if (!MP_WEBHOOK_SECRET) {
-    console.error('[MP Webhook] MP_WEBHOOK_SECRET not configured — rejecting all webhooks for security')
+    log.error('MP_WEBHOOK_SECRET not configured — rejecting all webhooks for security')
     return false
   }
 
   const xSignature = req.headers.get('x-signature')
   const xRequestId = req.headers.get('x-request-id')
   if (!xSignature || !xRequestId) {
-    console.warn('[MP Webhook] Missing x-signature or x-request-id headers')
+    log.warn('Missing x-signature or x-request-id headers')
     return false
   }
 
@@ -118,12 +134,14 @@ function verifyMPSignature(req: NextRequest, body: Record<string, unknown>): boo
  */
 function mpReadFailure(kind: string, id: unknown, httpStatus: number) {
   if (httpStatus === 404) {
-    console.warn(`[MP Webhook] ${kind} ${id} not found (404) — not ours, acknowledging`)
+    log.warn(`${kind} ${id} not found (404) — not ours, acknowledging`)
     return NextResponse.json({ received: true })
   }
-  console.error(
-    `[MP Webhook] Could not fetch ${kind} ${id}: MP returned ${httpStatus} — answering 502 so MP retries`
-  )
+  log.error('Could not fetch MercadoPago resource — answering 502 so MP retries', {
+    kind,
+    id,
+    mpStatus: httpStatus,
+  })
   return NextResponse.json(
     { error: 'Upstream MercadoPago read failed', kind, status: httpStatus },
     { status: 502 }
@@ -140,11 +158,14 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json()
-    console.log('[MP Webhook] Received:', JSON.stringify(body))
+    // The whole body, as a FIELD rather than a pre-stringified blob: the logger
+    // walks it and redacts, so a notification that ever carries a token stops
+    // being a plaintext secret in the log.
+    log.info('Webhook received', { body })
 
     // Verify webhook signature
     if (!verifyMPSignature(req, body)) {
-      console.error('[MP Webhook] Invalid signature — rejecting request')
+      log.error('Invalid signature — rejecting request')
       return NextResponse.json({ error: 'Invalid signature' }, { status: 403 })
     }
 
@@ -163,7 +184,7 @@ export async function POST(req: NextRequest) {
           signal: AbortSignal.timeout(MP_API_TIMEOUT_MS),
         })
       } catch (err) {
-        console.error(`[MP Webhook] preapproval ${body.data.id} read timed out or errored:`, err)
+        log.error(`preapproval ${body.data.id} read timed out or errored`, { err })
         return mpReadFailure('preapproval', body.data.id, 504)
       }
 
@@ -182,12 +203,19 @@ export async function POST(req: NextRequest) {
       const { status, external_reference, id: preapprovalId } = preapproval
       const parts = (external_reference ?? '').split(':')
 
-      console.log(`[MP Webhook] preapproval=${preapprovalId} | status=${status} | ref=${external_reference}`)
+      // The line the whole incident hangs off: which subscription, what MP says
+      // about it, and which product branch the external_reference will pick.
+      log.info('Preapproval resolved', {
+        preapprovalId,
+        status,
+        externalReference: external_reference,
+        product: parts[0],
+      })
 
       // ─── Monitoring subscription: "monitoring:subscriptionId:plan[:replacesSubId]" ───
       if (parts[0] === 'monitoring') {
         if (parts.length < 3 || !parts[1] || !parts[2]) {
-          console.warn('[MP Webhook] Invalid monitoring external_reference:', external_reference)
+          log.warn('Invalid monitoring external_reference', { external_reference })
           return NextResponse.json({ received: true })
         }
         const subscriptionId = parts[1]
@@ -202,7 +230,7 @@ export async function POST(req: NextRequest) {
           })
 
           if (count === 0) {
-            console.log(`[MP Webhook] Monitoring ${subscriptionId} already processed — skipping`)
+            log.info(`Monitoring ${subscriptionId} already processed — skipping`)
             return NextResponse.json({ received: true })
           }
 
@@ -215,16 +243,16 @@ export async function POST(req: NextRequest) {
               where: { id: currentSub.couponId },
               data: { usedCount: { increment: 1 } },
             })
-            console.log(`[MP Webhook] Coupon ${currentSub.couponId} usage incremented`)
+            log.info(`Coupon ${currentSub.couponId} usage incremented`)
           }
 
           // If this is a plan change, cancel the old subscription first
           if (replacesSubId) {
             await cancelOldSubscription(replacesSubId)
-            console.log(`[MP Webhook] Old subscription ${replacesSubId} cancelled (replaced by ${subscriptionId})`)
+            log.info(`Old subscription ${replacesSubId} cancelled (replaced by ${subscriptionId})`)
           }
 
-          console.log(`[MP Webhook] Monitoring ${subscriptionId} → provisioning (plan: ${plan})`)
+          log.info(`Monitoring ${subscriptionId} → provisioning (plan: ${plan})`)
 
           // Trigger auto-provisioning via n8n webhook (with retry)
           await triggerProvisioning(subscriptionId)
@@ -240,10 +268,10 @@ export async function POST(req: NextRequest) {
                 type: 'monitoring',
                 plan,
               })
-              console.log(`[MP Webhook] Payment confirmation email sent to ${userForEmail.user.email}`)
+              log.info(`Payment confirmation email sent to ${userForEmail.user.email}`)
             }
           } catch (emailErr) {
-            console.error('[MP Webhook] Failed to send payment email:', emailErr)
+            log.error('Failed to send payment email', { emailErr })
           }
         }
 
@@ -253,9 +281,9 @@ export async function POST(req: NextRequest) {
             data: { status: 'suspended' },
           })
           if (count === 0) {
-            console.log(`[MP Webhook] Monitoring ${subscriptionId} already suspended/cancelled — skipping`)
+            log.info(`Monitoring ${subscriptionId} already suspended/cancelled — skipping`)
           } else {
-            console.log(`[MP Webhook] Monitoring ${subscriptionId} suspended (${status})`)
+            log.info(`Monitoring ${subscriptionId} suspended (${status})`)
 
             // Trigger deprovisioning — remove tenant from n8n scrapers
             await triggerDeprovisioning(subscriptionId)
@@ -273,7 +301,7 @@ export async function POST(req: NextRequest) {
                 })
               }
             } catch (emailErr) {
-              console.error('[MP Webhook] Failed to send cancellation email:', emailErr)
+              log.error('Failed to send cancellation email', { emailErr })
             }
           }
         }
@@ -284,7 +312,7 @@ export async function POST(req: NextRequest) {
       // ─── Reviews subscription: "reviews:subscriptionId:plan" ───
       if (parts[0] === 'reviews') {
         if (parts.length < 3 || !parts[1] || !parts[2]) {
-          console.warn('[MP Webhook] Invalid reviews external_reference:', external_reference)
+          log.warn('Invalid reviews external_reference', { external_reference })
           return NextResponse.json({ received: true })
         }
         const reviewsSubId = parts[1]
@@ -298,7 +326,7 @@ export async function POST(req: NextRequest) {
           })
 
           if (count === 0) {
-            console.log(`[MP Webhook] Reviews ${reviewsSubId} already processed — skipping`)
+            log.info(`Reviews ${reviewsSubId} already processed — skipping`)
             return NextResponse.json({ received: true })
           }
 
@@ -313,7 +341,7 @@ export async function POST(req: NextRequest) {
             })
           }
 
-          console.log(`[MP Webhook] Reviews ${reviewsSubId} → provisioning (plan: ${reviewsPlan})`)
+          log.info(`Reviews ${reviewsSubId} → provisioning (plan: ${reviewsPlan})`)
 
           // Trigger auto-provisioning via n8n webhook
           await triggerReviewsProvisioning(reviewsSubId)
@@ -331,7 +359,7 @@ export async function POST(req: NextRequest) {
               })
             }
           } catch (emailErr) {
-            console.error('[MP Webhook] Failed to send reviews payment email:', emailErr)
+            log.error('Failed to send reviews payment email', { emailErr })
           }
         }
 
@@ -341,9 +369,9 @@ export async function POST(req: NextRequest) {
             data: { status: 'suspended' },
           })
           if (rCount === 0) {
-            console.log(`[MP Webhook] Reviews ${reviewsSubId} already suspended/cancelled — skipping`)
+            log.info(`Reviews ${reviewsSubId} already suspended/cancelled — skipping`)
           } else {
-            console.log(`[MP Webhook] Reviews ${reviewsSubId} suspended (${status})`)
+            log.info(`Reviews ${reviewsSubId} suspended (${status})`)
 
             // Trigger deprovisioning
             await triggerReviewsDeprovisioning(reviewsSubId)
@@ -360,7 +388,7 @@ export async function POST(req: NextRequest) {
                 })
               }
             } catch (emailErr) {
-              console.error('[MP Webhook] Failed to send reviews cancellation email:', emailErr)
+              log.error('Failed to send reviews cancellation email', { emailErr })
             }
           }
         }
@@ -371,7 +399,7 @@ export async function POST(req: NextRequest) {
       // ─── LinkedIn subscription: "linkedin:subscriptionId:plan" ───
       if (parts[0] === 'linkedin') {
         if (parts.length < 3 || !parts[1] || !parts[2]) {
-          console.warn('[MP Webhook] Invalid linkedin external_reference:', external_reference)
+          log.warn('Invalid linkedin external_reference', { external_reference })
           return NextResponse.json({ received: true })
         }
         const linkedinSubId = parts[1]
@@ -386,7 +414,7 @@ export async function POST(req: NextRequest) {
           })
 
           if (count === 0) {
-            console.log(`[MP Webhook] LinkedIn ${linkedinSubId} already processed — skipping`)
+            log.info(`LinkedIn ${linkedinSubId} already processed — skipping`)
             return NextResponse.json({ received: true })
           }
 
@@ -401,11 +429,11 @@ export async function POST(req: NextRequest) {
             })
           }
 
-          console.log(`[MP Webhook] LinkedIn ${linkedinSubId} → provisioning (plan: ${linkedinPlan})`)
+          log.info(`LinkedIn ${linkedinSubId} → provisioning (plan: ${linkedinPlan})`)
 
           // Trigger n8n provisioning workflow (will callback /api/linkedin/provision-callback)
           await triggerLinkedInProvisioning(linkedinSubId).catch((e) =>
-            console.error('[MP Webhook] LinkedIn n8n trigger error:', e)
+            log.error('LinkedIn n8n trigger error', { err: e })
           )
 
           // Send payment confirmation email + admin alert (kept as fallback)
@@ -432,10 +460,10 @@ export async function POST(req: NextRequest) {
                   Industria: subForEmail.industry ?? '',
                   Audiencia: subForEmail.audience ?? '',
                 },
-              }).catch((e) => console.error('[MP Webhook] LinkedIn admin alert failed:', e))
+              }).catch((e) => log.error('LinkedIn admin alert failed', { err: e }))
             }
           } catch (emailErr) {
-            console.error('[MP Webhook] Failed to send linkedin payment email:', emailErr)
+            log.error('Failed to send linkedin payment email', { emailErr })
           }
         }
 
@@ -445,9 +473,9 @@ export async function POST(req: NextRequest) {
             data: { status: 'suspended' },
           })
           if (lCount === 0) {
-            console.log(`[MP Webhook] LinkedIn ${linkedinSubId} already suspended/cancelled — skipping`)
+            log.info(`LinkedIn ${linkedinSubId} already suspended/cancelled — skipping`)
           } else {
-            console.log(`[MP Webhook] LinkedIn ${linkedinSubId} suspended (${status})`)
+            log.info(`LinkedIn ${linkedinSubId} suspended (${status})`)
 
             try {
               const subForEmail = await prisma.linkedInSubscription.findUnique({
@@ -461,7 +489,7 @@ export async function POST(req: NextRequest) {
                 })
               }
             } catch (emailErr) {
-              console.error('[MP Webhook] Failed to send linkedin cancellation email:', emailErr)
+              log.error('Failed to send linkedin cancellation email', { emailErr })
             }
           }
         }
@@ -472,7 +500,7 @@ export async function POST(req: NextRequest) {
       // ─── Trading subscription: "trading:subscriptionId:plan" ───
       if (parts[0] === 'trading') {
         if (parts.length < 3 || !parts[1] || !parts[2]) {
-          console.warn('[MP Webhook] Invalid trading external_reference:', external_reference)
+          log.warn('Invalid trading external_reference', { external_reference })
           return NextResponse.json({ received: true })
         }
         const tradingSubId = parts[1]
@@ -486,7 +514,7 @@ export async function POST(req: NextRequest) {
           })
 
           if (count === 0) {
-            console.log(`[MP Webhook] Trading ${tradingSubId} already processed — skipping`)
+            log.info(`Trading ${tradingSubId} already processed — skipping`)
             return NextResponse.json({ received: true })
           }
 
@@ -501,7 +529,7 @@ export async function POST(req: NextRequest) {
             })
           }
 
-          console.log(`[MP Webhook] Trading ${tradingSubId} → provisioning (plan: ${tradingPlan})`)
+          log.info(`Trading ${tradingSubId} → provisioning (plan: ${tradingPlan})`)
 
           // Send payment confirmation email
           try {
@@ -516,7 +544,7 @@ export async function POST(req: NextRequest) {
               })
             }
           } catch (emailErr) {
-            console.error('[MP Webhook] Failed to send trading payment email:', emailErr)
+            log.error('Failed to send trading payment email', { emailErr })
           }
         }
 
@@ -526,9 +554,9 @@ export async function POST(req: NextRequest) {
             data: { status: 'suspended' },
           })
           if (tCount === 0) {
-            console.log(`[MP Webhook] Trading ${tradingSubId} already suspended/cancelled — skipping`)
+            log.info(`Trading ${tradingSubId} already suspended/cancelled — skipping`)
           } else {
-            console.log(`[MP Webhook] Trading ${tradingSubId} suspended (${status})`)
+            log.info(`Trading ${tradingSubId} suspended (${status})`)
 
             try {
               const subForEmail = await prisma.tradingSubscription.findUnique({
@@ -542,7 +570,7 @@ export async function POST(req: NextRequest) {
                 })
               }
             } catch (emailErr) {
-              console.error('[MP Webhook] Failed to send trading cancellation email:', emailErr)
+              log.error('Failed to send trading cancellation email', { emailErr })
             }
           }
         }
@@ -553,7 +581,7 @@ export async function POST(req: NextRequest) {
       // ─── Leads subscription: "leads:subscriptionId:plan" ───
       if (parts[0] === 'leads') {
         if (parts.length < 3 || !parts[1] || !parts[2]) {
-          console.warn('[MP Webhook] Invalid leads external_reference:', external_reference)
+          log.warn('Invalid leads external_reference', { external_reference })
           return NextResponse.json({ received: true })
         }
         const leadsSubId = parts[1]
@@ -566,7 +594,7 @@ export async function POST(req: NextRequest) {
           })
 
           if (count === 0) {
-            console.log(`[MP Webhook] Leads ${leadsSubId} already processed — skipping`)
+            log.info(`Leads ${leadsSubId} already processed — skipping`)
             return NextResponse.json({ received: true })
           }
 
@@ -580,7 +608,7 @@ export async function POST(req: NextRequest) {
             })
           }
 
-          console.log(`[MP Webhook] Leads ${leadsSubId} → provisioning (plan: ${leadsPlan})`)
+          log.info(`Leads ${leadsSubId} → provisioning (plan: ${leadsPlan})`)
 
           // Trigger leads provisioning via n8n
           await triggerLeadsProvisioning(leadsSubId)
@@ -597,7 +625,7 @@ export async function POST(req: NextRequest) {
               })
             }
           } catch (emailErr) {
-            console.error('[MP Webhook] Failed to send leads payment email:', emailErr)
+            log.error('Failed to send leads payment email', { emailErr })
           }
         }
 
@@ -607,9 +635,9 @@ export async function POST(req: NextRequest) {
             data: { status: 'suspended' },
           })
           if (ldCount === 0) {
-            console.log(`[MP Webhook] Leads ${leadsSubId} already suspended/cancelled — skipping`)
+            log.info(`Leads ${leadsSubId} already suspended/cancelled — skipping`)
           } else {
-            console.log(`[MP Webhook] Leads ${leadsSubId} suspended (${status})`)
+            log.info(`Leads ${leadsSubId} suspended (${status})`)
 
             try {
               const subForEmail = await prisma.leadsSubscription.findUnique({
@@ -623,7 +651,7 @@ export async function POST(req: NextRequest) {
                 })
               }
             } catch (emailErr) {
-              console.error('[MP Webhook] Failed to send leads cancellation email:', emailErr)
+              log.error('Failed to send leads cancellation email', { emailErr })
             }
           }
         }
@@ -634,7 +662,7 @@ export async function POST(req: NextRequest) {
       // ─── Email Marketing subscription: "emailmarketing:subscriptionId:plan" ───
       if (parts[0] === 'emailmarketing') {
         if (parts.length < 3 || !parts[1] || !parts[2]) {
-          console.warn('[MP Webhook] Invalid emailmarketing external_reference:', external_reference)
+          log.warn('Invalid emailmarketing external_reference', { external_reference })
           return NextResponse.json({ received: true })
         }
         const emSubId = parts[1]
@@ -643,7 +671,7 @@ export async function POST(req: NextRequest) {
         // Validate plan exists
         const validPlans = ['basico', 'profesional', 'premium']
         if (!validPlans.includes(emPlan)) {
-          console.warn(`[MP Webhook] Invalid email marketing plan in external_reference: ${emPlan}`)
+          log.warn(`Invalid email marketing plan in external_reference: ${emPlan}`)
           return NextResponse.json({ received: true })
         }
 
@@ -655,7 +683,7 @@ export async function POST(req: NextRequest) {
           })
 
           if (count === 0) {
-            console.log(`[MP Webhook] Email Marketing ${emSubId} already processed — skipping`)
+            log.info(`Email Marketing ${emSubId} already processed — skipping`)
             return NextResponse.json({ received: true })
           }
 
@@ -672,7 +700,7 @@ export async function POST(req: NextRequest) {
 
           // Use the plan from the DB (source of truth), not from external_reference
           const activatedPlan = currentSub?.plan ?? emPlan
-          console.log(`[MP Webhook] Email Marketing ${emSubId} → awaiting_contacts (plan: ${activatedPlan})`)
+          log.info(`Email Marketing ${emSubId} → awaiting_contacts (plan: ${activatedPlan})`)
 
           // NOTE: provisioning is NOT triggered here — it happens after user uploads contacts
 
@@ -688,7 +716,7 @@ export async function POST(req: NextRequest) {
               })
             }
           } catch (emailErr) {
-            console.error('[MP Webhook] Failed to send email marketing payment email:', emailErr)
+            log.error('Failed to send email marketing payment email', { emailErr })
           }
         }
 
@@ -698,9 +726,9 @@ export async function POST(req: NextRequest) {
             data: { status: 'suspended' },
           })
           if (emCount === 0) {
-            console.log(`[MP Webhook] Email Marketing ${emSubId} already suspended/cancelled — skipping`)
+            log.info(`Email Marketing ${emSubId} already suspended/cancelled — skipping`)
           } else {
-            console.log(`[MP Webhook] Email Marketing ${emSubId} suspended (${status})`)
+            log.info(`Email Marketing ${emSubId} suspended (${status})`)
 
             // Trigger deprovisioning (disable n8n workflow)
             await triggerEmailMarketingDeprovisioning(emSubId)
@@ -717,7 +745,7 @@ export async function POST(req: NextRequest) {
                 })
               }
             } catch (emailErr) {
-              console.error('[MP Webhook] Failed to send email marketing cancellation email:', emailErr)
+              log.error('Failed to send email marketing cancellation email', { emailErr })
             }
           }
         }
@@ -728,7 +756,7 @@ export async function POST(req: NextRequest) {
       // ─── Prospeccion subscription: "prospeccion:subscriptionId:plan" ───
       if (parts[0] === 'prospeccion') {
         if (parts.length < 3 || !parts[1] || !parts[2]) {
-          console.warn('[MP Webhook] Invalid prospeccion external_reference:', external_reference)
+          log.warn('Invalid prospeccion external_reference', { external_reference })
           return NextResponse.json({ received: true })
         }
         const prospSubId = parts[1]
@@ -737,7 +765,7 @@ export async function POST(req: NextRequest) {
         // Validate plan exists
         const validProspPlans = ['starter', 'profesional', 'enterprise']
         if (!validProspPlans.includes(prospPlan)) {
-          console.warn(`[MP Webhook] Invalid prospeccion plan in external_reference: ${prospPlan}`)
+          log.warn(`Invalid prospeccion plan in external_reference: ${prospPlan}`)
           return NextResponse.json({ received: true })
         }
 
@@ -749,7 +777,7 @@ export async function POST(req: NextRequest) {
           })
 
           if (count === 0) {
-            console.log(`[MP Webhook] Prospeccion ${prospSubId} already processed — skipping`)
+            log.info(`Prospeccion ${prospSubId} already processed — skipping`)
             return NextResponse.json({ received: true })
           }
 
@@ -765,7 +793,7 @@ export async function POST(req: NextRequest) {
           }
 
           const activatedPlan = currentSub?.plan ?? prospPlan
-          console.log(`[MP Webhook] Prospeccion ${prospSubId} → provisioning (plan: ${activatedPlan})`)
+          log.info(`Prospeccion ${prospSubId} → provisioning (plan: ${activatedPlan})`)
 
           // Trigger prospeccion provisioning via n8n
           await triggerProspeccionProvisioning(prospSubId)
@@ -783,7 +811,7 @@ export async function POST(req: NextRequest) {
               })
             }
           } catch (emailErr) {
-            console.error('[MP Webhook] Failed to send prospeccion payment email:', emailErr)
+            log.error('Failed to send prospeccion payment email', { emailErr })
           }
         }
 
@@ -793,9 +821,9 @@ export async function POST(req: NextRequest) {
             data: { status: 'suspended' },
           })
           if (pCount === 0) {
-            console.log(`[MP Webhook] Prospeccion ${prospSubId} already suspended/cancelled — skipping`)
+            log.info(`Prospeccion ${prospSubId} already suspended/cancelled — skipping`)
           } else {
-            console.log(`[MP Webhook] Prospeccion ${prospSubId} suspended (${status})`)
+            log.info(`Prospeccion ${prospSubId} suspended (${status})`)
 
             // Trigger deprovisioning (disable n8n workflows)
             await triggerProspeccionDeprovisioning(prospSubId)
@@ -812,7 +840,7 @@ export async function POST(req: NextRequest) {
                 })
               }
             } catch (emailErr) {
-              console.error('[MP Webhook] Failed to send prospeccion cancellation email:', emailErr)
+              log.error('Failed to send prospeccion cancellation email', { emailErr })
             }
           }
         }
@@ -823,7 +851,7 @@ export async function POST(req: NextRequest) {
       // ─── Turnos subscription: "turnos:subscriptionId:plan" ───
       if (parts[0] === 'turnos') {
         if (parts.length < 3 || !parts[1] || !parts[2]) {
-          console.warn('[MP Webhook] Invalid turnos external_reference:', external_reference)
+          log.warn('Invalid turnos external_reference', { external_reference })
           return NextResponse.json({ received: true })
         }
         const turnosSubId = parts[1]
@@ -836,7 +864,7 @@ export async function POST(req: NextRequest) {
           })
 
           if (count === 0) {
-            console.log(`[MP Webhook] Turnos ${turnosSubId} already processed — skipping`)
+            log.info(`Turnos ${turnosSubId} already processed — skipping`)
             return NextResponse.json({ received: true })
           }
 
@@ -848,11 +876,11 @@ export async function POST(req: NextRequest) {
             })
           }
 
-          console.log(`[MP Webhook] Turnos ${turnosSubId} → provisioning (plan: ${turnosPlan})`)
+          log.info(`Turnos ${turnosSubId} → provisioning (plan: ${turnosPlan})`)
 
           // Trigger n8n provisioning workflow (will callback /api/turnos/provision-callback)
           await triggerTurnosProvisioning(turnosSubId).catch((e) =>
-            console.error('[MP Webhook] Turnos n8n trigger error:', e)
+            log.error('Turnos n8n trigger error', { err: e })
           )
 
           try {
@@ -878,10 +906,10 @@ export async function POST(req: NextRequest) {
                   'Slug': subForEmail.slug ?? 'no asignado',
                   'Workflow n8n ID': subForEmail.n8nWorkflowId ?? 'pendiente clonar',
                 },
-              }).catch((e) => console.error('[MP Webhook] Turnos admin alert failed:', e))
+              }).catch((e) => log.error('Turnos admin alert failed', { err: e }))
             }
           } catch (emailErr) {
-            console.error('[MP Webhook] Failed to send turnos payment email:', emailErr)
+            log.error('Failed to send turnos payment email', { emailErr })
           }
         }
 
@@ -891,7 +919,7 @@ export async function POST(req: NextRequest) {
             data: { status: 'suspended' },
           })
           if (tCount > 0) {
-            console.log(`[MP Webhook] Turnos ${turnosSubId} suspended (${status})`)
+            log.info(`Turnos ${turnosSubId} suspended (${status})`)
 
             // Deactivate n8n workflow
             const turnosSub = await prisma.turnosSubscription.findUnique({ where: { id: turnosSubId } })
@@ -906,7 +934,7 @@ export async function POST(req: NextRequest) {
                     signal: AbortSignal.timeout(N8N_ADMIN_API_TIMEOUT_MS),
                   })
                 }
-              } catch (e) { console.error('[MP Webhook] Turnos n8n deactivation error:', e) }
+              } catch (e) { log.error('Turnos n8n deactivation error', { err: e }) }
             }
 
             try {
@@ -918,7 +946,7 @@ export async function POST(req: NextRequest) {
                 await sendSubscriptionCancelledEmail(subForEmail.user.email, { type: 'turnos', plan: turnosPlan })
               }
             } catch (emailErr) {
-              console.error('[MP Webhook] Failed to send turnos cancellation email:', emailErr)
+              log.error('Failed to send turnos cancellation email', { emailErr })
             }
           }
         }
@@ -929,7 +957,7 @@ export async function POST(req: NextRequest) {
       // ─── Causas subscription: "causas:subscriptionId:plan" ───
       if (parts[0] === 'causas') {
         if (parts.length < 3 || !parts[1] || !parts[2]) {
-          console.warn('[MP Webhook] Invalid causas external_reference:', external_reference)
+          log.warn('Invalid causas external_reference', { external_reference })
           return NextResponse.json({ received: true })
         }
         const causasSubId = parts[1]
@@ -942,7 +970,7 @@ export async function POST(req: NextRequest) {
           })
 
           if (count === 0) {
-            console.log(`[MP Webhook] Causas ${causasSubId} already processed — skipping`)
+            log.info(`Causas ${causasSubId} already processed — skipping`)
             return NextResponse.json({ received: true })
           }
 
@@ -957,7 +985,7 @@ export async function POST(req: NextRequest) {
             })
           }
 
-          console.log(`[MP Webhook] Causas ${causasSubId} → provisioning (plan: ${causasPlan})`)
+          log.info(`Causas ${causasSubId} → provisioning (plan: ${causasPlan})`)
 
           // Trigger auto-provisioning (register tenant in scraper service)
           await triggerCausasProvisioning(causasSubId)
@@ -975,7 +1003,7 @@ export async function POST(req: NextRequest) {
               })
             }
           } catch (emailErr) {
-            console.error('[MP Webhook] Failed to send causas payment email:', emailErr)
+            log.error('Failed to send causas payment email', { emailErr })
           }
         }
 
@@ -985,9 +1013,9 @@ export async function POST(req: NextRequest) {
             data: { status: 'suspended' },
           })
           if (cCount === 0) {
-            console.log(`[MP Webhook] Causas ${causasSubId} already suspended/cancelled — skipping`)
+            log.info(`Causas ${causasSubId} already suspended/cancelled — skipping`)
           } else {
-            console.log(`[MP Webhook] Causas ${causasSubId} suspended (${status})`)
+            log.info(`Causas ${causasSubId} suspended (${status})`)
 
             // Deactivate scraper tenant
             await triggerCausasDeprovisioning(causasSubId)
@@ -1004,7 +1032,7 @@ export async function POST(req: NextRequest) {
                 })
               }
             } catch (emailErr) {
-              console.error('[MP Webhook] Failed to send causas cancellation email:', emailErr)
+              log.error('Failed to send causas cancellation email', { emailErr })
             }
           }
         }
@@ -1015,7 +1043,7 @@ export async function POST(req: NextRequest) {
       // ─── Facturacion subscription: "facturacion:subscriptionId:plan" ───
       if (parts[0] === 'facturacion') {
         if (parts.length < 3 || !parts[1] || !parts[2]) {
-          console.warn('[MP Webhook] Invalid facturacion external_reference:', external_reference)
+          log.warn('Invalid facturacion external_reference', { external_reference })
           return NextResponse.json({ received: true })
         }
         const factSubId = parts[1]
@@ -1029,7 +1057,7 @@ export async function POST(req: NextRequest) {
           })
 
           if (count === 0) {
-            console.log(`[MP Webhook] Facturacion ${factSubId} already processed — skipping`)
+            log.info(`Facturacion ${factSubId} already processed — skipping`)
             return NextResponse.json({ received: true })
           }
 
@@ -1044,7 +1072,7 @@ export async function POST(req: NextRequest) {
             })
           }
 
-          console.log(`[MP Webhook] Facturacion ${factSubId} → provisioning (plan: ${factPlan})`)
+          log.info(`Facturacion ${factSubId} → provisioning (plan: ${factPlan})`)
 
           // Trigger auto-provisioning (create tenant in Flask backend)
           await triggerFacturacionProvisioning(factSubId)
@@ -1062,7 +1090,7 @@ export async function POST(req: NextRequest) {
               })
             }
           } catch (emailErr) {
-            console.error('[MP Webhook] Failed to send facturacion payment email:', emailErr)
+            log.error('Failed to send facturacion payment email', { emailErr })
           }
         }
 
@@ -1072,9 +1100,9 @@ export async function POST(req: NextRequest) {
             data: { status: 'suspended' },
           })
           if (fCount === 0) {
-            console.log(`[MP Webhook] Facturacion ${factSubId} already suspended/cancelled — skipping`)
+            log.info(`Facturacion ${factSubId} already suspended/cancelled — skipping`)
           } else {
-            console.log(`[MP Webhook] Facturacion ${factSubId} suspended (${status})`)
+            log.info(`Facturacion ${factSubId} suspended (${status})`)
 
             // Deactivate Flask tenant
             await triggerFacturacionDeprovisioning(factSubId)
@@ -1091,7 +1119,7 @@ export async function POST(req: NextRequest) {
                 })
               }
             } catch (emailErr) {
-              console.error('[MP Webhook] Failed to send facturacion cancellation email:', emailErr)
+              log.error('Failed to send facturacion cancellation email', { emailErr })
             }
           }
         }
@@ -1102,7 +1130,7 @@ export async function POST(req: NextRequest) {
       // ─── LexPost subscription: "lexpost:subscriptionId:plan" ───
       if (parts[0] === 'lexpost') {
         if (parts.length < 3 || !parts[1] || !parts[2]) {
-          console.warn('[MP Webhook] Invalid lexpost external_reference:', external_reference)
+          log.warn('Invalid lexpost external_reference', { external_reference })
           return NextResponse.json({ received: true })
         }
         const lexpostSubId = parts[1]
@@ -1116,7 +1144,7 @@ export async function POST(req: NextRequest) {
           })
 
           if (count === 0) {
-            console.log(`[MP Webhook] LexPost ${lexpostSubId} already processed — skipping`)
+            log.info(`LexPost ${lexpostSubId} already processed — skipping`)
             return NextResponse.json({ received: true })
           }
 
@@ -1131,13 +1159,13 @@ export async function POST(req: NextRequest) {
             })
           }
 
-          console.log(`[MP Webhook] LexPost ${lexpostSubId} → provisioning (plan: ${lexpostPlan})`)
+          log.info(`LexPost ${lexpostSubId} → provisioning (plan: ${lexpostPlan})`)
 
           // Trigger n8n provisioning workflow (will callback /api/lexpost/provision-callback).
           // No-ops with a warning when N8N_LEXPOST_PROVISIONING_WEBHOOK is unset, which is
           // why the admin alert below is sent unconditionally as the manual fallback.
           await triggerLexpostProvisioning(lexpostSubId).catch((e) =>
-            console.error('[MP Webhook] LexPost n8n trigger error:', e)
+            log.error('LexPost n8n trigger error', { err: e })
           )
 
           // Send payment confirmation email
@@ -1165,10 +1193,10 @@ export async function POST(req: NextRequest) {
                   'IG accounts': subForEmail.igAccountCount,
                   'Publicaciones limit': subForEmail.publicationsLimit,
                 },
-              }).catch((e) => console.error('[MP Webhook] LexPost admin alert failed:', e))
+              }).catch((e) => log.error('LexPost admin alert failed', { err: e }))
             }
           } catch (emailErr) {
-            console.error('[MP Webhook] Failed to send lexpost payment email:', emailErr)
+            log.error('Failed to send lexpost payment email', { emailErr })
           }
         }
 
@@ -1178,9 +1206,9 @@ export async function POST(req: NextRequest) {
             data: { status: 'suspended' },
           })
           if (lpCount === 0) {
-            console.log(`[MP Webhook] LexPost ${lexpostSubId} already suspended/cancelled — skipping`)
+            log.info(`LexPost ${lexpostSubId} already suspended/cancelled — skipping`)
           } else {
-            console.log(`[MP Webhook] LexPost ${lexpostSubId} suspended (${status})`)
+            log.info(`LexPost ${lexpostSubId} suspended (${status})`)
 
             try {
               const subForEmail = await prisma.lexPostSubscription.findUnique({
@@ -1194,7 +1222,7 @@ export async function POST(req: NextRequest) {
                 })
               }
             } catch (emailErr) {
-              console.error('[MP Webhook] Failed to send lexpost cancellation email:', emailErr)
+              log.error('Failed to send lexpost cancellation email', { emailErr })
             }
           }
         }
@@ -1205,7 +1233,7 @@ export async function POST(req: NextRequest) {
       // ─── Suite Juridica subscription: "suite:subscriptionId:plan" ───
       if (parts[0] === 'suite') {
         if (parts.length < 3 || !parts[1] || !parts[2]) {
-          console.warn('[MP Webhook] Invalid suite external_reference:', external_reference)
+          log.warn('Invalid suite external_reference', { external_reference })
           return NextResponse.json({ received: true })
         }
         const suiteSubId = parts[1]
@@ -1219,7 +1247,7 @@ export async function POST(req: NextRequest) {
           })
 
           if (count === 0) {
-            console.log(`[MP Webhook] Suite ${suiteSubId} already processed — skipping`)
+            log.info(`Suite ${suiteSubId} already processed — skipping`)
             return NextResponse.json({ received: true })
           }
 
@@ -1234,7 +1262,7 @@ export async function POST(req: NextRequest) {
             })
           }
 
-          console.log(`[MP Webhook] Suite ${suiteSubId} → provisioning (plan: ${suitePlan})`)
+          log.info(`Suite ${suiteSubId} → provisioning (plan: ${suitePlan})`)
 
           // Provision: create 4 individual subscriptions in cascade
           await provisionSuiteJuridica(suiteSubId, suitePlan)
@@ -1252,7 +1280,7 @@ export async function POST(req: NextRequest) {
               })
             }
           } catch (emailErr) {
-            console.error('[MP Webhook] Failed to send suite payment email:', emailErr)
+            log.error('Failed to send suite payment email', { emailErr })
           }
         }
 
@@ -1262,9 +1290,9 @@ export async function POST(req: NextRequest) {
             data: { status: 'suspended' },
           })
           if (sCount === 0) {
-            console.log(`[MP Webhook] Suite ${suiteSubId} already suspended/cancelled — skipping`)
+            log.info(`Suite ${suiteSubId} already suspended/cancelled — skipping`)
           } else {
-            console.log(`[MP Webhook] Suite ${suiteSubId} suspended (${status})`)
+            log.info(`Suite ${suiteSubId} suspended (${status})`)
 
             // Suspend all 4 individual subscriptions
             const sub = await prisma.suiteJuridicaSubscription.findUnique({ where: { id: suiteSubId } })
@@ -1277,7 +1305,7 @@ export async function POST(req: NextRequest) {
                     id
                   )
                 } catch (e) {
-                  console.error(`[Suite Suspend] Error suspending ${table} ${id}:`, e)
+                  log.error(`Error suspending ${table} ${id}`, { phase: 'suite-suspend', err: e })
                 }
               }
               await Promise.all([
@@ -1300,7 +1328,7 @@ export async function POST(req: NextRequest) {
                 })
               }
             } catch (emailErr) {
-              console.error('[MP Webhook] Failed to send suite cancellation email:', emailErr)
+              log.error('Failed to send suite cancellation email', { emailErr })
             }
           }
         }
@@ -1326,7 +1354,7 @@ export async function POST(req: NextRequest) {
             suspendedReason: null,
           },
         })
-        console.log(`[MP Webhook] Project ${projectId} activated — plan: ${plan}`)
+        log.info(`Project ${projectId} activated — plan: ${plan}`)
 
         // Reflect the paid plan on the owner's account. Previously this
         // transition set Project.hasPaid/plan but left User.plan alone, so a
@@ -1351,7 +1379,7 @@ export async function POST(req: NextRequest) {
             })
           }
         } catch (emailErr) {
-          console.error('[MP Webhook] Failed to send project payment email:', emailErr)
+          log.error('Failed to send project payment email', { emailErr })
         }
       }
 
@@ -1375,9 +1403,9 @@ export async function POST(req: NextRequest) {
           },
         })
         if (count === 0) {
-          console.log(`[MP Webhook] Project ${projectId} already suspended — skipping (${status})`)
+          log.info(`Project ${projectId} already suspended — skipping (${status})`)
         } else {
-          console.log(`[MP Webhook] Project ${projectId} suspended (${status})`)
+          log.info(`Project ${projectId} suspended (${status})`)
           // Reconcile the owner's account plan downward. Recompute rather than
           // force 'free': the user may still hold a plan on another live project.
           const suspendedProj = await prisma.project.findUnique({
@@ -1420,7 +1448,7 @@ export async function POST(req: NextRequest) {
           signal: AbortSignal.timeout(MP_API_TIMEOUT_MS),
         })
       } catch (err) {
-        console.error(`[MP Webhook] ${body.type} ${body.data.id} read timed out or errored:`, err)
+        log.error(`${body.type} ${body.data.id} read timed out or errored`, { err })
         return mpReadFailure(body.type, body.data.id, 504)
       }
       // Same rule as the preapproval branch: a charge we could not read is not a
@@ -1442,9 +1470,13 @@ export async function POST(req: NextRequest) {
         : (detail.metadata?.preapproval_id ?? undefined)
       const externalRef: string = detail.external_reference ?? ''
 
-      console.log(
-        `[MP Webhook] ${body.type}=${body.data.id} | status=${payStatus} | preapproval=${preapprovalRef} | ref=${externalRef}`
-      )
+      log.info('Payment resolved', {
+        mpType: body.type,
+        mpId: body.data.id,
+        payStatus,
+        preapprovalId: preapprovalRef,
+        externalReference: externalRef,
+      })
 
       const project = preapprovalRef
         ? await prisma.project.findFirst({ where: { preapprovalId: preapprovalRef } })
@@ -1453,7 +1485,7 @@ export async function POST(req: NextRequest) {
           : null
 
       if (!project) {
-        console.log('[MP Webhook] No project matches this payment — ignoring')
+        log.info('No project matches this payment — ignoring')
         return NextResponse.json({ received: true })
       }
 
@@ -1479,7 +1511,7 @@ export async function POST(req: NextRequest) {
           },
         })
         if (count > 0) {
-          console.log(`[MP Webhook] Project ${project.id} recovered — payment approved`)
+          log.info(`Project ${project.id} recovered — payment approved`)
           // Notify only on the real transition. The guard makes count>0 fire
           // once even if MP re-delivers this approved notification.
           await notifySiteBillingEvent(project, 'recovered')
@@ -1496,9 +1528,12 @@ export async function POST(req: NextRequest) {
           data: { billingStatus: 'grace', graceUntil },
         })
         if (count > 0) {
-          console.log(
-            `[MP Webhook] Project ${project.id} → grace (payment ${payStatus}), ${GRACE_PERIOD_MS / 86400000}d to recover`
-          )
+          log.warn('Project entered grace', {
+            projectId: project.id,
+            payStatus,
+            graceDays: GRACE_PERIOD_MS / 86400000,
+            graceUntil,
+          })
           // count>0 means we just moved active→grace, so the owner/operator
           // emails fire exactly once for this transition.
           await notifySiteBillingEvent({ ...project, graceUntil }, 'grace')
@@ -1519,17 +1554,19 @@ export async function POST(req: NextRequest) {
             },
           })
           if (suspended > 0) {
-            console.log(
-              `[MP Webhook] Project ${project.id} → suspended (grace elapsed, payment ${payStatus})`
-            )
+            log.warn('Project suspended — grace elapsed', {
+              projectId: project.id,
+              payStatus,
+            })
             await notifySiteBillingEvent(project, 'suspended')
             // Site is down for non-payment — reconcile the owner's account plan
             // down to whatever they still hold on other live projects.
             await syncUserPlanFromProjects(project.userId)
           } else {
-            console.log(
-              `[MP Webhook] Project ${project.id} already in grace/suspended — deadline unchanged`
-            )
+            log.info('Project already in grace/suspended — deadline unchanged', {
+              projectId: project.id,
+              payStatus,
+            })
           }
         }
       }
@@ -1537,7 +1574,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ received: true })
   } catch (err) {
-    console.error('[MP Webhook] Error:', err)
+    log.error('Error', { err })
     return NextResponse.json({ error: 'Webhook error' }, { status: 500 })
   }
 }
@@ -1616,10 +1653,7 @@ async function notifySiteBillingEvent(
       await sendSiteRecoveredEmail(ownerEmail, { siteName, siteUrl, plan })
     }
   } catch (err) {
-    console.error(
-      `[MP Webhook] site billing notification (${event}) failed for project ${project.id}:`,
-      err
-    )
+    log.error('Site billing notification failed', { event, projectId: project.id, err })
   }
 }
 
@@ -1627,7 +1661,7 @@ async function notifySiteBillingEvent(
 async function triggerProvisioning(subscriptionId: string) {
   const webhookUrl = process.env.N8N_PROVISIONING_WEBHOOK
   if (!webhookUrl) {
-    console.warn('[MP Webhook] N8N_PROVISIONING_WEBHOOK not configured — manual provisioning required')
+    log.warn('N8N_PROVISIONING_WEBHOOK not configured — manual provisioning required')
     return
   }
 
@@ -1664,13 +1698,13 @@ async function triggerProvisioning(subscriptionId: string) {
       })
 
       if (res.ok) {
-        console.log(`[MP Webhook] Provisioning OK (attempt ${attempt}): ${res.status}`)
+        log.info(`Provisioning OK (attempt ${attempt}): ${res.status}`)
         return
       }
 
-      console.warn(`[MP Webhook] Provisioning attempt ${attempt}/${MAX_RETRIES} failed: HTTP ${res.status}`)
+      log.warn(`Provisioning attempt ${attempt}/${MAX_RETRIES} failed: HTTP ${res.status}`)
     } catch (err) {
-      console.error(`[MP Webhook] Provisioning attempt ${attempt}/${MAX_RETRIES} error:`, err)
+      log.error(`Provisioning attempt ${attempt}/${MAX_RETRIES} error`, { err })
     }
 
     if (attempt < MAX_RETRIES) {
@@ -1679,14 +1713,14 @@ async function triggerProvisioning(subscriptionId: string) {
     }
   }
 
-  console.error(`[MP Webhook] Provisioning FAILED after ${MAX_RETRIES} attempts for ${subscriptionId} — manual provisioning required`)
+  log.error(`Provisioning FAILED after ${MAX_RETRIES} attempts for ${subscriptionId} — manual provisioning required`)
 }
 
 /** Trigger n8n deprovisioning — remove tenant from scraper workflows */
 async function triggerDeprovisioning(subscriptionId: string) {
   const apiKey = process.env.SCRAPER_API_KEY
   if (!apiKey) {
-    console.warn('[MP Webhook] SCRAPER_API_KEY not configured — manual deprovisioning required')
+    log.warn('SCRAPER_API_KEY not configured — manual deprovisioning required')
     return
   }
 
@@ -1695,7 +1729,7 @@ async function triggerDeprovisioning(subscriptionId: string) {
       where: { id: subscriptionId },
     })
     if (!sub?.n8nTenantId) {
-      console.log(`[MP Webhook] Subscription ${subscriptionId} has no tenantId — skip deprovision`)
+      log.info(`Subscription ${subscriptionId} has no tenantId — skip deprovision`)
       return
     }
 
@@ -1707,9 +1741,9 @@ async function triggerDeprovisioning(subscriptionId: string) {
       signal: AbortSignal.timeout(N8N_WEBHOOK_TIMEOUT_MS),
     })
 
-    console.log(`[MP Webhook] Deprovision tenant ${sub.n8nTenantId}: ${res.status}`)
+    log.info(`Deprovision tenant ${sub.n8nTenantId}: ${res.status}`)
   } catch (err) {
-    console.error('[MP Webhook] Failed to trigger deprovisioning:', err)
+    log.error('Failed to trigger deprovisioning', { err })
   }
 }
 
@@ -1732,7 +1766,7 @@ async function cancelOldSubscription(oldSubId: string) {
           signal: AbortSignal.timeout(MP_API_TIMEOUT_MS),
         })
       } catch (err) {
-        console.error(`[MP Webhook] Failed to cancel old MP preapproval ${oldSub.preapprovalId}:`, err)
+        log.error(`Failed to cancel old MP preapproval ${oldSub.preapprovalId}`, { err })
       }
     }
 
@@ -1746,7 +1780,7 @@ async function cancelOldSubscription(oldSubId: string) {
           signal: AbortSignal.timeout(N8N_WEBHOOK_TIMEOUT_MS),
         })
       } catch (err) {
-        console.error(`[MP Webhook] Failed to remove old tenant ${oldSub.n8nTenantId}:`, err)
+        log.error(`Failed to remove old tenant ${oldSub.n8nTenantId}`, { err })
       }
     }
 
@@ -1756,7 +1790,7 @@ async function cancelOldSubscription(oldSubId: string) {
       data: { status: 'cancelled' },
     })
   } catch (err) {
-    console.error(`[MP Webhook] Error cancelling old subscription ${oldSubId}:`, err)
+    log.error(`Error cancelling old subscription ${oldSubId}`, { err })
   }
 }
 
@@ -1764,7 +1798,7 @@ async function cancelOldSubscription(oldSubId: string) {
 async function triggerReviewsProvisioning(subscriptionId: string) {
   const webhookUrl = process.env.N8N_REVIEWS_PROVISIONING_WEBHOOK
   if (!webhookUrl) {
-    console.warn('[MP Webhook] N8N_REVIEWS_PROVISIONING_WEBHOOK not configured — manual provisioning required')
+    log.warn('N8N_REVIEWS_PROVISIONING_WEBHOOK not configured — manual provisioning required')
     return
   }
 
@@ -1799,13 +1833,13 @@ async function triggerReviewsProvisioning(subscriptionId: string) {
       })
 
       if (res.ok) {
-        console.log(`[MP Webhook] Reviews provisioning OK (attempt ${attempt}): ${res.status}`)
+        log.info(`Reviews provisioning OK (attempt ${attempt}): ${res.status}`)
         return
       }
 
-      console.warn(`[MP Webhook] Reviews provisioning attempt ${attempt}/${MAX_RETRIES} failed: HTTP ${res.status}`)
+      log.warn(`Reviews provisioning attempt ${attempt}/${MAX_RETRIES} failed: HTTP ${res.status}`)
     } catch (err) {
-      console.error(`[MP Webhook] Reviews provisioning attempt ${attempt}/${MAX_RETRIES} error:`, err)
+      log.error(`Reviews provisioning attempt ${attempt}/${MAX_RETRIES} error`, { err })
     }
 
     if (attempt < MAX_RETRIES) {
@@ -1814,7 +1848,7 @@ async function triggerReviewsProvisioning(subscriptionId: string) {
     }
   }
 
-  console.error(`[MP Webhook] Reviews provisioning FAILED after ${MAX_RETRIES} attempts for ${subscriptionId}`)
+  log.error(`Reviews provisioning FAILED after ${MAX_RETRIES} attempts for ${subscriptionId}`)
 }
 
 /** Trigger n8n reviews deprovisioning */
@@ -1837,9 +1871,9 @@ async function triggerReviewsDeprovisioning(subscriptionId: string) {
       signal: AbortSignal.timeout(N8N_WEBHOOK_TIMEOUT_MS),
     })
 
-    console.log(`[MP Webhook] Reviews deprovision tenant ${sub.n8nTenantId}: ${res.status}`)
+    log.info(`Reviews deprovision tenant ${sub.n8nTenantId}: ${res.status}`)
   } catch (err) {
-    console.error('[MP Webhook] Failed to trigger reviews deprovisioning:', err)
+    log.error('Failed to trigger reviews deprovisioning', { err })
   }
 }
 
@@ -1847,7 +1881,7 @@ async function triggerReviewsDeprovisioning(subscriptionId: string) {
 async function triggerLeadsProvisioning(subscriptionId: string) {
   const webhookUrl = process.env.N8N_LEADS_PROVISIONING_WEBHOOK
   if (!webhookUrl) {
-    console.warn('[MP Webhook] N8N_LEADS_PROVISIONING_WEBHOOK not configured — manual provisioning required')
+    log.warn('N8N_LEADS_PROVISIONING_WEBHOOK not configured — manual provisioning required')
     return
   }
 
@@ -1881,14 +1915,14 @@ async function triggerLeadsProvisioning(subscriptionId: string) {
       })
 
       if (res.ok) {
-        console.log(`[MP Webhook] Leads provisioning OK (attempt ${attempt}): ${res.status}`)
+        log.info(`Leads provisioning OK (attempt ${attempt}): ${res.status}`)
         return
       }
 
       const body = await res.text().catch(() => '')
-      console.warn(`[MP Webhook] Leads provisioning attempt ${attempt}/${MAX_RETRIES} failed: HTTP ${res.status} — ${body.slice(0, 300)}`)
+      log.warn(`Leads provisioning attempt ${attempt}/${MAX_RETRIES} failed: HTTP ${res.status} — ${body.slice(0, 300)}`)
     } catch (err) {
-      console.error(`[MP Webhook] Leads provisioning attempt ${attempt}/${MAX_RETRIES} error:`, err)
+      log.error(`Leads provisioning attempt ${attempt}/${MAX_RETRIES} error`, { err })
     }
 
     if (attempt < MAX_RETRIES) {
@@ -1898,14 +1932,14 @@ async function triggerLeadsProvisioning(subscriptionId: string) {
   }
 
   // Mark subscription as failed so admin can investigate
-  console.error(`[MP Webhook] Leads provisioning FAILED after ${MAX_RETRIES} attempts for ${subscriptionId}`)
+  log.error(`Leads provisioning FAILED after ${MAX_RETRIES} attempts for ${subscriptionId}`)
   try {
     await prisma.leadsSubscription.update({
       where: { id: subscriptionId },
       data: { status: 'provision_failed' },
     })
   } catch (dbErr) {
-    console.error(`[MP Webhook] Failed to mark subscription as provision_failed:`, dbErr)
+    log.error(`Failed to mark subscription as provision_failed`, { dbErr })
   }
 }
 
@@ -1913,7 +1947,7 @@ async function triggerLeadsProvisioning(subscriptionId: string) {
 async function triggerEmailMarketingProvisioning(subscriptionId: string) {
   const webhookUrl = process.env.N8N_EMAIL_MARKETING_PROVISIONING_WEBHOOK
   if (!webhookUrl) {
-    console.warn('[MP Webhook] N8N_EMAIL_MARKETING_PROVISIONING_WEBHOOK not configured — manual provisioning required')
+    log.warn('N8N_EMAIL_MARKETING_PROVISIONING_WEBHOOK not configured — manual provisioning required')
     return
   }
 
@@ -1947,14 +1981,14 @@ async function triggerEmailMarketingProvisioning(subscriptionId: string) {
       })
 
       if (res.ok) {
-        console.log(`[MP Webhook] Email Marketing provisioning OK (attempt ${attempt}): ${res.status}`)
+        log.info(`Email Marketing provisioning OK (attempt ${attempt}): ${res.status}`)
         return
       }
 
       const body = await res.text().catch(() => '')
-      console.warn(`[MP Webhook] Email Marketing provisioning attempt ${attempt}/${MAX_RETRIES} failed: HTTP ${res.status} — ${body.slice(0, 300)}`)
+      log.warn(`Email Marketing provisioning attempt ${attempt}/${MAX_RETRIES} failed: HTTP ${res.status} — ${body.slice(0, 300)}`)
     } catch (err) {
-      console.error(`[MP Webhook] Email Marketing provisioning attempt ${attempt}/${MAX_RETRIES} error:`, err)
+      log.error(`Email Marketing provisioning attempt ${attempt}/${MAX_RETRIES} error`, { err })
     }
 
     if (attempt < MAX_RETRIES) {
@@ -1963,14 +1997,14 @@ async function triggerEmailMarketingProvisioning(subscriptionId: string) {
     }
   }
 
-  console.error(`[MP Webhook] Email Marketing provisioning FAILED after ${MAX_RETRIES} attempts for ${subscriptionId}`)
+  log.error(`Email Marketing provisioning FAILED after ${MAX_RETRIES} attempts for ${subscriptionId}`)
 }
 
 /** Deprovisioning: disable n8n workflow when subscription is cancelled/paused */
 async function triggerEmailMarketingDeprovisioning(subscriptionId: string) {
   const webhookUrl = process.env.N8N_EMAIL_MARKETING_PROVISIONING_WEBHOOK
   if (!webhookUrl) {
-    console.warn('[MP Webhook] N8N_EMAIL_MARKETING_PROVISIONING_WEBHOOK not configured — manual deprovisioning required')
+    log.warn('N8N_EMAIL_MARKETING_PROVISIONING_WEBHOOK not configured — manual deprovisioning required')
     return
   }
 
@@ -1993,9 +2027,9 @@ async function triggerEmailMarketingDeprovisioning(subscriptionId: string) {
       }),
       signal: AbortSignal.timeout(N8N_WEBHOOK_TIMEOUT_MS),
     })
-    console.log(`[MP Webhook] Email Marketing deprovisioning triggered for ${subscriptionId}`)
+    log.info(`Email Marketing deprovisioning triggered for ${subscriptionId}`)
   } catch (err) {
-    console.error(`[MP Webhook] Email Marketing deprovisioning failed for ${subscriptionId}:`, err)
+    log.error(`Email Marketing deprovisioning failed for ${subscriptionId}`, { err })
   }
 }
 
@@ -2003,7 +2037,7 @@ async function triggerEmailMarketingDeprovisioning(subscriptionId: string) {
 async function triggerProspeccionProvisioning(subscriptionId: string) {
   const webhookUrl = process.env.N8N_PROSPECCION_PROVISIONING_WEBHOOK
   if (!webhookUrl) {
-    console.warn('[MP Webhook] N8N_PROSPECCION_PROVISIONING_WEBHOOK not configured — manual provisioning required')
+    log.warn('N8N_PROSPECCION_PROVISIONING_WEBHOOK not configured — manual provisioning required')
     return
   }
 
@@ -2041,14 +2075,14 @@ async function triggerProspeccionProvisioning(subscriptionId: string) {
       })
 
       if (res.ok) {
-        console.log(`[MP Webhook] Prospeccion provisioning OK (attempt ${attempt}): ${res.status}`)
+        log.info(`Prospeccion provisioning OK (attempt ${attempt}): ${res.status}`)
         return
       }
 
       const body = await res.text().catch(() => '')
-      console.warn(`[MP Webhook] Prospeccion provisioning attempt ${attempt}/${MAX_RETRIES} failed: HTTP ${res.status} — ${body.slice(0, 300)}`)
+      log.warn(`Prospeccion provisioning attempt ${attempt}/${MAX_RETRIES} failed: HTTP ${res.status} — ${body.slice(0, 300)}`)
     } catch (err) {
-      console.error(`[MP Webhook] Prospeccion provisioning attempt ${attempt}/${MAX_RETRIES} error:`, err)
+      log.error(`Prospeccion provisioning attempt ${attempt}/${MAX_RETRIES} error`, { err })
     }
 
     if (attempt < MAX_RETRIES) {
@@ -2058,14 +2092,14 @@ async function triggerProspeccionProvisioning(subscriptionId: string) {
   }
 
   // Mark subscription as failed so admin can investigate
-  console.error(`[MP Webhook] Prospeccion provisioning FAILED after ${MAX_RETRIES} attempts for ${subscriptionId}`)
+  log.error(`Prospeccion provisioning FAILED after ${MAX_RETRIES} attempts for ${subscriptionId}`)
   try {
     await prisma.prospeccionSubscription.update({
       where: { id: subscriptionId },
       data: { status: 'provision_failed' },
     })
   } catch (dbErr) {
-    console.error(`[MP Webhook] Failed to mark prospeccion subscription as provision_failed:`, dbErr)
+    log.error(`Failed to mark prospeccion subscription as provision_failed`, { dbErr })
   }
 }
 
@@ -2073,7 +2107,7 @@ async function triggerProspeccionProvisioning(subscriptionId: string) {
 async function triggerProspeccionDeprovisioning(subscriptionId: string) {
   const webhookUrl = process.env.N8N_PROSPECCION_PROVISIONING_WEBHOOK
   if (!webhookUrl) {
-    console.warn('[MP Webhook] N8N_PROSPECCION_PROVISIONING_WEBHOOK not configured — manual deprovisioning required')
+    log.warn('N8N_PROSPECCION_PROVISIONING_WEBHOOK not configured — manual deprovisioning required')
     return
   }
 
@@ -2097,9 +2131,9 @@ async function triggerProspeccionDeprovisioning(subscriptionId: string) {
       }),
       signal: AbortSignal.timeout(N8N_WEBHOOK_TIMEOUT_MS),
     })
-    console.log(`[MP Webhook] Prospeccion deprovisioning triggered for ${subscriptionId}`)
+    log.info(`Prospeccion deprovisioning triggered for ${subscriptionId}`)
   } catch (err) {
-    console.error(`[MP Webhook] Prospeccion deprovisioning failed for ${subscriptionId}:`, err)
+    log.error(`Prospeccion deprovisioning failed for ${subscriptionId}`, { err })
   }
 }
 
@@ -2110,7 +2144,7 @@ async function triggerCausasProvisioning(subscriptionId: string) {
   const scraperKey = process.env.CAUSAS_SCRAPER_API_KEY
 
   if (!scraperUrl || !scraperKey) {
-    console.warn('[MP Webhook] CAUSAS_SCRAPER_URL or CAUSAS_SCRAPER_API_KEY not configured — manual provisioning required')
+    log.warn('CAUSAS_SCRAPER_URL or CAUSAS_SCRAPER_API_KEY not configured — manual provisioning required')
     // Still mark as active so user can access the dashboard
     await prisma.causasSubscription.update({
       where: { id: subscriptionId },
@@ -2133,13 +2167,13 @@ async function triggerCausasProvisioning(subscriptionId: string) {
       })
 
       if (provisionResp.ok) {
-        console.log(`[MP Webhook] Causas ${subscriptionId} provisioned successfully`)
+        log.info(`Causas ${subscriptionId} provisioned successfully`)
         return
       }
 
-      console.warn(`[MP Webhook] Causas provision attempt ${attempt}/${maxRetries} failed: ${provisionResp.status}`)
+      log.warn(`Causas provision attempt ${attempt}/${maxRetries} failed: ${provisionResp.status}`)
     } catch (err) {
-      console.error(`[MP Webhook] Causas provision attempt ${attempt}/${maxRetries} error:`, err)
+      log.error(`Causas provision attempt ${attempt}/${maxRetries} error`, { err })
     }
 
     if (attempt < maxRetries) {
@@ -2148,7 +2182,7 @@ async function triggerCausasProvisioning(subscriptionId: string) {
   }
 
   // If all retries fail, still mark as active
-  console.error(`[MP Webhook] Causas ${subscriptionId} provisioning FAILED after ${maxRetries} attempts — marking active anyway`)
+  log.error(`Causas ${subscriptionId} provisioning FAILED after ${maxRetries} attempts — marking active anyway`)
   await prisma.causasSubscription.update({
     where: { id: subscriptionId },
     data: { status: 'active', provisionedAt: new Date() },
@@ -2176,9 +2210,9 @@ async function triggerCausasDeprovisioning(subscriptionId: string) {
       },
       signal: AbortSignal.timeout(SCRAPER_CONTROL_TIMEOUT_MS),
     })
-    console.log(`[MP Webhook] Causas deprovisioning triggered for ${subscriptionId}`)
+    log.info(`Causas deprovisioning triggered for ${subscriptionId}`)
   } catch (err) {
-    console.error(`[MP Webhook] Causas deprovisioning failed for ${subscriptionId}:`, err)
+    log.error(`Causas deprovisioning failed for ${subscriptionId}`, { err })
   }
 }
 
@@ -2187,7 +2221,7 @@ async function triggerFacturacionProvisioning(subscriptionId: string) {
   const provisionSecret = process.env.FLASK_PROVISION_SECRET
 
   if (!flaskUrl || !provisionSecret) {
-    console.warn('[MP Webhook] FLASK_BACKEND_URL or FLASK_PROVISION_SECRET not configured — manual provisioning required')
+    log.warn('FLASK_BACKEND_URL or FLASK_PROVISION_SECRET not configured — manual provisioning required')
     return
   }
 
@@ -2229,13 +2263,13 @@ async function triggerFacturacionProvisioning(subscriptionId: string) {
             provisionedAt: new Date(),
           },
         })
-        console.log(`[MP Webhook] Facturacion ${subscriptionId} provisioned (Flask tenant: ${data.tenantId})`)
+        log.info(`Facturacion ${subscriptionId} provisioned (Flask tenant: ${data.tenantId})`)
         return
       }
 
-      console.warn(`[MP Webhook] Facturacion provision attempt ${attempt}/${maxRetries} failed: ${res.status}`)
+      log.warn(`Facturacion provision attempt ${attempt}/${maxRetries} failed: ${res.status}`)
     } catch (err) {
-      console.error(`[MP Webhook] Facturacion provision attempt ${attempt}/${maxRetries} error:`, err)
+      log.error(`Facturacion provision attempt ${attempt}/${maxRetries} error`, { err })
     }
 
     if (attempt < maxRetries) {
@@ -2243,7 +2277,7 @@ async function triggerFacturacionProvisioning(subscriptionId: string) {
     }
   }
 
-  console.error(`[MP Webhook] Facturacion ${subscriptionId} provisioning FAILED after ${maxRetries} attempts`)
+  log.error(`Facturacion ${subscriptionId} provisioning FAILED after ${maxRetries} attempts`)
 
   // Fallback: mark as active so user isn't stuck — Flask provisioning can be retried later
   await prisma.facturacionSubscription.update({
@@ -2274,9 +2308,9 @@ async function triggerFacturacionDeprovisioning(subscriptionId: string) {
       body: JSON.stringify({ tenantId: sub.flaskTenantId }),
       signal: AbortSignal.timeout(FLASK_BACKEND_TIMEOUT_MS),
     })
-    console.log(`[MP Webhook] Facturacion deprovisioning triggered for ${subscriptionId}`)
+    log.info(`Facturacion deprovisioning triggered for ${subscriptionId}`)
   } catch (err) {
-    console.error(`[MP Webhook] Facturacion deprovisioning failed for ${subscriptionId}:`, err)
+    log.error(`Facturacion deprovisioning failed for ${subscriptionId}`, { err })
   }
 }
 
@@ -2286,7 +2320,7 @@ async function provisionSuiteJuridica(suiteSubId: string, suitePlan: string) {
     const { getSuiteJuridicaPlanConfig } = await import('@/lib/suite-juridica-plans')
     const planConfig = getSuiteJuridicaPlanConfig(suitePlan)
     if (!planConfig) {
-      console.error(`[Suite Provision] Unknown plan: ${suitePlan}`)
+      log.error(`Unknown suite plan: ${suitePlan}`, { phase: 'suite-provision' })
       return
     }
 
@@ -2375,9 +2409,16 @@ async function provisionSuiteJuridica(suiteSubId: string, suitePlan: string) {
       })
     })
 
-    console.log(`[Suite Provision] Suite ${suiteSubId} provisioned with 4 subs (${limits.monitoringPlan}/${limits.facturacionPlan}/${limits.causasPlan}/${limits.turnosPlan})`)
+    log.info('Suite provisioned with 4 subscriptions', {
+      phase: 'suite-provision',
+      suiteSubId,
+      monitoringPlan: limits.monitoringPlan,
+      facturacionPlan: limits.facturacionPlan,
+      causasPlan: limits.causasPlan,
+      turnosPlan: limits.turnosPlan,
+    })
   } catch (err) {
-    console.error(`[Suite Provision] Error provisioning suite ${suiteSubId}:`, err)
+    log.error(`Error provisioning suite ${suiteSubId}`, { phase: 'suite-provision', err })
     // Mark as active anyway — individual subs can be configured later
     await prisma.suiteJuridicaSubscription.update({
       where: { id: suiteSubId },
@@ -2393,7 +2434,7 @@ async function provisionSuiteJuridica(suiteSubId: string, suitePlan: string) {
 async function triggerTurnosProvisioning(subscriptionId: string) {
   const webhookUrl = process.env.N8N_TURNOS_PROVISIONING_WEBHOOK
   if (!webhookUrl) {
-    console.warn('[MP Webhook] N8N_TURNOS_PROVISIONING_WEBHOOK not configured — manual provisioning required')
+    log.warn('N8N_TURNOS_PROVISIONING_WEBHOOK not configured — manual provisioning required')
     return
   }
   try {
@@ -2402,7 +2443,7 @@ async function triggerTurnosProvisioning(subscriptionId: string) {
       include: { user: { select: { email: true, name: true } } },
     })
     if (!sub) {
-      console.error(`[MP Webhook] Turnos subscription ${subscriptionId} not found`)
+      log.error(`Turnos subscription ${subscriptionId} not found`)
       return
     }
     const res = await fetch(webhookUrl, {
@@ -2420,9 +2461,9 @@ async function triggerTurnosProvisioning(subscriptionId: string) {
       }),
       signal: AbortSignal.timeout(N8N_WEBHOOK_TIMEOUT_MS),
     })
-    console.log(`[MP Webhook] Turnos provisioning triggered for ${subscriptionId} → ${res.status}`)
+    log.info(`Turnos provisioning triggered for ${subscriptionId} → ${res.status}`)
   } catch (err) {
-    console.error(`[MP Webhook] Turnos provisioning failed for ${subscriptionId}:`, err)
+    log.error(`Turnos provisioning failed for ${subscriptionId}`, { err })
   }
 }
 
@@ -2430,7 +2471,7 @@ async function triggerTurnosProvisioning(subscriptionId: string) {
 async function triggerLinkedInProvisioning(subscriptionId: string) {
   const webhookUrl = process.env.N8N_LINKEDIN_PROVISIONING_WEBHOOK
   if (!webhookUrl) {
-    console.warn('[MP Webhook] N8N_LINKEDIN_PROVISIONING_WEBHOOK not configured — manual provisioning required')
+    log.warn('N8N_LINKEDIN_PROVISIONING_WEBHOOK not configured — manual provisioning required')
     return
   }
   try {
@@ -2439,7 +2480,7 @@ async function triggerLinkedInProvisioning(subscriptionId: string) {
       include: { user: { select: { email: true, name: true } } },
     })
     if (!sub) {
-      console.error(`[MP Webhook] LinkedIn subscription ${subscriptionId} not found`)
+      log.error(`LinkedIn subscription ${subscriptionId} not found`)
       return
     }
     const res = await fetch(webhookUrl, {
@@ -2459,9 +2500,9 @@ async function triggerLinkedInProvisioning(subscriptionId: string) {
       }),
       signal: AbortSignal.timeout(N8N_WEBHOOK_TIMEOUT_MS),
     })
-    console.log(`[MP Webhook] LinkedIn provisioning triggered for ${subscriptionId} → ${res.status}`)
+    log.info(`LinkedIn provisioning triggered for ${subscriptionId} → ${res.status}`)
   } catch (err) {
-    console.error(`[MP Webhook] LinkedIn provisioning failed for ${subscriptionId}:`, err)
+    log.error(`LinkedIn provisioning failed for ${subscriptionId}`, { err })
   }
 }
 
@@ -2469,7 +2510,7 @@ async function triggerLinkedInProvisioning(subscriptionId: string) {
 async function triggerLexpostProvisioning(subscriptionId: string) {
   const webhookUrl = process.env.N8N_LEXPOST_PROVISIONING_WEBHOOK
   if (!webhookUrl) {
-    console.warn('[MP Webhook] N8N_LEXPOST_PROVISIONING_WEBHOOK not configured — manual provisioning required')
+    log.warn('N8N_LEXPOST_PROVISIONING_WEBHOOK not configured — manual provisioning required')
     return
   }
   try {
@@ -2478,7 +2519,7 @@ async function triggerLexpostProvisioning(subscriptionId: string) {
       include: { user: { select: { email: true, name: true } } },
     })
     if (!sub) {
-      console.error(`[MP Webhook] LexPost subscription ${subscriptionId} not found`)
+      log.error(`LexPost subscription ${subscriptionId} not found`)
       return
     }
     const res = await fetch(webhookUrl, {
@@ -2498,9 +2539,9 @@ async function triggerLexpostProvisioning(subscriptionId: string) {
       }),
       signal: AbortSignal.timeout(N8N_WEBHOOK_TIMEOUT_MS),
     })
-    console.log(`[MP Webhook] LexPost provisioning triggered for ${subscriptionId} → ${res.status}`)
+    log.info(`LexPost provisioning triggered for ${subscriptionId} → ${res.status}`)
   } catch (err) {
-    console.error(`[MP Webhook] LexPost provisioning failed for ${subscriptionId}:`, err)
+    log.error(`LexPost provisioning failed for ${subscriptionId}`, { err })
   }
 }
 
