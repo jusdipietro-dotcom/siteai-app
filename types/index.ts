@@ -152,6 +152,14 @@ export interface Project {
   updatedAt: string
   views?: number
   thumbnail?: string
+  /**
+   * Leads still in `new` for this project.
+   *
+   * Server-derived and read-only, like `views`. Present only on the project
+   * LIST response — the single-project GET does not compute it, so treat
+   * `undefined` as "not loaded", never as zero.
+   */
+  unreadLeads?: number
 }
 
 // ─── Templates ────────────────────────────────────────────────────────────────

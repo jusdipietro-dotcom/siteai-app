@@ -4,7 +4,10 @@ import { prisma } from '@/lib/prisma'
 import { sendSiteLeadNotificationEmail } from '@/lib/email'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 import { parseJSON } from '@/lib/published-site'
+import { requestLogger } from '@/lib/request-log'
 import type { BusinessData } from '@/types'
+
+const log = requestLogger({ route: 'api/site-leads' })
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -92,7 +95,7 @@ export async function POST(req: Request) {
       },
     })
   } catch (err) {
-    console.error('[site-leads] create failed', err)
+    log.error('lead create failed', { projectId: project.id, err })
     return NextResponse.json({ error: 'No se pudo enviar el mensaje. Intenta de nuevo.' }, { status: 500 })
   }
 
@@ -100,6 +103,14 @@ export async function POST(req: Request) {
   // public contact email the owner set on the site, fall back to the account
   // email. Fire-and-forget — the lead is already saved, so a mail failure must
   // not turn a captured lead into an error for the visitor.
+  //
+  // The notification is now a convenience, not the delivery mechanism: the owner
+  // can read this lead at /projects/{id}/leads whether or not the mail lands. It
+  // still gets logged through the structured logger rather than a bare
+  // console.error, because a mail provider that starts failing for EVERY owner
+  // is an incident, and an unstructured line in stdout is not something anyone
+  // will notice or alert on. `err` goes through the logger's redaction, so an
+  // SMTP error carrying credentials does not end up in the log.
   const bd = parseJSON<BusinessData>(project.businessData, {} as BusinessData)
   const ownerEmail = bd.contact?.email?.trim() || project.user?.email || null
   if (ownerEmail) {
@@ -114,10 +125,17 @@ export async function POST(req: Request) {
         message: lead.message,
       },
     }).catch((err) => {
-      console.error('[site-leads] notification email failed', err)
+      log.error('lead notification email failed', {
+        projectId: project.id,
+        leadId: lead.id,
+        err,
+      })
     })
   } else {
-    console.warn(`[site-leads] no owner email for project ${project.id}; lead ${lead.id} stored only`)
+    log.warn('no owner email for project; lead stored without notification', {
+      projectId: project.id,
+      leadId: lead.id,
+    })
   }
 
   return NextResponse.json({ ok: true, id: lead.id }, { status: 201 })

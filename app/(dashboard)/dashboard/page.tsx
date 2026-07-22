@@ -23,7 +23,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel
 } from '@/components/ui/dropdown-menu'
-import { Edit, Copy, Trash2, ExternalLink, Eye as EyeIcon, Settings, Rocket, MoreHorizontal } from 'lucide-react'
+import { Edit, Copy, Trash2, ExternalLink, Eye as EyeIcon, Settings, Rocket, MoreHorizontal, Inbox } from 'lucide-react'
 
 const STATUS_FILTERS: { value: ProjectStatus | 'all'; label: string }[] = [
   { value: 'all',       label: 'Todos' },
@@ -243,6 +243,7 @@ export default function DashboardPage() {
                   onDelete={() => setDeleteId(project.id)}
                   onPublish={() => handlePublish(project.id, project.name)}
                   onSettings={() => router.push(`/projects/${project.id}/settings`)}
+                  onLeads={() => router.push(`/projects/${project.id}/leads`)}
                 />
               </motion.div>
             ))}
@@ -280,7 +281,7 @@ export default function DashboardPage() {
 }
 
 // ── Project Card ──────────────────────────────────────────────────────────────
-function ProjectCard({ project, onEdit, onPreview, onDuplicate, onDelete, onPublish, onSettings }: {
+function ProjectCard({ project, onEdit, onPreview, onDuplicate, onDelete, onPublish, onSettings, onLeads }: {
   project: any
   onEdit: () => void
   onPreview: () => void
@@ -288,6 +289,7 @@ function ProjectCard({ project, onEdit, onPreview, onDuplicate, onDelete, onPubl
   onDelete: () => void
   onPublish: () => void
   onSettings: () => void
+  onLeads: () => void
 }) {
   const colorHex = project.businessData.branding.primaryColor
   // `project.publishedUrl` is a relative path (`/s/{slug}`); window.open() on it
@@ -348,6 +350,9 @@ function ProjectCard({ project, onEdit, onPreview, onDuplicate, onDelete, onPubl
             <DropdownMenuContent align="end">
               <DropdownMenuItem icon={<Edit className="h-3.5 w-3.5" />} onClick={onEdit}>Editar</DropdownMenuItem>
               <DropdownMenuItem icon={<EyeIcon className="h-3.5 w-3.5" />} onClick={onPreview}>Preview</DropdownMenuItem>
+              <DropdownMenuItem icon={<Inbox className="h-3.5 w-3.5" />} onClick={onLeads}>
+                Mensajes{project.unreadLeads ? ` (${project.unreadLeads})` : ''}
+              </DropdownMenuItem>
               <DropdownMenuItem icon={<Settings className="h-3.5 w-3.5" />} onClick={onSettings}>Configuración</DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem icon={<Copy className="h-3.5 w-3.5" />} onClick={onDuplicate}>Duplicar</DropdownMenuItem>
@@ -363,6 +368,23 @@ function ProjectCard({ project, onEdit, onPreview, onDuplicate, onDelete, onPubl
         </div>
 
         <BillingNotice project={project} />
+
+        {/* Unread leads. Only rendered when the list response actually carried a
+            count and it is above zero — a lead arriving is news, "you have 0
+            messages" is noise on every card forever. */}
+        {project.unreadLeads > 0 && (
+          <button
+            type="button"
+            onClick={onLeads}
+            className="mt-3 w-full flex items-center gap-2 rounded-lg bg-brand-50 border border-brand-200 px-3 py-2 text-left hover:bg-brand-100 transition-colors"
+          >
+            <Inbox className="h-3.5 w-3.5 text-brand-600 shrink-0" />
+            <span className="text-xs font-semibold text-brand-900">
+              {project.unreadLeads} mensaje{project.unreadLeads === 1 ? '' : 's'} sin leer
+            </span>
+            <ArrowUpRight className="h-3 w-3 text-brand-600 ml-auto shrink-0" />
+          </button>
+        )}
 
         {/* Meta */}
         <div className="flex items-center gap-3 mt-3 pt-3 border-t border-surface-50">

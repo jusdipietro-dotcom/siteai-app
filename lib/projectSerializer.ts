@@ -204,5 +204,11 @@ export function deserializeProject(row: any): Project {
     mediaIds: parseJSON(row.mediaIds, [] as Project['mediaIds'], `project ${row.id}.mediaIds`),
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
+    // Only present when the caller asked Prisma for the filtered relation count
+    // (GET /api/projects does; the single-project GET does not). Left undefined
+    // otherwise rather than defaulted to 0, so the dashboard can tell "no unread
+    // leads" apart from "this response never carried the count" and not render a
+    // reassuring zero it did not measure.
+    unreadLeads: row._count?.siteLeads,
   }
 }

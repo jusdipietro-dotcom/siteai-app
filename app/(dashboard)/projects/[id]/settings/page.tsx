@@ -3,7 +3,7 @@ import { useState, useRef } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ArrowLeft, Save, Globe, Search, BarChart2, Share2, Upload, ExternalLink, Pencil } from 'lucide-react'
+import { ArrowLeft, Save, Globe, Search, BarChart2, Share2, Upload, ExternalLink, Pencil, Inbox } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -234,6 +234,12 @@ export default function SettingsPage() {
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
+            <Link href={`/projects/${id}/leads`}>
+              <Button variant="outline" size="sm" className="gap-1.5">
+                <Inbox className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Mensajes</span>
+              </Button>
+            </Link>
             <Link href={`/projects/${id}/editor`}>
               <Button variant="outline" size="sm" className="gap-1.5">
                 <ExternalLink className="w-3.5 h-3.5" />

@@ -20,6 +20,12 @@ export async function GET() {
   const rows = await prisma.project.findMany({
     where: { userId: session.user.id },
     orderBy: { updatedAt: 'desc' },
+    // Unread lead count per project, so the dashboard card can tell the owner a
+    // message arrived without them opening the inbox. A filtered relation count
+    // is one aggregate in the same round trip — the alternative (N count queries
+    // from the client, or shipping the leads themselves) would either be N+1 or
+    // put third-party personal data on a screen that does not display it.
+    include: { _count: { select: { siteLeads: { where: { status: 'new' } } } } },
   })
 
   return NextResponse.json(rows.map(deserializeProject))
