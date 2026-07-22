@@ -26,14 +26,54 @@ import {
   isTradingPlanId,
 } from '@/lib/trading-plans'
 
-import { getCausasPlanConfig } from '@/lib/causas-plans'
-import { getTurnosPlanConfig } from '@/lib/turnos-plans'
-import { getWebsitePlanConfig } from '@/lib/website-plans'
-import { getSuiteJuridicaPlanConfig } from '@/lib/suite-juridica-plans'
-import { getFacturacionPlanConfig } from '@/lib/facturacion-plans'
-import { getLexpostPlan } from '@/lib/lexpost-plans'
-import { getPlanConfig as getProspeccionPlanConfig } from '@/lib/prospeccion-plans'
-import { getPlanConfig as getEmailMarketingPlanConfig } from '@/lib/email-marketing-plans'
+import {
+  CAUSAS_PLAN_IDS,
+  CAUSAS_PLANS,
+  getCausasPlanConfig,
+  isCausasPlanId,
+} from '@/lib/causas-plans'
+import {
+  TURNOS_PLAN_IDS,
+  TURNOS_PLANS,
+  getTurnosPlanConfig,
+  isTurnosPlanId,
+} from '@/lib/turnos-plans'
+import {
+  WEBSITE_PLAN_IDS,
+  WEBSITE_PLANS,
+  getWebsitePlanConfig,
+  isWebsitePlanId,
+} from '@/lib/website-plans'
+import {
+  SUITE_JURIDICA_PLAN_IDS,
+  SUITE_JURIDICA_PLANS,
+  getSuiteJuridicaPlanConfig,
+  isSuiteJuridicaPlanId,
+} from '@/lib/suite-juridica-plans'
+import {
+  FACTURACION_PLAN_IDS,
+  FACTURACION_PLANS,
+  getFacturacionPlanConfig,
+  isFacturacionPlanId,
+} from '@/lib/facturacion-plans'
+import {
+  LEXPOST_PLAN_IDS,
+  LEXPOST_PLANS,
+  getLexpostPlan,
+  isLexpostPlanId,
+} from '@/lib/lexpost-plans'
+import {
+  PROSPECCION_PLAN_IDS,
+  PROSPECCION_PLANS,
+  getPlanConfig as getProspeccionPlanConfig,
+  isProspeccionPlanId,
+} from '@/lib/prospeccion-plans'
+import {
+  EMAIL_MARKETING_PLAN_IDS,
+  EMAIL_MARKETING_PLANS,
+  getPlanConfig as getEmailMarketingPlanConfig,
+  isEmailMarketingPlanId,
+} from '@/lib/email-marketing-plans'
 
 /**
  * Plan-id lookup guards.
@@ -44,7 +84,8 @@ import { getPlanConfig as getEmailMarketingPlanConfig } from '@/lib/email-market
  * sails past a `if (!planConfig) return 400` check and then yields
  * `planConfig.monthly === undefined`, i.e. a NaN price.
  *
- * The hardened modules validate the id against an explicit id list first.
+ * Every module below validates the id against an explicit id list first, so the
+ * raw indexing is never reached with an unvalidated key.
  */
 
 /** Keys that exist on Object.prototype and are therefore never real plan ids. */
@@ -60,6 +101,22 @@ const PROTOTYPE_KEYS = [
 ]
 
 const NON_STRING_INPUTS = [null, undefined, 42, {}, [], true, Symbol('x')]
+
+/**
+ * Strings that must never resolve to a plan. Filtered per module against that
+ * module's real ids, because one module's junk is another's real id — e.g.
+ * `enterprise` is a genuine prospeccion plan.
+ */
+const UNKNOWN_ID_CANDIDATES = [
+  '',
+  'free',
+  'gratis',
+  'BASICO',
+  'basico ',
+  ' basico',
+  'enterprise',
+  'definitely-not-a-plan',
+]
 
 const hardened = [
   {
@@ -97,6 +154,62 @@ const hardened = [
     isId: isTradingPlanId,
     get: getTradingPlan,
   },
+  {
+    name: 'causas',
+    ids: CAUSAS_PLAN_IDS,
+    plans: CAUSAS_PLANS,
+    isId: isCausasPlanId,
+    get: getCausasPlanConfig,
+  },
+  {
+    name: 'turnos',
+    ids: TURNOS_PLAN_IDS,
+    plans: TURNOS_PLANS,
+    isId: isTurnosPlanId,
+    get: getTurnosPlanConfig,
+  },
+  {
+    name: 'website',
+    ids: WEBSITE_PLAN_IDS,
+    plans: WEBSITE_PLANS,
+    isId: isWebsitePlanId,
+    get: getWebsitePlanConfig,
+  },
+  {
+    name: 'suite-juridica',
+    ids: SUITE_JURIDICA_PLAN_IDS,
+    plans: SUITE_JURIDICA_PLANS,
+    isId: isSuiteJuridicaPlanId,
+    get: getSuiteJuridicaPlanConfig,
+  },
+  {
+    name: 'prospeccion',
+    ids: PROSPECCION_PLAN_IDS,
+    plans: PROSPECCION_PLANS,
+    isId: isProspeccionPlanId,
+    get: getProspeccionPlanConfig,
+  },
+  {
+    name: 'lexpost',
+    ids: LEXPOST_PLAN_IDS,
+    plans: LEXPOST_PLANS,
+    isId: isLexpostPlanId,
+    get: getLexpostPlan,
+  },
+  {
+    name: 'facturacion',
+    ids: FACTURACION_PLAN_IDS,
+    plans: FACTURACION_PLANS,
+    isId: isFacturacionPlanId,
+    get: getFacturacionPlanConfig,
+  },
+  {
+    name: 'email-marketing',
+    ids: EMAIL_MARKETING_PLAN_IDS,
+    plans: EMAIL_MARKETING_PLANS,
+    isId: isEmailMarketingPlanId,
+    get: getEmailMarketingPlanConfig,
+  },
 ] as const
 
 describe.each(hardened)('$name plan guard (hardened)', ({ ids, plans, isId, get }) => {
@@ -133,7 +246,11 @@ describe.each(hardened)('$name plan guard (hardened)', ({ ids, plans, isId, get 
   })
 
   it('rejects unknown ids', () => {
-    for (const bad of ['', 'free', 'gratis', 'BASICO', 'basico ', ' basico', 'enterprise']) {
+    const real = ids as readonly string[]
+    const unknownIds = UNKNOWN_ID_CANDIDATES.filter((candidate) => !real.includes(candidate))
+    // Guard the guard: a filter that removed everything would assert nothing.
+    expect(unknownIds.length).toBeGreaterThan(0)
+    for (const bad of unknownIds) {
       expect(isId(bad)).toBe(false)
       expect(get(bad)).toBeUndefined()
     }
@@ -152,65 +269,28 @@ describe.each(hardened)('$name plan guard (hardened)', ({ ids, plans, isId, get 
       expect(typeof get(key)).not.toBe('function')
     }
   })
-})
 
-/**
- * ─────────────────────────────────────────────────────────────────────────────
- * KNOWN VULNERABILITY — characterisation tests, NOT an endorsement.
- *
- * These eight modules were NOT hardened. They still do `PLANS[planId as PlanId]`
- * with no id validation, so a prototype key returns a truthy value and passes
- * the `if (!planConfig) return 400` guard in the routes that call them.
- *
- * Reachable today, e.g.:
- *   POST /api/email-marketing/subscribe   {"plan":"toString"}  -> 201, row stored
- *   POST /api/mp/create-email-marketing-subscription
- *     -> finalPrice = Math.round(undefined * ...) = NaN, and `NaN <= 0` is false,
- *        so it does not even take the free-provisioning branch.
- *
- * The tests below assert CURRENT (broken) behaviour so the gap is visible and
- * tracked rather than silently forgotten. When a module is hardened, its case
- * here SHOULD go red — move it into the `hardened` table above at that point.
- * ─────────────────────────────────────────────────────────────────────────────
- */
-const unhardened = [
-  { name: 'causas', get: getCausasPlanConfig, realId: 'basico' },
-  { name: 'turnos', get: getTurnosPlanConfig, realId: 'basico' },
-  { name: 'website', get: getWebsitePlanConfig, realId: 'essential' },
-  { name: 'suite-juridica', get: getSuiteJuridicaPlanConfig, realId: 'abogado' },
-  { name: 'facturacion', get: getFacturacionPlanConfig, realId: 'basico' },
-  { name: 'lexpost', get: getLexpostPlan, realId: 'basico' },
-  { name: 'prospeccion', get: getProspeccionPlanConfig, realId: 'starter' },
-  { name: 'email-marketing', get: getEmailMarketingPlanConfig, realId: 'basico' },
-] as const
+  /**
+   * The NaN-price path this module used to reach. Kept as an explicit assertion
+   * that it can no longer happen, not just that the lookup returns undefined:
+   * the expression below is the one the MercadoPago routes evaluate.
+   */
+  it('can no longer produce a NaN price from a prototype key', () => {
+    for (const key of PROTOTYPE_KEYS) {
+      const leaked = get(key) as unknown as { monthly?: number } | undefined
+      // Previously a truthy function, so `if (!planConfig) return 400` passed.
+      expect(leaked).toBeUndefined()
+      // The route never gets to the pricing math, so no NaN reaches checkout.
+      expect(leaked?.monthly).toBeUndefined()
+    }
 
-describe.each(unhardened)('$name plan lookup', ({ get, realId }) => {
-  it('resolves its real plan id', () => {
-    const plan = get(realId) as { id: string; monthly: number } | undefined
-    expect(plan).toBeDefined()
-    expect(plan!.id).toBe(realId)
-    expect(Number.isFinite(plan!.monthly)).toBe(true)
-    expect(plan!.monthly).toBeGreaterThan(0)
-  })
-
-  it('correctly rejects an ordinary unknown id', () => {
-    expect(get('definitely-not-a-plan')).toBeUndefined()
-    expect(get('')).toBeUndefined()
-  })
-
-  it('KNOWN VULNERABILITY: a prototype key is accepted as a plan', () => {
-    // Documents the live hole. Should start failing once the module is hardened.
-    const leaked = get('toString')
-    expect(leaked).toBeDefined()
-    expect(typeof leaked).toBe('function')
-  })
-
-  it('KNOWN VULNERABILITY: the leaked value produces a NaN price', () => {
-    const leaked = get('toString') as unknown as { monthly?: number }
-    expect(leaked.monthly).toBeUndefined()
-    // This is the exact expression the MercadoPago routes evaluate.
-    expect(Math.round((leaked.monthly as number) * (1 - 0 / 100))).toBeNaN()
-    // ...and NaN <= 0 is false, so the "free plan" short-circuit does not catch it.
-    expect(Number.isNaN(NaN) && (NaN as number) <= 0).toBe(false)
+    for (const id of ids) {
+      const monthly = (get(id) as { monthly: number }).monthly
+      const finalPrice = Math.round(monthly * (1 - 0 / 100))
+      expect(finalPrice).not.toBeNaN()
+      // NaN <= 0 is false, which is why a NaN price used to skip the
+      // free-provisioning short-circuit instead of being caught by it.
+      expect(finalPrice).toBeGreaterThan(0)
+    }
   })
 })
