@@ -46,6 +46,27 @@ function isFrameworkPath(pathname: string): boolean {
 }
 
 /**
+ * Paths that belong to the CLIENT SITE on a site-subdomain host, even though
+ * they look like platform-owned files everywhere else.
+ *
+ * `{sub}.sitios.automaticialab.com` serves exactly one published site and
+ * nothing else, so that host's root is that site's root. robots.txt is only
+ * ever honoured by a crawler at a host root, which made the previous behaviour
+ * wrong in both directions: every client subdomain served the platform's
+ * public/robots.txt, advertising `Sitemap: https://automaticialab.com/sitemap.xml`
+ * on the client's host and applying the dashboard's Disallow rules to it.
+ *
+ * Only applied in the subdomain branch. On the shared path host
+ * (`sites.automaticialab.com/{slug}`) the root genuinely is the platform's, so
+ * `/robots.txt` there stays with the platform and only `/{slug}/robots.txt`
+ * reaches a site.
+ *
+ * `/sitemap.xml` needs no entry: it matches neither isFrameworkPath nor
+ * STATIC_FILE_RE, so it already rewrites through to the site route.
+ */
+const SITE_OWNED_ROOT_PATHS = new Set(['/robots.txt'])
+
+/**
  * Every response leaves here carrying `x-request-id`, so a customer complaint
  * ("no me anda", a screenshot, a support ticket) can be tied to the exact log
  * lines for that request.
@@ -87,11 +108,16 @@ async function route(req: NextRequest, resolved: ResolvedRequestId): Promise<Nex
   // they cannot both match, but order makes the precedence explicit.
   const siteSubdomain = extractSiteSubdomain(hostname)
   if (siteSubdomain) {
-    if (isFrameworkPath(pathname) || (pathname !== '/' && STATIC_FILE_RE.test(pathname))) {
+    // A site-owned root file wins over both exclusions: `/robots.txt` is caught
+    // by isFrameworkPath AND by STATIC_FILE_RE (`.txt`), so it needs to bypass
+    // the whole condition rather than one half of it.
+    const siteOwned = SITE_OWNED_ROOT_PATHS.has(pathname)
+    if (!siteOwned && (isFrameworkPath(pathname) || (pathname !== '/' && STATIC_FILE_RE.test(pathname)))) {
       return forward(req, resolved)
     }
 
-    // "/" → /sub/{sub}; "/sitemap.xml" → /sub/{sub}/sitemap.xml
+    // "/" → /sub/{sub}; "/sitemap.xml" → /sub/{sub}/sitemap.xml;
+    // "/robots.txt" → /sub/{sub}/robots.txt
     const url = req.nextUrl.clone()
     url.pathname = pathname === '/' ? `/sub/${siteSubdomain}` : `/sub/${siteSubdomain}${pathname}`
     return NextResponse.rewrite(url, {

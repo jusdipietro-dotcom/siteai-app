@@ -12,6 +12,11 @@ import { NextResponse } from 'next/server'
 import type { Project } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { publishedSiteUrl } from '@/lib/site-domain'
+import {
+  absoluteSiteImageUrl,
+  hasProfessionalSeo,
+  parseSeoKeywords,
+} from '@/lib/site-seo'
 import { normalizeSubdomain, validateSubdomain } from '@/lib/subdomain'
 import type { BusinessData } from '@/types'
 
@@ -122,6 +127,19 @@ export const SITE_NOT_FOUND_METADATA: Metadata = { title: 'Sitio no encontrado' 
  * a subdomain declares the subdomain as canonical even when it was reached
  * through the path URL. Projects without a subdomain keep the path URL — which
  * is exactly the previous behavior.
+ *
+ * Two tiers of output:
+ *   - `keywords` for EVERY paid site. The owner has been typing them into the
+ *     wizard and the settings screen since day one and nothing ever emitted
+ *     them, so Essential's advertised "SEO básico (título, descripción,
+ *     keywords)" was false. Not plan-gated: both tiers advertise it.
+ *   - The OpenGraph/Twitter IMAGE only for Professional, through the shared
+ *     `hasProfessionalSeo` gate. The title/description pair in those cards
+ *     predates this and stays available to both tiers; the image is the part
+ *     that turns a shared link into a card, and it is the paid differentiator.
+ *
+ * The image tags are omitted entirely rather than emitted empty when the owner
+ * has no usable hero image — a blank og:image is worse than none.
  */
 export function buildPublishedSiteMetadata(project: Project): Metadata {
   const bd = parseJSON<BusinessData>(project.businessData, {} as BusinessData)
@@ -129,12 +147,29 @@ export function buildPublishedSiteMetadata(project: Project): Metadata {
   const description = bd.seo?.description || bd.description || ''
   const canonical = publishedSiteUrl(project)
 
+  const keywords = parseSeoKeywords(bd.seo?.keywords)
+  const shareImage = hasProfessionalSeo(project)
+    ? absoluteSiteImageUrl(bd.heroImage, canonical)
+    : null
+
   return {
     title,
     description,
+    ...(keywords.length > 0 && { keywords }),
     alternates: { canonical },
-    openGraph: { title, description, type: 'website', url: canonical },
-    twitter: { card: 'summary_large_image', title, description },
+    openGraph: {
+      title,
+      description,
+      type: 'website',
+      url: canonical,
+      ...(shareImage && { images: [shareImage] }),
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      ...(shareImage && { images: [shareImage] }),
+    },
   }
 }
 
@@ -174,6 +209,51 @@ export function publishedSiteSitemapResponse(
   return new NextResponse(xml, {
     headers: {
       'Content-Type': 'application/xml',
+      'Cache-Control': 'public, max-age=86400',
+    },
+  })
+}
+
+/**
+ * Renders robots.txt for a published project — Professional plan only.
+ *
+ * Same contract as `publishedSiteSitemapResponse`: takes the already-gated
+ * project (or null) so both addressing modes share one 404 shape, and an
+ * Essential site is indistinguishable from a project that does not exist.
+ *
+ * The `Sitemap:` line is emitted only when the sitemap route will actually
+ * answer — that route 404s when the owner turned `seo.sitemapEnabled` off, and
+ * pointing a crawler at a 404 is worse than saying nothing.
+ *
+ * KNOWN LIMIT, worth stating plainly: crawlers only read robots.txt at the ROOT
+ * of a host. In subdomain mode the canonical URL IS the root
+ * (`https://{sub}.{base}/robots.txt`) so this is fully effective. In path mode
+ * the file lands at `https://{SITES_DOMAIN}/{slug}/robots.txt`, which no crawler
+ * fetches — the host root belongs to the platform, not to any one client site.
+ * It is served in both modes anyway so the two routes never diverge, and so a
+ * project that later gains a subdomain needs no new code.
+ */
+export function publishedSiteRobotsResponse(
+  project: Project | null
+): NextResponse {
+  const notFound = new NextResponse('Not found', { status: 404 })
+  if (!project) return notFound
+  if (!hasProfessionalSeo(project)) return notFound
+
+  const bd = parseJSON<{ seo?: { sitemapEnabled?: boolean } }>(
+    project.businessData,
+    {}
+  )
+  const base = publishedSiteUrl(project)
+
+  const lines = ['User-agent: *', 'Allow: /']
+  if (bd.seo?.sitemapEnabled) {
+    lines.push('', `Sitemap: ${base}/sitemap.xml`)
+  }
+
+  return new NextResponse(lines.join('\n') + '\n', {
+    headers: {
+      'Content-Type': 'text/plain; charset=utf-8',
       'Cache-Control': 'public, max-age=86400',
     },
   })
