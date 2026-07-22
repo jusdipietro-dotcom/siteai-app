@@ -5,6 +5,7 @@ import { HeroSection } from '@/components/site/sections/HeroSection'
 import { PricingSection } from '@/components/site/sections/PricingSection'
 import { ServicesSection } from '@/components/site/sections/ServicesSection'
 import { StatsSection } from '@/components/site/sections/StatsSection'
+import { TeamSection } from '@/components/site/sections/TeamSection'
 import { typographyOptions } from '@/config/themes'
 import { parseJSON } from '@/lib/published-site'
 import { publishedSiteUrl } from '@/lib/site-domain'
@@ -191,27 +192,11 @@ export function PublishedSite({ project: row }: { project: Project }) {
 
       case 'team':
         return (
-          <section className="section-pad" id="equipo" key="team" style={{ background: '#f8fafc' }}>
-            <div className="container">
-              <p className="label" style={{ textAlign: 'center' }}>El equipo</p>
-              <h2 className="heading-lg" style={{ textAlign: 'center', marginBottom: '3rem' }}>Conocé a nuestro equipo</h2>
-              <div className="grid-3">
-                {bd.team.map((m) => {
-                  const photo = safeImg(m.image)
-                  return (
-                    <div key={m.id} className="card team-member-card">
-                      {photo
-                        ? <img className="team-photo" src={photo} alt={m.name} />
-                        : <div className="team-avatar">{m.name?.[0] ?? '?'}</div>}
-                      <h3 style={{ fontWeight: 700, fontSize: '1rem', color: '#0f172a', marginBottom: '0.25rem' }}>{m.name}</h3>
-                      <p style={{ fontSize: '0.8rem', color, fontWeight: 600, marginBottom: '0.75rem' }}>{m.role}</p>
-                      {m.bio && <p className="subtext" style={{ fontSize: '0.875rem' }}>{m.bio}</p>}
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          </section>
+          <TeamSection
+            key="team"
+            members={bd.team.map((m) => ({ id: m.id, name: m.name, role: m.role, bio: m.bio, photo: safeImg(m.image) }))}
+            color={color}
+          />
         )
 
       case 'testimonials':
