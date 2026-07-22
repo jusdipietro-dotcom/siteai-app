@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 import { isUserFreeAccount } from '@/lib/free-account'
 import { getTrialEndDate, expireStaleTrials, hasUsedTrial } from '@/lib/trial'
-import { LEXPOST_PLANS as LEXPOST_PLANS_RAW } from '@/lib/lexpost-plans'
+import { LEXPOST_PLANS as LEXPOST_PLANS_RAW, isLexpostPlanId, type LexpostPlanId } from '@/lib/lexpost-plans'
 
 // Adapter: keep legacy field names (limit, accounts) used by this endpoint.
 const LEXPOST_PLANS = Object.fromEntries(
@@ -15,7 +15,7 @@ const LEXPOST_PLANS = Object.fromEntries(
     limit: v.publicationsLimit,
     accounts: v.igAccountCount,
   }])
-) as Record<string, { monthly: number; title: string; limit: number; accounts: number }>
+) as Record<LexpostPlanId, { monthly: number; title: string; limit: number; accounts: number }>
 
 export async function POST(req: NextRequest) {
   try {
@@ -33,7 +33,10 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const { plan, notificationEmail, payerEmail, igUsername, couponCode } = body
 
-    const planConfig = LEXPOST_PLANS[plan]
+    // Membership check first: the adapter map is a plain object, so indexing it
+    // with an unvalidated body value would resolve 'toString' through
+    // Object.prototype and return a truthy function.
+    const planConfig = isLexpostPlanId(plan) ? LEXPOST_PLANS[plan] : undefined
     if (!planConfig) {
       return NextResponse.json({ error: 'Plan invalido' }, { status: 400 })
     }

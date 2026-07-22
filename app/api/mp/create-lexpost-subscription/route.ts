@@ -3,10 +3,13 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { MP_API_TIMEOUT_MS } from '@/lib/fetch-timeouts'
+import { isLexpostPlanId, type LexpostPlanId } from '@/lib/lexpost-plans'
 
 const ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN!
 
-const LEXPOST_PLANS: Record<string, { monthly: number; title: string }> = {
+// Keyed by LexpostPlanId so this local title override cannot drift from the
+// canonical id list in lib/lexpost-plans.ts.
+const LEXPOST_PLANS: Record<LexpostPlanId, { monthly: number; title: string }> = {
   basico:       { monthly: 15000, title: 'LexPost Basico — Automatic IA Lab' },
   profesional:  { monthly: 25000, title: 'LexPost Profesional — Automatic IA Lab' },
   estudio:      { monthly: 45000, title: 'LexPost Estudio — Automatic IA Lab' },
@@ -47,7 +50,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Ya se genero un link de pago para esta suscripcion. Refresca la pagina.' }, { status: 409 })
     }
 
-    const planConfig = LEXPOST_PLANS[sub.plan]
+    // Membership check first: a stored plan of 'toString' would otherwise
+    // resolve through Object.prototype and price the preapproval at NaN.
+    const planConfig = isLexpostPlanId(sub.plan) ? LEXPOST_PLANS[sub.plan] : undefined
     if (!planConfig) {
       return NextResponse.json({ error: 'Plan invalido' }, { status: 400 })
     }

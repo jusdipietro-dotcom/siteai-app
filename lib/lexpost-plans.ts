@@ -2,7 +2,11 @@
  * Configuración centralizada de planes de LexPost (publicaciones IG legales).
  */
 
-export type LexpostPlanId = 'basico' | 'profesional' | 'estudio'
+/** Source of truth for the valid plan ids. `LexpostPlanId` is derived from it so
+ * the list and the type can never drift apart. */
+export const LEXPOST_PLAN_IDS = ['basico', 'profesional', 'estudio'] as const
+
+export type LexpostPlanId = (typeof LEXPOST_PLAN_IDS)[number]
 
 export interface LexpostPlanConfig {
   id: LexpostPlanId
@@ -46,6 +50,19 @@ export const LEXPOST_PLANS_LIST = [
   LEXPOST_PLANS.estudio,
 ]
 
-export function getLexpostPlan(planId: string): LexpostPlanConfig | undefined {
-  return LEXPOST_PLANS[planId as LexpostPlanId]
+/**
+ * Narrows an untrusted value (request body, DB column) to a known plan id.
+ *
+ * Checks the id list instead of indexing LEXPOST_PLANS directly: the map is a
+ * plain object, so `LEXPOST_PLANS['toString']` resolves through
+ * Object.prototype and returns a truthy function — enough to slip past an
+ * `if (!planConfig)` guard and reach the pricing math with an undefined
+ * `monthly`.
+ */
+export function isLexpostPlanId(value: unknown): value is LexpostPlanId {
+  return typeof value === 'string' && LEXPOST_PLAN_IDS.some((id) => id === value)
+}
+
+export function getLexpostPlan(planId: unknown): LexpostPlanConfig | undefined {
+  return isLexpostPlanId(planId) ? LEXPOST_PLANS[planId] : undefined
 }
