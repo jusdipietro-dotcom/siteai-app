@@ -35,6 +35,9 @@ const NAV_ITEMS = [
 ]
 
 const ADMIN_ITEMS = [
+  // The admin index. First on purpose: it is the only entry that answers
+  // "what needs my attention today?", and the other five are drill-downs from it.
+  { href: '/admin',                label: 'Resumen',        icon: LayoutDashboard },
   { href: '/admin/negocio',        label: 'Negocio',        icon: BarChart3 },
   { href: '/admin/sitios',         label: 'Sitios',         icon: Globe },
   { href: '/admin/suscripciones',  label: 'Suscripciones',  icon: Users },
@@ -200,19 +203,25 @@ export function DashboardSidebar() {
             <p className="text-[10px] font-bold uppercase tracking-widest text-white/25 mb-1.5 px-1">
               Admin
             </p>
-            {ADMIN_ITEMS.map(({ href, label, icon: Icon }) => (
-              <Link
-                key={href}
-                href={href}
-                className={cn(
-                  'flex items-center gap-2.5 h-8 px-2 rounded-lg text-xs text-white/50 hover:bg-white/6 hover:text-white/80 transition-all',
-                  pathname.startsWith(href) && 'bg-white/8 text-white/80'
-                )}
-              >
-                <Icon className="h-3.5 w-3.5 shrink-0" />
-                {label}
-              </Link>
-            ))}
+            {ADMIN_ITEMS.map(({ href, label, icon: Icon }) => {
+              // `/admin` is a prefix of every other admin route, so a plain
+              // startsWith would light up "Resumen" on all five sub-pages.
+              // The index matches exactly; the rest match by prefix.
+              const isActive = href === '/admin' ? pathname === href : pathname.startsWith(href)
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  className={cn(
+                    'flex items-center gap-2.5 h-8 px-2 rounded-lg text-xs text-white/50 hover:bg-white/6 hover:text-white/80 transition-all',
+                    isActive && 'bg-white/8 text-white/80'
+                  )}
+                >
+                  <Icon className="h-3.5 w-3.5 shrink-0" />
+                  {label}
+                </Link>
+              )
+            })}
           </div>
         )}
       </div>
