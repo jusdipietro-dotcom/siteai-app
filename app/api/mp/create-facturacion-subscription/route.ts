@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { FACTURACION_PLANS } from '@/lib/facturacion-plans'
+import { getFacturacionPlanConfig } from '@/lib/facturacion-plans'
 import { MP_API_TIMEOUT_MS } from '@/lib/fetch-timeouts'
 
 const ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN!
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Ya se generó un link de pago para esta suscripción. Refrescá la página.' }, { status: 409 })
     }
 
-    const planConfig = FACTURACION_PLANS[sub.plan as keyof typeof FACTURACION_PLANS]
+    const planConfig = getFacturacionPlanConfig(sub.plan)
     if (!planConfig) {
       return NextResponse.json({ error: 'Plan inválido' }, { status: 400 })
     }

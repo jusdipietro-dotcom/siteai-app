@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
-import { FACTURACION_PLANS } from '@/lib/facturacion-plans'
+import { getFacturacionPlanConfig } from '@/lib/facturacion-plans'
 import { isUserFreeAccount } from '@/lib/free-account'
 import { getTrialEndDate, expireStaleTrials, hasUsedTrial } from '@/lib/trial'
 import { provisionFacturacion } from '@/lib/facturacion-provision'
@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
     const { plan, cuit, razonSocial, puntoVenta, condicionIva, notificationEmail, payerEmail, couponCode } = body
 
     // Validate plan
-    const planConfig = FACTURACION_PLANS[plan as keyof typeof FACTURACION_PLANS]
+    const planConfig = getFacturacionPlanConfig(plan)
     if (!planConfig) {
       return NextResponse.json({ error: 'Plan inválido' }, { status: 400 })
     }
