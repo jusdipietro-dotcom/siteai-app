@@ -6,6 +6,7 @@ import { PricingSection } from '@/components/site/sections/PricingSection'
 import { ServicesSection } from '@/components/site/sections/ServicesSection'
 import { StatsSection } from '@/components/site/sections/StatsSection'
 import { TeamSection } from '@/components/site/sections/TeamSection'
+import { TestimonialsSection } from '@/components/site/sections/TestimonialsSection'
 import { typographyOptions } from '@/config/themes'
 import { parseJSON } from '@/lib/published-site'
 import { publishedSiteUrl } from '@/lib/site-domain'
@@ -200,31 +201,7 @@ export function PublishedSite({ project: row }: { project: Project }) {
         )
 
       case 'testimonials':
-        return (
-          <section className="section-pad testi-section" id="testimonios" key="testimonials">
-            <div className="container">
-              <p className="label" style={{ textAlign: 'center' }}>Testimonios</p>
-              <h2 className="heading-lg" style={{ textAlign: 'center', marginBottom: '3rem' }}>Lo que dicen nuestros clientes</h2>
-              <div className="grid-3">
-                {bd.testimonials.map((t) => (
-                  <div key={t.id} className="card testi-card">
-                    {typeof t.rating === 'number' && t.rating > 0 && (
-                      <div className="stars">{'★'.repeat(Math.min(5, Math.round(t.rating)))}</div>
-                    )}
-                    <p className="testi-quote">"{t.content}"</p>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                      <div className="testi-avatar">{t.author?.[0] ?? '?'}</div>
-                      <div>
-                        <p style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.875rem' }}>{t.author}</p>
-                        <p style={{ color: '#94a3b8', fontSize: '0.75rem' }}>{t.role}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-        )
+        return <TestimonialsSection key="testimonials" testimonials={bd.testimonials} />
 
       case 'faq':
         return (
