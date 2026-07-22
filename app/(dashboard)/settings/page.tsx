@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 import { User, Bell, Shield, CreditCard, Save } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import { DeleteAccountCard } from '@/components/dashboard/DeleteAccountCard'
 import { cn } from '@/lib/utils'
 
 const TABS = [
@@ -164,6 +165,20 @@ export default function SettingsPage() {
                     </Button>
                   </div>
                 </div>
+
+                {/*
+                  Danger zone. Placed last, behind a divider, and only rendered
+                  once the session has actually produced an email — the
+                  confirmation is "type your own address", which is impossible
+                  to satisfy (and would be a confusing dead control) while the
+                  session is still loading.
+                */}
+                {user?.email && (
+                  <div className="pt-6 mt-6 border-t border-surface-100">
+                    <h2 className="text-base font-semibold text-surface-900 mb-4">Zona de riesgo</h2>
+                    <DeleteAccountCard email={user.email} />
+                  </div>
+                )}
               </div>
             )}
           </motion.div>
