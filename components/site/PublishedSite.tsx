@@ -1,4 +1,5 @@
 import type { Project } from '@prisma/client'
+import { HeroSection } from '@/components/site/sections/HeroSection'
 import { typographyOptions } from '@/config/themes'
 import { parseJSON } from '@/lib/published-site'
 import { publishedSiteUrl } from '@/lib/site-domain'
@@ -170,20 +171,15 @@ export function PublishedSite({ project: row }: { project: Project }) {
     switch (section.id) {
       case 'hero':
         return (
-          <section className="hero" id="inicio" key="hero">
-            {heroImg && <img className="hero-bg" src={heroImg} alt="" />}
-            <div className="container hero-content">
-              {bd.businessType && <div className="hero-badge">✦ {bd.businessType}</div>}
-              <h1>{name}</h1>
-              {(bd.tagline || bd.description) && (
-                <p className="hero-tagline">{bd.tagline || bd.description}</p>
-              )}
-              <div className="hero-cta">
-                {showContact && <a href="#contacto" className="btn-primary">Contactar ahora</a>}
-                {shows('services') && <a href="#servicios" className="btn-outline">Ver servicios</a>}
-              </div>
-            </div>
-          </section>
+          <HeroSection
+            key="hero"
+            name={name}
+            businessType={bd.businessType}
+            tagline={bd.tagline || bd.description}
+            heroImage={heroImg}
+            showContact={showContact}
+            showServices={shows('services')}
+          />
         )
 
       case 'about':
