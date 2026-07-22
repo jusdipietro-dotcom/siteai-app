@@ -4,6 +4,19 @@ import GoogleProvider from 'next-auth/providers/google'
 import bcrypt from 'bcryptjs'
 import { prisma } from './prisma'
 import { isAdminEmail } from './admin-emails'
+import { isAccountAccessBlocked } from './account-deletion'
+
+/**
+ * Shown to a user who tries to sign in to an account that asked to be deleted.
+ *
+ * Says the account is closed and does NOT offer a self-service way back, for
+ * the reason spelled out in app/api/account/delete/route.ts: the MercadoPago
+ * preapprovals were already cancelled, and un-cancelling them is not an
+ * operation MercadoPago has.
+ */
+export const ACCOUNT_DELETED_MESSAGE =
+  'Esta cuenta fue dada de baja y sus datos están programados para eliminarse. ' +
+  'Si fue un error, escribinos a automaticialab@gmail.com.'
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -27,6 +40,13 @@ export const authOptions: NextAuthOptions = {
         const valid = await bcrypt.compare(credentials.password, user.password)
         if (!valid) {
           throw new Error('Credenciales incorrectas')
+        }
+
+        // Checked AFTER the password, deliberately: answering "this account was
+        // deleted" before verifying credentials would turn the login form into
+        // an oracle for which addresses ever had an account here.
+        if (isAccountAccessBlocked(user)) {
+          throw new Error(ACCOUNT_DELETED_MESSAGE)
         }
 
         return {
@@ -64,6 +84,16 @@ export const authOptions: NextAuthOptions = {
               image: user.image,
             },
           })
+        } else if (isAccountAccessBlocked(existing)) {
+          // Refuses the sign-in AND explains why. Returning `false` here would
+          // send the user to a generic AccessDenied with no way to understand
+          // what happened to their account.
+          //
+          // Note this can only match an account still inside its 30-day window:
+          // the purge rewrites the email to a `@deleted.invalid` tombstone, so
+          // afterwards the address is free again and this branch falls through
+          // to `create` above — a person who left really can come back.
+          return `/login?error=${encodeURIComponent(ACCOUNT_DELETED_MESSAGE)}`
         }
       }
       return true
@@ -85,6 +115,39 @@ export const authOptions: NextAuthOptions = {
 
     async session({ session, token }) {
       if (session.user) {
+        // ── Deletion gate ───────────────────────────────────────────────────
+        // Checked here, on EVERY session read, because this is the only choke
+        // point that can revoke an ALREADY-ISSUED session. Sessions are JWTs:
+        // nothing is stored server-side to invalidate, and middleware.ts runs
+        // on the Edge runtime where Prisma cannot run. Blocking at sign-in
+        // alone would leave a user who is currently logged in with a working
+        // account for the full lifetime of their token — up to 30 days, i.e.
+        // exactly the window in which their data is supposed to be going away.
+        //
+        // COST: one indexed lookup on a unique column per session read. Paid
+        // deliberately. Every route that reads a session goes on to do real
+        // database work anyway, and the alternative — a cached flag with a
+        // refresh interval — makes "the account is unusable from that moment"
+        // false by however long the interval is.
+        const account = token.email
+          ? await prisma.user.findUnique({
+              where: { email: token.email },
+              select: { deletionRequestedAt: true, deletedAt: true },
+            })
+          : null
+
+        // A deleted (or missing) account gets a session with an EMPTY id rather
+        // than a thrown error or a null return. Every authenticated route in
+        // this codebase gates on `if (!session?.user?.id)`, so an empty string
+        // — falsy, and still a `string` for the type system — turns all of them
+        // into 401s at once, with no route needing to learn about deletion.
+        if (!account || isAccountAccessBlocked(account)) {
+          session.user.id = ''
+          session.user.plan = 'free'
+          session.user.isAdmin = false
+          return session
+        }
+
         session.user.id = token.id as string
         session.user.plan = (token.plan as string) ?? 'free'
         // Derived here rather than in the JWT so that changing ADMIN_EMAILS
