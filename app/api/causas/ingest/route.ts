@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { timingSafeEqual } from 'crypto'
 import { prisma } from '@/lib/prisma'
-import { CAUSAS_PLANS, type CausasPlanId } from '@/lib/causas-plans'
+import { getCausasPlanConfig } from '@/lib/causas-plans'
 
 function safeCompare(a: string, b: string): boolean {
   if (a.length !== b.length) return false
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Enforce maxCausas limit per plan
-    const planConfig = CAUSAS_PLANS[sub.plan as CausasPlanId]
+    const planConfig = getCausasPlanConfig(sub.plan)
     const maxCausas = planConfig?.maxCausas ?? 30
     const currentCount = await prisma.causasCase.count({ where: { subscriptionId } })
     const newCaseIds = new Set(

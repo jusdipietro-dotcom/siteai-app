@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { encryptCredentials } from '@/lib/encryption'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
-import { CAUSAS_PLANS } from '@/lib/causas-plans'
+import { getCausasPlanConfig } from '@/lib/causas-plans'
 import { isUserFreeAccount } from '@/lib/free-account'
 import { getTrialEndDate, expireStaleTrials, hasUsedTrial } from '@/lib/trial'
 
@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
     const { plan, mevUser, mevPass, dptoId, dptoNombre, dptoTipo, notificationEmail, payerEmail, couponCode } = body
 
     // Validate plan
-    const planConfig = CAUSAS_PLANS[plan as keyof typeof CAUSAS_PLANS]
+    const planConfig = getCausasPlanConfig(plan)
     if (!planConfig) {
       return NextResponse.json({ error: 'Plan inválido' }, { status: 400 })
     }

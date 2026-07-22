@@ -3,7 +3,11 @@
  * Usada por backend (subscribe, webhook) y frontend (dashboard, landing).
  */
 
-export type CausasPlanId = 'basico' | 'profesional' | 'estudio'
+/** Source of truth for the valid plan ids. `CausasPlanId` is derived from it so
+ * the list and the type can never drift apart. */
+export const CAUSAS_PLAN_IDS = ['basico', 'profesional', 'estudio'] as const
+
+export type CausasPlanId = (typeof CAUSAS_PLAN_IDS)[number]
 
 export interface CausasPlanConfig {
   id: CausasPlanId
@@ -90,9 +94,21 @@ export const CAUSAS_PLANS_LIST = [
   CAUSAS_PLANS.estudio,
 ]
 
+/**
+ * Narrows an untrusted value (request body, DB column) to a known plan id.
+ *
+ * Checks the id list instead of indexing CAUSAS_PLANS directly: the map is a
+ * plain object, so `CAUSAS_PLANS['toString']` resolves through Object.prototype
+ * and returns a truthy function — enough to slip past an `if (!planConfig)`
+ * guard and reach the pricing math with an undefined `monthly`.
+ */
+export function isCausasPlanId(value: unknown): value is CausasPlanId {
+  return typeof value === 'string' && CAUSAS_PLAN_IDS.some((id) => id === value)
+}
+
 /** Helpers */
-export function getCausasPlanConfig(planId: string): CausasPlanConfig | undefined {
-  return CAUSAS_PLANS[planId as CausasPlanId]
+export function getCausasPlanConfig(planId: unknown): CausasPlanConfig | undefined {
+  return isCausasPlanId(planId) ? CAUSAS_PLANS[planId] : undefined
 }
 
 export function formatCausasLimit(n: number): string {
