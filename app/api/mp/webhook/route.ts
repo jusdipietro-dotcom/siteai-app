@@ -7,6 +7,7 @@ import { getGraceEndDate, GRACE_PERIOD_MS, effectiveBillingStatus } from '@/lib/
 import { parseJSON } from '@/lib/published-site'
 import { publishedSiteUrl } from '@/lib/site-domain'
 import { FLASK_BACKEND_TIMEOUT_MS, INTERNAL_PROVISION_TIMEOUT_MS, MP_API_TIMEOUT_MS, N8N_ADMIN_API_TIMEOUT_MS, N8N_WEBHOOK_TIMEOUT_MS, SCRAPER_CONTROL_TIMEOUT_MS } from '@/lib/fetch-timeouts'
+import { isWebsitePlanId, type WebsitePlanId } from '@/lib/website-plans'
 
 const ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN!
 const MP_WEBHOOK_SECRET = process.env.MP_WEBHOOK_SECRET
@@ -14,7 +15,19 @@ const MP_WEBHOOK_SECRET = process.env.MP_WEBHOOK_SECRET
 // Plan precedence for the site generator (Project model). A user who owns
 // several projects reflects the HIGHEST plan they still hold — see
 // syncUserPlanFromProjects.
-const WEBSITE_PLAN_RANK: Record<string, number> = { free: 0, essential: 1, professional: 2 }
+const WEBSITE_PLAN_RANK: Record<WebsitePlanId | 'free', number> = { free: 0, essential: 1, professional: 2 }
+
+/**
+ * Rank of a stored Project.plan value.
+ *
+ * Goes through isWebsitePlanId rather than indexing WEBSITE_PLAN_RANK with the
+ * raw column: the map is a plain object, so a value like 'toString' would
+ * resolve through Object.prototype and yield a function instead of a number.
+ * Anything that is not a known website plan id ranks as free.
+ */
+function websitePlanRank(plan: unknown): number {
+  return isWebsitePlanId(plan) ? WEBSITE_PLAN_RANK[plan] : WEBSITE_PLAN_RANK.free
+}
 
 /**
  * Recomputes and persists User.plan from the projects the user still holds.
@@ -43,7 +56,7 @@ async function syncUserPlanFromProjects(userId: string, now: Date = new Date()):
     for (const p of owned) {
       if (effectiveBillingStatus(p, now) === 'suspended') continue
       const plan = p.plan ?? 'free'
-      if ((WEBSITE_PLAN_RANK[plan] ?? 0) > (WEBSITE_PLAN_RANK[best] ?? 0)) best = plan
+      if (websitePlanRank(plan) > websitePlanRank(best)) best = plan
     }
     await prisma.user.update({ where: { id: userId }, data: { plan: best } })
   } catch (err) {

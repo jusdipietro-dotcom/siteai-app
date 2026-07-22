@@ -78,7 +78,9 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   // Never trust a client-sent plan (or price): the id is only accepted if it
   // resolves in the server-side plan config.
-  const planConfig = typeof body.plan === 'string' ? getWebsitePlanConfig(body.plan) : undefined
+  // getWebsitePlanConfig validates by id-list membership, so a non-string body
+  // value and a prototype key such as 'toString' both resolve to undefined.
+  const planConfig = getWebsitePlanConfig(body.plan)
   if (!planConfig) {
     return NextResponse.json({ error: 'Plan inválido' }, { status: 400 })
   }

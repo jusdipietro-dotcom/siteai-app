@@ -9,7 +9,11 @@
  * tambien desde route handlers que corren en el servidor.
  */
 
-export type WebsitePlanId = 'essential' | 'professional'
+/** Source of truth for the valid plan ids. `WebsitePlanId` is derived from it so
+ * the list and the type can never drift apart. */
+export const WEBSITE_PLAN_IDS = ['essential', 'professional'] as const
+
+export type WebsitePlanId = (typeof WEBSITE_PLAN_IDS)[number]
 
 export interface WebsitePlanConfig {
   id: WebsitePlanId
@@ -67,13 +71,26 @@ export const WEBSITE_PLANS_LIST = [
   WEBSITE_PLANS.professional,
 ]
 
+/**
+ * Narrows an untrusted value (request body, DB column) to a known plan id.
+ *
+ * Checks the id list instead of indexing WEBSITE_PLANS directly: the map is a
+ * plain object, so `WEBSITE_PLANS['toString']` resolves through
+ * Object.prototype and returns a truthy function — enough to slip past an
+ * `if (!planConfig)` guard and reach the pricing math with an undefined
+ * `monthly`.
+ */
+export function isWebsitePlanId(value: unknown): value is WebsitePlanId {
+  return typeof value === 'string' && WEBSITE_PLAN_IDS.some((id) => id === value)
+}
+
 /** Helpers */
-export function getWebsitePlanConfig(planId: string): WebsitePlanConfig | undefined {
-  return WEBSITE_PLANS[planId as WebsitePlanId]
+export function getWebsitePlanConfig(planId: unknown): WebsitePlanConfig | undefined {
+  return isWebsitePlanId(planId) ? WEBSITE_PLANS[planId] : undefined
 }
 
 /** Precio mensual segun modalidad de facturacion. */
-export function websitePlanPrice(planId: string, annual: boolean): number {
+export function websitePlanPrice(planId: unknown, annual: boolean): number {
   const plan = getWebsitePlanConfig(planId)
   if (!plan) return 0
   return annual ? plan.annual : plan.monthly
