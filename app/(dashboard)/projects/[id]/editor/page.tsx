@@ -1200,7 +1200,7 @@ function PreviewSection({ section, bd, name, color, galleryImages, device }: { s
       return (
         <div className="px-8 py-8 bg-surface-900 text-center">
           <p className="text-sm font-bold text-white mb-1">{name}</p>
-          <p className="text-xs text-white/40">© 2025 · Todos los derechos reservados</p>
+          <p className="text-xs text-white/40">© {new Date().getFullYear()} · Todos los derechos reservados</p>
         </div>
       )
     default:
