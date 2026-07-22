@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 import { extractSiteSubdomain, isSitesPathHost } from '@/lib/site-domain'
+import {
+  REQUEST_ID_HEADER,
+  resolveRequestId,
+  withCorrelationHeaders,
+  type ResolvedRequestId,
+} from '@/lib/request-id'
 
 // Rutas que requieren autenticación
 const PROTECTED_PATHS = [
@@ -39,7 +45,34 @@ function isFrameworkPath(pathname: string): boolean {
   )
 }
 
+/**
+ * Every response leaves here carrying `x-request-id`, so a customer complaint
+ * ("no me anda", a screenshot, a support ticket) can be tied to the exact log
+ * lines for that request.
+ *
+ * Applied to EVERY exit — rewrite, redirect and pass-through alike. A redirect
+ * to /login is precisely the response somebody complains about, and it must be
+ * correlatable too.
+ */
 export async function middleware(req: NextRequest) {
+  const resolved = resolveRequestId(req.headers.get(REQUEST_ID_HEADER))
+  const res = await route(req, resolved)
+  res.headers.set(REQUEST_ID_HEADER, resolved.id)
+  return res
+}
+
+/**
+ * Forwards the request downstream with the correlation id attached, so
+ * `requestLogger()` can find it in the route handler. See lib/request-id.ts for
+ * why the inbound `x-request-id` is never rewritten.
+ */
+function forward(req: NextRequest, resolved: ResolvedRequestId): NextResponse {
+  return NextResponse.next({
+    request: { headers: withCorrelationHeaders(req.headers, resolved) },
+  })
+}
+
+async function route(req: NextRequest, resolved: ResolvedRequestId): Promise<NextResponse> {
   const hostname = req.headers.get('host') ?? ''
   const { pathname } = req.nextUrl
 
@@ -55,20 +88,22 @@ export async function middleware(req: NextRequest) {
   const siteSubdomain = extractSiteSubdomain(hostname)
   if (siteSubdomain) {
     if (isFrameworkPath(pathname) || (pathname !== '/' && STATIC_FILE_RE.test(pathname))) {
-      return NextResponse.next()
+      return forward(req, resolved)
     }
 
     // "/" → /sub/{sub}; "/sitemap.xml" → /sub/{sub}/sitemap.xml
     const url = req.nextUrl.clone()
     url.pathname = pathname === '/' ? `/sub/${siteSubdomain}` : `/sub/${siteSubdomain}${pathname}`
-    return NextResponse.rewrite(url)
+    return NextResponse.rewrite(url, {
+      request: { headers: withCorrelationHeaders(req.headers, resolved) },
+    })
   }
 
   // ── Site routing by path: sites.automaticialab.com/{slug} → /s/{slug} ──────
   if (isSitesPathHost(hostname)) {
     // Dejar pasar internals de Next.js y API routes sin modificar
     if (isFrameworkPath(pathname) || pathname === '/') {
-      return NextResponse.next()
+      return forward(req, resolved)
     }
 
     // Reescribir /{slug} o /{slug}/ruta → /s/{slug} o /s/{slug}/ruta
@@ -78,14 +113,16 @@ export async function middleware(req: NextRequest) {
     if (slug) {
       // Archivos estáticos en la raíz (sin slug) pasan sin rewrite
       if (segments.length === 1 && STATIC_FILE_RE.test(slug)) {
-        return NextResponse.next()
+        return forward(req, resolved)
       }
       const url = req.nextUrl.clone()
       url.pathname = `/s/${pathname.slice(1)}`
-      return NextResponse.rewrite(url)
+      return NextResponse.rewrite(url, {
+        request: { headers: withCorrelationHeaders(req.headers, resolved) },
+      })
     }
 
-    return NextResponse.next()
+    return forward(req, resolved)
   }
 
   // ── Public routes that start with a protected prefix ────────────────────────
@@ -127,7 +164,7 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  return NextResponse.next()
+  return forward(req, resolved)
 }
 
 export const config = {
