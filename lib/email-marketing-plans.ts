@@ -3,7 +3,11 @@
  * Usada por backend (subscribe, webhook) y frontend (dashboard, landing).
  */
 
-export type EmailMarketingPlanId = 'basico' | 'profesional' | 'premium'
+/** Source of truth for the valid plan ids. `EmailMarketingPlanId` is derived from
+ * it so the list and the type can never drift apart. */
+export const EMAIL_MARKETING_PLAN_IDS = ['basico', 'profesional', 'premium'] as const
+
+export type EmailMarketingPlanId = (typeof EMAIL_MARKETING_PLAN_IDS)[number]
 
 export interface EmailMarketingPlanConfig {
   id: EmailMarketingPlanId
@@ -72,9 +76,22 @@ export const EMAIL_MARKETING_PLANS_LIST = [
   EMAIL_MARKETING_PLANS.premium,
 ]
 
+/**
+ * Narrows an untrusted value (request body, DB column) to a known plan id.
+ *
+ * Checks the id list instead of indexing EMAIL_MARKETING_PLANS directly: the map
+ * is a plain object, so `EMAIL_MARKETING_PLANS['toString']` resolves through
+ * Object.prototype and returns a truthy function — enough to slip past an
+ * `if (!planConfig)` guard and reach the pricing math with an undefined
+ * `monthly`.
+ */
+export function isEmailMarketingPlanId(value: unknown): value is EmailMarketingPlanId {
+  return typeof value === 'string' && EMAIL_MARKETING_PLAN_IDS.some((id) => id === value)
+}
+
 /** Helpers */
-export function getPlanConfig(planId: string): EmailMarketingPlanConfig | undefined {
-  return EMAIL_MARKETING_PLANS[planId as EmailMarketingPlanId]
+export function getPlanConfig(planId: unknown): EmailMarketingPlanConfig | undefined {
+  return isEmailMarketingPlanId(planId) ? EMAIL_MARKETING_PLANS[planId] : undefined
 }
 
 export function formatContactLimit(n: number): string {
