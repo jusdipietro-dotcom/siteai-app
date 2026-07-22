@@ -24,6 +24,30 @@ model User {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
+  // ── Account deletion lifecycle (see lib/account-deletion.ts) ───────────────
+  // Three columns rather than one status string, because each answers a
+  // different question and each is written at a different moment:
+  //
+  //   deletionRequestedAt  — when the owner asked. Non-null BLOCKS all access
+  //                          immediately (the session callback in lib/auth.ts
+  //                          refuses to hydrate a session for such a user), so
+  //                          the account is unusable from that instant.
+  //   deletionScheduledFor — the earliest instant the purge may run:
+  //                          requestedAt + 30 days, the window promised in
+  //                          app/privacy/page.tsx. STORED rather than derived
+  //                          so that changing DELETION_WINDOW_MS later cannot
+  //                          retroactively move an in-flight deadline.
+  //   deletedAt            — when the purge actually ran. Non-null means this
+  //                          row is a billing TOMBSTONE: the personal data is
+  //                          gone, but the row survives because the anonymised
+  //                          financial trail (Project / *Subscription rows)
+  //                          hangs off this id by foreign key. Hard-deleting
+  //                          the User would cascade that trail away, which is
+  //                          the opposite compliance problem.
+  deletionRequestedAt  DateTime?
+  deletionScheduledFor DateTime?
+  deletedAt            DateTime?
+
   projects                    Project[]
   media                       Media[]
   monitoringSubscriptions     MonitoringSubscription[]
@@ -39,6 +63,10 @@ model User {
   suiteJuridicaSubscriptions  SuiteJuridicaSubscription[]
   lexpostSubscriptions        LexPostSubscription[]
   passwordResetTokens         PasswordResetToken[]
+
+  // The daily purge sweep (POST /api/admin/expire-trials) scans exactly this:
+  // "scheduled on or before now, not purged yet".
+  @@index([deletionScheduledFor, deletedAt])
 }
 
 model PasswordResetToken {
