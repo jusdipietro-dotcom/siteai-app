@@ -114,7 +114,10 @@ const nextConfig = {
     instrumentationHook: true,
   },
 
-  typescript: { ignoreBuildErrors: true },
+  // Type errors fail the build. The Dockerfile runs `next build`, so a type
+  // error now stops the container image from being produced instead of
+  // reaching production unnoticed.
+  typescript: { ignoreBuildErrors: false },
   eslint: { ignoreDuringBuilds: true },
 }
 
