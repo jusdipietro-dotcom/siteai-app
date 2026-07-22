@@ -1,5 +1,13 @@
 import { prisma } from './prisma'
 import { FLASK_BACKEND_TIMEOUT_MS } from './fetch-timeouts'
+import { requestLogger } from './request-log'
+
+/**
+ * A provisioning failure here means a customer paid and never got the product,
+ * so these lines are the ones an operator greps. Structured, request-correlated
+ * and redacted — the Flask provisioning secret must never reach a log.
+ */
+const log = requestLogger({ flow: 'facturacion-provision' })
 
 /**
  * Provision a facturacion subscription in the Flask backend.
@@ -17,7 +25,7 @@ export async function provisionFacturacion(
   const provisionSecret = process.env.FLASK_PROVISION_SECRET
 
   if (!flaskUrl || !provisionSecret) {
-    console.warn('[Facturacion Provision] FLASK_BACKEND_URL or FLASK_PROVISION_SECRET not configured')
+    log.warn('FLASK_BACKEND_URL or FLASK_PROVISION_SECRET not configured — cannot provision')
     return { success: false }
   }
 
@@ -59,13 +67,13 @@ export async function provisionFacturacion(
             provisionedAt: new Date(),
           },
         })
-        console.log(`[Facturacion Provision] ${subscriptionId} -> ${targetStatus} (Flask tenant: ${data.tenantId})`)
+        log.info('Provisioned', { subscriptionId, targetStatus, flaskTenantId: data.tenantId })
         return { success: true, flaskTenantId: data.tenantId }
       }
 
-      console.warn(`[Facturacion Provision] Attempt ${attempt}/${maxRetries} failed: ${res.status}`)
+      log.warn('Provisioning attempt failed', { subscriptionId, attempt, maxRetries, httpStatus: res.status })
     } catch (err) {
-      console.error(`[Facturacion Provision] Attempt ${attempt}/${maxRetries} error:`, err)
+      log.error('Provisioning attempt errored', { subscriptionId, attempt, maxRetries, err })
     }
 
     if (attempt < maxRetries) {
@@ -73,6 +81,6 @@ export async function provisionFacturacion(
     }
   }
 
-  console.error(`[Facturacion Provision] ${subscriptionId} FAILED after ${maxRetries} attempts`)
+  log.error('Provisioning FAILED — manual provisioning required', { subscriptionId, maxRetries })
   return { success: false }
 }

@@ -4,6 +4,9 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { MP_API_TIMEOUT_MS } from '@/lib/fetch-timeouts'
 import { isTradingPlanId, type TradingPlanId } from '@/lib/trading-plans'
+import { requestLogger } from '@/lib/request-log'
+
+const log = requestLogger({ route: 'api/mp/create-trading-subscription' })
 
 const ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN!
 
@@ -17,7 +20,7 @@ const TRADING_PLANS: Record<TradingPlanId, { monthly: number; title: string }> =
 export async function POST(req: NextRequest) {
   try {
     if (!ACCESS_TOKEN) {
-      console.error('[MP Trading] MP_ACCESS_TOKEN no está configurado')
+      log.error('MP_ACCESS_TOKEN no está configurado')
       return NextResponse.json({ error: 'El sistema de pago no está configurado. Contactá soporte.' }, { status: 503 })
     }
 
@@ -61,7 +64,7 @@ export async function POST(req: NextRequest) {
         where: { id: subscriptionId },
         data: { status: 'provisioning', preapprovalId: `free-${subscriptionId}` },
       })
-      console.log(`[MP Trading] 100% discount — skipping MP, direct provisioning for ${subscriptionId}`)
+      log.info('100% discount — skipping MP, direct provisioning for ${subscriptionId}')
 
       const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? process.env.APP_URL ?? 'https://automaticialab.com'
       return NextResponse.json({
@@ -98,7 +101,7 @@ export async function POST(req: NextRequest) {
       back_url: backUrl,
     }
 
-    console.log('[MP Trading] Creating preapproval:', { plan: sub.plan, subscriptionId, price: finalPrice })
+    log.info('Creating preapproval', { plan: sub.plan, subscriptionId, price: finalPrice })
 
     const res = await fetch('https://api.mercadopago.com/preapproval', {
       method: 'POST',
@@ -113,13 +116,13 @@ export async function POST(req: NextRequest) {
     const data = await res.json()
 
     if (!res.ok) {
-      console.error('[MP Trading] Error:', res.status, JSON.stringify(data, null, 2))
+      log.error('MercadoPago rejected the preapproval', { httpStatus: res.status, mpResponse: data })
       return NextResponse.json({ error: data.message ?? 'Error de MercadoPago' }, { status: res.status })
     }
 
     const initPoint = data.init_point
     if (!initPoint || !data.id) {
-      console.error('[MP Trading] Missing init_point or id')
+      log.error('MercadoPago response is missing init_point or id', { hasInitPoint: !!initPoint, hasId: !!data.id })
       return NextResponse.json({ error: 'MercadoPago no devolvió link de pago' }, { status: 502 })
     }
 
@@ -128,10 +131,10 @@ export async function POST(req: NextRequest) {
       data: { preapprovalId: data.id },
     })
 
-    console.log('[MP Trading] Preapproval created:', data.id)
+    log.info('Preapproval created', { preapprovalId: data.id })
     return NextResponse.json({ init_point: initPoint, id: data.id })
   } catch (err) {
-    console.error('[MP Trading] Exception:', err)
+    log.error('Unhandled exception creating the preapproval', { err })
     return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 })
   }
 }

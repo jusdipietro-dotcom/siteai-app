@@ -4,6 +4,9 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getTurnosPlanConfig } from '@/lib/turnos-plans'
 import { MP_API_TIMEOUT_MS } from '@/lib/fetch-timeouts'
+import { requestLogger } from '@/lib/request-log'
+
+const log = requestLogger({ route: 'api/mp/create-turnos-subscription' })
 
 const ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN!
 
@@ -75,7 +78,7 @@ export async function POST(req: NextRequest) {
 
     const data = await res.json()
     if (!res.ok) {
-      console.error('[MP Turnos] Error:', res.status, JSON.stringify(data, null, 2))
+      log.error('MercadoPago rejected the preapproval', { httpStatus: res.status, mpResponse: data })
       return NextResponse.json({ error: data.message ?? 'Error de MercadoPago' }, { status: res.status })
     }
 
@@ -90,7 +93,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ init_point: data.init_point, id: data.id })
   } catch (err) {
-    console.error('[MP Turnos] Exception:', err)
+    log.error('Unhandled exception creating the preapproval', { err })
     return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 })
   }
 }

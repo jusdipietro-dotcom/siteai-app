@@ -3,6 +3,9 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { MP_API_TIMEOUT_MS } from '@/lib/fetch-timeouts'
+import { requestLogger } from '@/lib/request-log'
+
+const log = requestLogger({ route: 'api/mp/check-subscription' })
 
 const ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN!
 
@@ -112,7 +115,7 @@ export async function GET(req: NextRequest) {
       const data = await res.json()
 
       if (!res.ok) {
-        console.error('[MP] check-preapproval error:', data)
+        log.error('check-preapproval error', { data })
         // An id MercadoPago does not know is indistinguishable from one that is
         // not the caller's. Upstream failures stay 502 so a transient outage is
         // not reported to the user as "no existe".
@@ -131,7 +134,7 @@ export async function GET(req: NextRequest) {
         status: data.status === 'authorized' ? 'authorized' : data.status,
       })
     } catch (err) {
-      console.error('[MP] check-preapproval exception:', err)
+      log.error('check-preapproval exception', { err })
       return NextResponse.json({ error: 'Error interno' }, { status: 500 })
     }
   }
@@ -148,7 +151,7 @@ export async function GET(req: NextRequest) {
       const data = await res.json()
 
       if (!res.ok) {
-        console.error('[MP] check-payment error:', data)
+        log.error('check-payment error', { data })
         if (res.status === 404) return notFound()
         return NextResponse.json({ error: 'Error consultando pago' }, { status: 502 })
       }
@@ -162,7 +165,7 @@ export async function GET(req: NextRequest) {
         status: data.status === 'approved' ? 'authorized' : data.status,
       })
     } catch (err) {
-      console.error('[MP] check-payment exception:', err)
+      log.error('check-payment exception', { err })
       return NextResponse.json({ error: 'Error interno' }, { status: 500 })
     }
   }

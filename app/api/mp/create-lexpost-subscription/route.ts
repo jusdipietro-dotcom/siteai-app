@@ -4,6 +4,9 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { MP_API_TIMEOUT_MS } from '@/lib/fetch-timeouts'
 import { isLexpostPlanId, type LexpostPlanId } from '@/lib/lexpost-plans'
+import { requestLogger } from '@/lib/request-log'
+
+const log = requestLogger({ route: 'api/mp/create-lexpost-subscription' })
 
 const ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN!
 
@@ -18,7 +21,7 @@ const LEXPOST_PLANS: Record<LexpostPlanId, { monthly: number; title: string }> =
 export async function POST(req: NextRequest) {
   try {
     if (!ACCESS_TOKEN) {
-      console.error('[MP LexPost] MP_ACCESS_TOKEN no esta configurado')
+      log.error('MP_ACCESS_TOKEN no esta configurado')
       return NextResponse.json({ error: 'El sistema de pago no esta configurado. Contacta soporte.' }, { status: 503 })
     }
 
@@ -46,7 +49,7 @@ export async function POST(req: NextRequest) {
 
     // Idempotency: if a preapproval already exists, don't create another
     if (sub.preapprovalId) {
-      console.log(`[MP LexPost] Subscription ${subscriptionId} already has preapproval ${sub.preapprovalId} — skipping`)
+      log.info('Subscription already has a preapproval — skipping', { subscriptionId: subscriptionId, preapprovalId: sub.preapprovalId })
       return NextResponse.json({ error: 'Ya se genero un link de pago para esta suscripcion. Refresca la pagina.' }, { status: 409 })
     }
 
@@ -93,7 +96,7 @@ export async function POST(req: NextRequest) {
       back_url: backUrl,
     }
 
-    console.log('[MP LexPost] Creating preapproval:', { plan: sub.plan, subscriptionId, price: finalPrice })
+    log.info('Creating preapproval', { plan: sub.plan, subscriptionId, price: finalPrice })
 
     const res = await fetch('https://api.mercadopago.com/preapproval', {
       method: 'POST',
@@ -108,13 +111,13 @@ export async function POST(req: NextRequest) {
     const data = await res.json()
 
     if (!res.ok) {
-      console.error('[MP LexPost] Error:', res.status, JSON.stringify(data, null, 2))
+      log.error('MercadoPago rejected the preapproval', { httpStatus: res.status, mpResponse: data })
       return NextResponse.json({ error: data.message ?? 'Error de MercadoPago' }, { status: res.status })
     }
 
     const initPoint = data.init_point
     if (!initPoint || !data.id) {
-      console.error('[MP LexPost] Missing init_point or id:', { init_point: !!initPoint, id: !!data.id })
+      log.error('MercadoPago response is missing init_point or id', { hasInitPoint: !!initPoint, hasId: !!data.id })
       return NextResponse.json({ error: 'MercadoPago no devolvio link de pago' }, { status: 502 })
     }
 
@@ -124,10 +127,10 @@ export async function POST(req: NextRequest) {
       data: { preapprovalId: data.id },
     })
 
-    console.log('[MP LexPost] Preapproval created:', data.id)
+    log.info('Preapproval created', { preapprovalId: data.id })
     return NextResponse.json({ init_point: initPoint, id: data.id })
   } catch (err) {
-    console.error('[MP LexPost] Exception:', err)
+    log.error('Unhandled exception creating the preapproval', { err })
     return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 })
   }
 }

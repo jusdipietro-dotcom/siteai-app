@@ -4,6 +4,9 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { MP_API_TIMEOUT_MS } from '@/lib/fetch-timeouts'
 import { isLinkedInPlanId, type LinkedInPlanId } from '@/lib/linkedin-plans'
+import { requestLogger } from '@/lib/request-log'
+
+const log = requestLogger({ route: 'api/mp/create-linkedin-subscription' })
 
 const ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN!
 
@@ -18,7 +21,7 @@ const LINKEDIN_PLANS: Record<LinkedInPlanId, { monthly: number; title: string }>
 export async function POST(req: NextRequest) {
   try {
     if (!ACCESS_TOKEN) {
-      console.error('[MP LinkedIn] MP_ACCESS_TOKEN no está configurado')
+      log.error('MP_ACCESS_TOKEN no está configurado')
       return NextResponse.json({ error: 'El sistema de pago no está configurado. Contactá soporte.' }, { status: 503 })
     }
 
@@ -44,7 +47,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (sub.preapprovalId) {
-      console.log(`[MP LinkedIn] Subscription ${subscriptionId} already has preapproval ${sub.preapprovalId} — skipping`)
+      log.info('Subscription already has a preapproval — skipping', { subscriptionId: subscriptionId, preapprovalId: sub.preapprovalId })
       return NextResponse.json({ error: 'Ya se generó un link de pago para esta suscripción. Refrescá la página.' }, { status: 409 })
     }
 
@@ -90,7 +93,7 @@ export async function POST(req: NextRequest) {
       back_url: backUrl,
     }
 
-    console.log('[MP LinkedIn] Creating preapproval:', { plan: sub.plan, subscriptionId, price: finalPrice })
+    log.info('Creating preapproval', { plan: sub.plan, subscriptionId, price: finalPrice })
 
     const res = await fetch('https://api.mercadopago.com/preapproval', {
       method: 'POST',
@@ -105,13 +108,13 @@ export async function POST(req: NextRequest) {
     const data = await res.json()
 
     if (!res.ok) {
-      console.error('[MP LinkedIn] Error:', res.status, JSON.stringify(data, null, 2))
+      log.error('MercadoPago rejected the preapproval', { httpStatus: res.status, mpResponse: data })
       return NextResponse.json({ error: data.message ?? 'Error de MercadoPago' }, { status: res.status })
     }
 
     const initPoint = data.init_point
     if (!initPoint || !data.id) {
-      console.error('[MP LinkedIn] Missing init_point or id:', { init_point: !!initPoint, id: !!data.id })
+      log.error('MercadoPago response is missing init_point or id', { hasInitPoint: !!initPoint, hasId: !!data.id })
       return NextResponse.json({ error: 'MercadoPago no devolvió link de pago' }, { status: 502 })
     }
 
@@ -120,10 +123,10 @@ export async function POST(req: NextRequest) {
       data: { preapprovalId: data.id },
     })
 
-    console.log('[MP LinkedIn] Preapproval created:', data.id)
+    log.info('Preapproval created', { preapprovalId: data.id })
     return NextResponse.json({ init_point: initPoint, id: data.id })
   } catch (err) {
-    console.error('[MP LinkedIn] Exception:', err)
+    log.error('Unhandled exception creating the preapproval', { err })
     return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 })
   }
 }

@@ -5,6 +5,9 @@ import { prisma } from '@/lib/prisma'
 import { isValidEmail } from '@/lib/validators'
 import { getWebsitePlanConfig } from '@/lib/website-plans'
 import { MP_API_TIMEOUT_MS } from '@/lib/fetch-timeouts'
+import { requestLogger } from '@/lib/request-log'
+
+const log = requestLogger({ route: 'api/mp/create-subscription' })
 
 const ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN!
 
@@ -32,11 +35,11 @@ async function cancelMpPreapproval(preapprovalId: string): Promise<boolean> {
       cache: 'no-store',
     })
     if (!res.ok) {
-      console.error(`[MP] prior preapproval ${preapprovalId} cancel failed — status ${res.status}`)
+      log.error('prior preapproval ${preapprovalId} cancel failed — status ${res.status}')
     }
     return res.ok
   } catch (err) {
-    console.error(`[MP] prior preapproval ${preapprovalId} cancel errored:`, err)
+    log.error('prior preapproval ${preapprovalId} cancel errored', { err })
     return false
   } finally {
     clearTimeout(timeout)
@@ -46,7 +49,7 @@ async function cancelMpPreapproval(preapprovalId: string): Promise<boolean> {
 export async function POST(req: NextRequest) {
   try {
     if (!ACCESS_TOKEN) {
-      console.error('[MP] MP_ACCESS_TOKEN no está configurado')
+      log.error('MP_ACCESS_TOKEN no está configurado')
       return NextResponse.json({ error: 'Pago no configurado. Contactá soporte.' }, { status: 503 })
     }
 
@@ -126,13 +129,14 @@ export async function POST(req: NextRequest) {
     if (project.preapprovalId) {
       const cancelled = await cancelMpPreapproval(project.preapprovalId)
       if (!cancelled) {
-        console.warn(
-          `[MP] proceeding with new checkout for project ${projectId} despite failing to cancel prior preapproval ${project.preapprovalId} — it may keep charging until cancelled by other means`
+        log.warn(
+          'Proceeding with a new checkout despite failing to cancel the prior preapproval — it may keep charging until cancelled by other means',
+          { projectId, priorPreapprovalId: project.preapprovalId }
         )
       }
     }
 
-    console.log('[MP] creating preapproval for', { plan, projectId, payerEmail: payerEmail.toLowerCase() })
+    log.info('Creating preapproval', { plan, projectId, payerEmail: payerEmail.toLowerCase() })
 
     const res = await fetch('https://api.mercadopago.com/preapproval', {
       method: 'POST',
@@ -147,7 +151,7 @@ export async function POST(req: NextRequest) {
     const data = await res.json()
 
     if (!res.ok) {
-      console.error('[MP] create preapproval error (status=%d):', res.status, JSON.stringify(data, null, 2))
+      log.error('MercadoPago rejected the preapproval', { httpStatus: res.status, mpResponse: data })
       const mpMessage = data.message ?? data.error ?? 'Error de MercadoPago'
       const mpCause = Array.isArray(data.cause)
         ? data.cause.map((c: { code?: string; description?: string }) => c.description ?? c.code).join(', ')
@@ -160,11 +164,11 @@ export async function POST(req: NextRequest) {
 
     const initPoint = data.init_point
     if (!initPoint) {
-      console.error('[MP] preapproval missing init_point:', data)
+      log.error('preapproval missing init_point', { data })
       return NextResponse.json({ error: 'MercadoPago no devolvió un link de suscripción' }, { status: 502 })
     }
 
-    console.log('[MP] preapproval created, id:', data.id)
+    log.info('Preapproval created', { preapprovalId: data.id })
 
     // Persist the preapproval id NOW, at creation — not only when the authorized
     // webhook lands. The double-checkout guard above and the project cancel flow
@@ -179,7 +183,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ init_point: initPoint, id: data.id })
   } catch (err) {
-    console.error('[MP] create-subscription exception:', err)
+    log.error('create-subscription exception', { err })
     return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 })
   }
 }

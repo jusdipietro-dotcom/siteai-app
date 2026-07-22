@@ -22,7 +22,7 @@
  */
 
 import { headers } from 'next/headers'
-import { createLogger, type LogContext, type Logger } from './logger'
+import { createLogger, type LogContext, type LogLevel, type Logger } from './logger'
 import { CORRELATION_ID_HEADER, REQUEST_ID_HEADER } from './request-id'
 
 /**
@@ -43,12 +43,29 @@ export function currentRequestId(): string | undefined {
 }
 
 /**
- * A logger bound to the current request id plus whatever context you give it.
+ * A logger that resolves the current request id at CALL time.
  *
- * Call it once at the top of a handler and reuse the result, or call it inside
- * a helper that has no handle on the handler's logger — both are cheap (an
- * AsyncLocalStorage read).
+ * The laziness is the whole point. It means a route file can bind ONE
+ * module-level logger:
+ *
+ *     const log = requestLogger({ route: 'api/mp/webhook' })
+ *
+ * and every function in that file — the handler, and the twenty module-level
+ * helpers it calls — writes lines carrying the right requestId, with nothing
+ * threaded through and nothing re-bound per request. An eagerly-bound logger
+ * would capture `undefined` once at module-eval time and keep it forever.
+ *
+ * The cost is one AsyncLocalStorage read per line, which is a map lookup.
  */
 export function requestLogger(context: LogContext = {}): Logger {
-  return createLogger({ requestId: currentRequestId(), ...context })
+  const at = (level: LogLevel) => (msg: string, extra?: LogContext) =>
+    createLogger({ requestId: currentRequestId(), ...context })[level](msg, extra)
+
+  return {
+    debug: at('debug'),
+    info: at('info'),
+    warn: at('warn'),
+    error: at('error'),
+    child: (extra: LogContext) => requestLogger({ ...context, ...extra }),
+  }
 }
