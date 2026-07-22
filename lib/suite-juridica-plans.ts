@@ -3,7 +3,11 @@
  * Combo de 4 servicios con descuento vs compra individual.
  */
 
-export type SuiteJuridicaPlanId = 'abogado' | 'profesional' | 'estudio'
+/** Source of truth for the valid plan ids. `SuiteJuridicaPlanId` is derived from
+ * it so the list and the type can never drift apart. */
+export const SUITE_JURIDICA_PLAN_IDS = ['abogado', 'profesional', 'estudio'] as const
+
+export type SuiteJuridicaPlanId = (typeof SUITE_JURIDICA_PLAN_IDS)[number]
 
 export interface SuiteServiceLimits {
   monitoringPlan: string   // plan individual a crear en MonitoringSubscription
@@ -98,6 +102,19 @@ export const SUITE_JURIDICA_PLANS_LIST = [
   SUITE_JURIDICA_PLANS.estudio,
 ]
 
-export function getSuiteJuridicaPlanConfig(planId: string): SuiteJuridicaPlanConfig | undefined {
-  return SUITE_JURIDICA_PLANS[planId as SuiteJuridicaPlanId]
+/**
+ * Narrows an untrusted value (request body, DB column) to a known plan id.
+ *
+ * Checks the id list instead of indexing SUITE_JURIDICA_PLANS directly: the map
+ * is a plain object, so `SUITE_JURIDICA_PLANS['toString']` resolves through
+ * Object.prototype and returns a truthy function — enough to slip past an
+ * `if (!planConfig)` guard and reach the pricing math with an undefined
+ * `monthly`.
+ */
+export function isSuiteJuridicaPlanId(value: unknown): value is SuiteJuridicaPlanId {
+  return typeof value === 'string' && SUITE_JURIDICA_PLAN_IDS.some((id) => id === value)
+}
+
+export function getSuiteJuridicaPlanConfig(planId: unknown): SuiteJuridicaPlanConfig | undefined {
+  return isSuiteJuridicaPlanId(planId) ? SUITE_JURIDICA_PLANS[planId] : undefined
 }

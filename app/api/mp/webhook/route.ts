@@ -2283,8 +2283,8 @@ async function triggerFacturacionDeprovisioning(subscriptionId: string) {
 /** Provision Suite Juridica: create 4 individual subscriptions in cascade */
 async function provisionSuiteJuridica(suiteSubId: string, suitePlan: string) {
   try {
-    const { SUITE_JURIDICA_PLANS } = await import('@/lib/suite-juridica-plans')
-    const planConfig = SUITE_JURIDICA_PLANS[suitePlan as keyof typeof SUITE_JURIDICA_PLANS]
+    const { getSuiteJuridicaPlanConfig } = await import('@/lib/suite-juridica-plans')
+    const planConfig = getSuiteJuridicaPlanConfig(suitePlan)
     if (!planConfig) {
       console.error(`[Suite Provision] Unknown plan: ${suitePlan}`)
       return

@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
-import { SUITE_JURIDICA_PLANS } from '@/lib/suite-juridica-plans'
+import { getSuiteJuridicaPlanConfig } from '@/lib/suite-juridica-plans'
 import { isUserFreeAccount } from '@/lib/free-account'
 import { getTrialEndDate, expireStaleTrials, hasUsedTrial } from '@/lib/trial'
 
@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const { plan, payerEmail, couponCode } = body
 
-    const planConfig = SUITE_JURIDICA_PLANS[plan as keyof typeof SUITE_JURIDICA_PLANS]
+    const planConfig = getSuiteJuridicaPlanConfig(plan)
     if (!planConfig) {
       return NextResponse.json({ error: 'Plan invalido' }, { status: 400 })
     }
