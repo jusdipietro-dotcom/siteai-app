@@ -2,7 +2,11 @@
  * Configuración centralizada de planes de LinkedIn Optimizer IA.
  */
 
-export type LinkedInPlanId = 'basico' | 'profesional' | 'agencia'
+/** Source of truth for the valid plan ids. `LinkedInPlanId` is derived from it
+ * so the list and the type can never drift apart. */
+export const LINKEDIN_PLAN_IDS = ['basico', 'profesional', 'agencia'] as const
+
+export type LinkedInPlanId = (typeof LINKEDIN_PLAN_IDS)[number]
 
 export interface LinkedInPlanConfig {
   id: LinkedInPlanId
@@ -46,6 +50,19 @@ export const LINKEDIN_PLANS_LIST = [
   LINKEDIN_PLANS.agencia,
 ]
 
-export function getLinkedInPlan(planId: string): LinkedInPlanConfig | undefined {
-  return LINKEDIN_PLANS[planId as LinkedInPlanId]
+/**
+ * Narrows an untrusted value (request body, DB column) to a known plan id.
+ *
+ * Checks the id list instead of indexing LINKEDIN_PLANS directly: the map is a
+ * plain object, so `LINKEDIN_PLANS['toString']` resolves through
+ * Object.prototype and returns a truthy function — enough to slip past an
+ * `if (!planConfig)` guard and reach the pricing math with an undefined
+ * `monthly`.
+ */
+export function isLinkedInPlanId(value: unknown): value is LinkedInPlanId {
+  return typeof value === 'string' && LINKEDIN_PLAN_IDS.some((id) => id === value)
+}
+
+export function getLinkedInPlan(planId: unknown): LinkedInPlanConfig | undefined {
+  return isLinkedInPlanId(planId) ? LINKEDIN_PLANS[planId] : undefined
 }

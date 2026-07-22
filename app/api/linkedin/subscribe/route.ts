@@ -6,7 +6,7 @@ import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 import { isUserFreeAccount } from '@/lib/free-account'
 import { isValidEmail } from '@/lib/validators'
 import { getTrialEndDate, expireStaleTrials, hasUsedTrial } from '@/lib/trial'
-import { LINKEDIN_PLANS } from '@/lib/linkedin-plans'
+import { getLinkedInPlan } from '@/lib/linkedin-plans'
 
 export async function POST(req: NextRequest) {
   try {
@@ -24,7 +24,9 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const { plan, linkedinName, industry, audience, notificationEmail, payerEmail, couponCode } = body
 
-    const planConfig = LINKEDIN_PLANS[plan]
+    // Validate plan. `planConfig.id` is the narrowed, canonical id — use it
+    // everywhere below instead of the raw (untyped) request value.
+    const planConfig = getLinkedInPlan(plan)
     if (!planConfig) {
       return NextResponse.json({ error: 'Plan invalido' }, { status: 400 })
     }
@@ -93,7 +95,7 @@ export async function POST(req: NextRequest) {
     const subscription = await prisma.linkedInSubscription.create({
       data: {
         userId: session.user.id,
-        plan,
+        plan: planConfig.id,
         linkedinName: linkedinName?.trim() || null,
         industry: industry.trim(),
         audience: audience.trim(),
@@ -113,7 +115,7 @@ export async function POST(req: NextRequest) {
       })
       return NextResponse.json({
         subscriptionId: subscription.id,
-        plan,
+        plan: planConfig.id,
         status: 'active',
         nextStep: 'done',
         freeAccount: true,
@@ -135,7 +137,7 @@ export async function POST(req: NextRequest) {
       })
       return NextResponse.json({
         subscriptionId: subscription.id,
-        plan,
+        plan: planConfig.id,
         status: 'trial',
         trialEndsAt: getTrialEndDate().toISOString(),
         nextStep: 'trial_started',
@@ -146,7 +148,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       subscriptionId: subscription.id,
-      plan,
+      plan: planConfig.id,
       monthlyPrice: finalPrice,
       discount: discountApplied,
       status: 'pending_payment',

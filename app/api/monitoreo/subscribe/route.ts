@@ -6,7 +6,7 @@ import { encryptPortalCredentials } from '@/lib/encryption'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 import { isUserFreeAccount } from '@/lib/free-account'
 import { getTrialEndDate, expireStaleTrials, hasUsedTrial } from '@/lib/trial'
-import { MONITOREO_PLANS as MONITORING_PLANS } from '@/lib/monitoreo-plans'
+import { getMonitoreoPlan } from '@/lib/monitoreo-plans'
 
 export async function POST(req: NextRequest) {
   try {
@@ -25,8 +25,9 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const { plan, portal, cuil, pjnUser, pjnPass, scbaUser, scbaPass, notificationEmail, payerEmail, couponCode } = body
 
-    // Validate plan
-    const planConfig = MONITORING_PLANS[plan]
+    // Validate plan. `planConfig.id` is the narrowed, canonical id — use it
+    // everywhere below instead of the raw (untyped) request value.
+    const planConfig = getMonitoreoPlan(plan)
     if (!planConfig) {
       return NextResponse.json({ error: 'Plan inválido' }, { status: 400 })
     }
@@ -130,7 +131,7 @@ export async function POST(req: NextRequest) {
       const subscription = await tx.monitoringSubscription.create({
         data: {
           userId: session.user.id,
-          plan,
+          plan: planConfig.id,
           portal,
           cuil: normalizedCuil,
           ...encrypted,
@@ -160,7 +161,7 @@ export async function POST(req: NextRequest) {
       })
       return NextResponse.json({
         subscriptionId: subscription.id,
-        plan,
+        plan: planConfig.id,
         status: 'active',
         nextStep: 'done',
         freeAccount: true,
@@ -182,7 +183,7 @@ export async function POST(req: NextRequest) {
       })
       return NextResponse.json({
         subscriptionId: subscription.id,
-        plan,
+        plan: planConfig.id,
         status: 'trial',
         trialEndsAt: getTrialEndDate().toISOString(),
         nextStep: 'trial_started',
@@ -194,7 +195,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       subscriptionId: subscription.id,
-      plan,
+      plan: planConfig.id,
       portal,
       cuil: subscription.cuil,
       monthlyPrice: finalPrice,

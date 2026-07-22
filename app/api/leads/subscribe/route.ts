@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 import { isUserFreeAccount } from '@/lib/free-account'
 import { getTrialEndDate, expireStaleTrials, hasUsedTrial } from '@/lib/trial'
-import { LEADS_PLANS } from '@/lib/leads-plans'
+import { getLeadsPlan } from '@/lib/leads-plans'
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -39,8 +39,9 @@ export async function POST(req: NextRequest) {
       googleSheetUrl?: string; nichesList?: string[]; citiesList?: string[]
     }
 
-    // Validate plan
-    const planConfig = LEADS_PLANS[plan]
+    // Validate plan. `planConfig.id` is the narrowed, canonical id — use it
+    // everywhere below instead of the raw request value.
+    const planConfig = getLeadsPlan(plan)
     if (!planConfig) {
       return NextResponse.json({ error: 'Plan inválido' }, { status: 400 })
     }
@@ -128,7 +129,7 @@ export async function POST(req: NextRequest) {
       return tx.leadsSubscription.create({
         data: {
           userId: session.user.id,
-          plan,
+          plan: planConfig.id,
           notificationEmail: notificationEmail.toLowerCase().trim(),
           payerEmail: payerEmail.toLowerCase().trim(),
           googleSheetUrl: sanitizedSheetUrl,
@@ -149,7 +150,7 @@ export async function POST(req: NextRequest) {
       })
       return NextResponse.json({
         subscriptionId: subscription.id,
-        plan,
+        plan: planConfig.id,
         status: 'active',
         nextStep: 'done',
         freeAccount: true,
@@ -171,7 +172,7 @@ export async function POST(req: NextRequest) {
       })
       return NextResponse.json({
         subscriptionId: subscription.id,
-        plan,
+        plan: planConfig.id,
         status: 'trial',
         trialEndsAt: getTrialEndDate().toISOString(),
         nextStep: 'trial_started',
@@ -182,7 +183,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       subscriptionId: subscription.id,
-      plan,
+      plan: planConfig.id,
       monthlyPrice: finalPrice,
       discount: discountApplied,
       status: 'pending_payment',

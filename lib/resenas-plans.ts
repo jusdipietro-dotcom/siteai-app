@@ -2,7 +2,11 @@
  * Configuración centralizada de planes de Reseñas Google IA.
  */
 
-export type ResenasPlanId = 'basico' | 'profesional' | 'premium'
+/** Source of truth for the valid plan ids. `ResenasPlanId` is derived from it so
+ * the list and the type can never drift apart. */
+export const RESENAS_PLAN_IDS = ['basico', 'profesional', 'premium'] as const
+
+export type ResenasPlanId = (typeof RESENAS_PLAN_IDS)[number]
 
 export interface ResenasPlanConfig {
   id: ResenasPlanId
@@ -42,6 +46,19 @@ export const RESENAS_PLANS_LIST = [
   RESENAS_PLANS.premium,
 ]
 
-export function getResenasPlan(planId: string): ResenasPlanConfig | undefined {
-  return RESENAS_PLANS[planId as ResenasPlanId]
+/**
+ * Narrows an untrusted value (request body, DB column) to a known plan id.
+ *
+ * Checks the id list instead of indexing RESENAS_PLANS directly: the map is a
+ * plain object, so `RESENAS_PLANS['toString']` resolves through
+ * Object.prototype and returns a truthy function — enough to slip past an
+ * `if (!planConfig)` guard and reach the pricing math with an undefined
+ * `monthly`.
+ */
+export function isResenasPlanId(value: unknown): value is ResenasPlanId {
+  return typeof value === 'string' && RESENAS_PLAN_IDS.some((id) => id === value)
+}
+
+export function getResenasPlan(planId: unknown): ResenasPlanConfig | undefined {
+  return isResenasPlanId(planId) ? RESENAS_PLANS[planId] : undefined
 }

@@ -7,7 +7,7 @@ import { isUserFreeAccount } from '@/lib/free-account'
 import { getTrialEndDate, expireStaleTrials, hasUsedTrial } from '@/lib/trial'
 import { isValidEmail } from '@/lib/validators'
 
-import { RESENAS_PLANS as REVIEWS_PLANS } from '@/lib/resenas-plans'
+import { getResenasPlan } from '@/lib/resenas-plans'
 
 export async function POST(req: NextRequest) {
   try {
@@ -25,8 +25,9 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const { plan, businessName, businessType, searchUrl, googleEmail, responseTone, notificationEmail, payerEmail, couponCode } = body
 
-    // Validate plan
-    const planConfig = REVIEWS_PLANS[plan]
+    // Validate plan. `planConfig.id` is the narrowed, canonical id — use it
+    // everywhere below instead of the raw (untyped) request value.
+    const planConfig = getResenasPlan(plan)
     if (!planConfig) {
       return NextResponse.json({ error: 'Plan inválido' }, { status: 400 })
     }
@@ -127,7 +128,7 @@ export async function POST(req: NextRequest) {
     const subscription = await prisma.reviewsSubscription.create({
       data: {
         userId: session.user.id,
-        plan,
+        plan: planConfig.id,
         businessName: businessName.trim(),
         businessType: businessType.trim(),
         searchUrl: finalSearchUrl,
@@ -149,7 +150,7 @@ export async function POST(req: NextRequest) {
       })
       return NextResponse.json({
         subscriptionId: subscription.id,
-        plan,
+        plan: planConfig.id,
         status: 'active',
         nextStep: 'done',
         freeAccount: true,
@@ -171,7 +172,7 @@ export async function POST(req: NextRequest) {
       })
       return NextResponse.json({
         subscriptionId: subscription.id,
-        plan,
+        plan: planConfig.id,
         status: 'trial',
         trialEndsAt: getTrialEndDate().toISOString(),
         nextStep: 'trial_started',
@@ -182,7 +183,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       subscriptionId: subscription.id,
-      plan,
+      plan: planConfig.id,
       businessName: subscription.businessName,
       monthlyPrice: finalPrice,
       discount: discountApplied,

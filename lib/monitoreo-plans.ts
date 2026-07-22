@@ -3,7 +3,11 @@
  * Usada por backend (subscribe, webhook, mp/create) y frontend (dashboard, landing).
  */
 
-export type MonitoreoPlanId = 'basico' | 'profesional' | 'estudio'
+/** Source of truth for the valid plan ids. `MonitoreoPlanId` is derived from it
+ * so the list and the type can never drift apart. */
+export const MONITOREO_PLAN_IDS = ['basico', 'profesional', 'estudio'] as const
+
+export type MonitoreoPlanId = (typeof MONITOREO_PLAN_IDS)[number]
 
 export interface MonitoreoPlanConfig {
   id: MonitoreoPlanId
@@ -47,6 +51,19 @@ export const MONITOREO_PLANS_LIST = [
   MONITOREO_PLANS.estudio,
 ]
 
-export function getMonitoreoPlan(planId: string): MonitoreoPlanConfig | undefined {
-  return MONITOREO_PLANS[planId as MonitoreoPlanId]
+/**
+ * Narrows an untrusted value (request body, DB column) to a known plan id.
+ *
+ * Checks the id list instead of indexing MONITOREO_PLANS directly: the map is a
+ * plain object, so `MONITOREO_PLANS['toString']` resolves through
+ * Object.prototype and returns a truthy function — enough to slip past an
+ * `if (!planConfig)` guard and reach the pricing math with an undefined
+ * `monthly`.
+ */
+export function isMonitoreoPlanId(value: unknown): value is MonitoreoPlanId {
+  return typeof value === 'string' && MONITOREO_PLAN_IDS.some((id) => id === value)
+}
+
+export function getMonitoreoPlan(planId: unknown): MonitoreoPlanConfig | undefined {
+  return isMonitoreoPlanId(planId) ? MONITOREO_PLANS[planId] : undefined
 }
