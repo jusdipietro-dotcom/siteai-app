@@ -1,15 +1,24 @@
 # Wildcard TLS for `*.sitios.automaticialab.com`
 
-**Status: not applied.** Everything here is blocked on a Cloudflare API token
-that does not exist yet. Nothing in this document has been executed against the
-VPS, Cloudflare, or EasyPanel.
+**Status: LIVE in production.** The wildcard certificate is issued and serving.
+The steps below are the runbook that produced that state, kept for renewal
+debugging, disaster recovery, and re-provisioning. Where a step says "blocked
+on a Cloudflare token", that token now exists — it lives in
+`06-CREDENCIALES/CLOUDFLARE.txt` (value never reproduced here; the file also
+records the zone id). The resolver env vars are set on the `easypanel-traefik`
+Swarm service and the router was created through EasyPanel's `domains.createDomain`.
+
+> **Correction note (2026-07):** an earlier revision of this file said
+> "Status: not applied", which was stale. The wildcard IS live. If any check in
+> the Verification section fails, treat it as a regression to debug, not as an
+> unfinished task.
 
 | | |
 |---|---|
 | Target host | `*.sitios.automaticialab.com` |
 | Backend | this app, port `3000` |
 | VPS | `76.13.71.141`, EasyPanel (Traefik) |
-| Blocked on | Cloudflare API token, `Zone:DNS:Edit`, scoped to `automaticialab.com` |
+| Cloudflare token | `06-CREDENCIALES/CLOUDFLARE.txt` — `Zone:DNS:Edit`, scoped to `automaticialab.com` |
 
 ## Why a DNS-01 challenge is mandatory here
 
@@ -199,6 +208,13 @@ by hand and the router is not.
 So: **resolver by hand (step 3, unavoidable), router via the API (step 4).**
 
 ### 4a. EasyPanel API
+
+> **What actually worked in production (supersedes the payload below).** With
+> `"wildcard": true`, EasyPanel PREPENDS the `*.` itself. Pass the host WITHOUT
+> the leading `*.` — i.e. `"domain": "sitios.automaticialab.com"` — or you get
+> `*.*.sitios.automaticialab.com`, which ACME rejects. The example below sends
+> `*.sitios.automaticialab.com` AND `wildcard:true`; that combination is the
+> mistake to avoid. Send the bare base host with the flag on.
 
 ```sh
 # Authenticate
