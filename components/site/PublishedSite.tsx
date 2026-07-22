@@ -1,5 +1,6 @@
 import type { Project } from '@prisma/client'
 import { AboutSection } from '@/components/site/sections/AboutSection'
+import { ContactSection } from '@/components/site/sections/ContactSection'
 import { CtaSection } from '@/components/site/sections/CtaSection'
 import { FaqSection } from '@/components/site/sections/FaqSection'
 import { GallerySection } from '@/components/site/sections/GallerySection'
@@ -213,86 +214,50 @@ export function PublishedSite({ project: row }: { project: Project }) {
 
       case 'contact':
         return (
-          <section className="section-pad" id="contacto" key="contact" style={{ background: '#fff' }}>
-            <div className="container">
-              <p className="label" style={{ textAlign: 'center' }}>Contacto</p>
-              <h2 className="heading-lg" style={{ textAlign: 'center', marginBottom: '3rem' }}>Contactate con nosotros</h2>
-              <div className="grid-2" style={{ maxWidth: '800px', margin: '0 auto', alignItems: 'start' }}>
-                <div>
-                  {bd.contact?.phone && (
-                    <a href={`tel:${bd.contact.phone}`} className="contact-info-item" style={{ display: 'flex', color: '#475569', marginBottom: '1rem' }}>
-                      <span className="contact-info-icon">📞</span>
-                      <span>{bd.contact.phone}</span>
-                    </a>
-                  )}
-                  {bd.contact?.email && (
-                    <a href={`mailto:${bd.contact.email}`} className="contact-info-item" style={{ display: 'flex', color: '#475569', marginBottom: '1rem' }}>
-                      <span className="contact-info-icon">✉️</span>
-                      <span>{bd.contact.email}</span>
-                    </a>
-                  )}
-                  {(bd.contact?.city || bd.contact?.address) && (
-                    <div className="contact-info-item" style={{ display: 'flex', color: '#475569', marginBottom: '1rem' }}>
-                      <span className="contact-info-icon">📍</span>
-                      <span>{[bd.contact.address, bd.contact.city, bd.contact.province].filter(Boolean).join(', ')}</span>
-                    </div>
-                  )}
-                  {bd.contact?.schedule && (
-                    <div className="contact-info-item" style={{ display: 'flex', color: '#475569', marginBottom: '1.5rem' }}>
-                      <span className="contact-info-icon">🕐</span>
-                      <span>{bd.contact.schedule}</span>
-                    </div>
-                  )}
-                  {whatsappNum && (
-                    <a
-                      href={`https://wa.me/${whatsappNum}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: '#25D366', color: '#fff', padding: '0.75rem 1.5rem', borderRadius: '9999px', fontWeight: 700, fontSize: '0.875rem', marginTop: '0.5rem' }}
-                    >
-                      💬 Escribinos por WhatsApp
-                    </a>
-                  )}
-                </div>
-                <div className="contact-form">
-                  <p style={{ fontWeight: 700, color: '#0f172a', marginBottom: '1rem', fontSize: '0.95rem' }}>Envianos un mensaje</p>
-                  {/*
-                    Real lead capture. The old `mailto:` + method=get submitted
-                    nothing (and nothing at all on mobile/webmail), so every lead
-                    was silently lost. This posts to /api/site-leads, which stores
-                    the lead against this project and notifies the owner. Progressive
-                    enhancement via a vanilla script rather than a React island: the
-                    published document nests its own <html> under the app's root
-                    layout, where hydration is unreliable — the same reason the
-                    hamburger above uses an inline script.
-                  */}
-                  <form id="lead-form">
-                    {/* Honeypot — hidden from humans, catches bots (same contract as /api/inquiries) */}
-                    <input
-                      id="lead-honeypot"
-                      type="text"
-                      name="company_website"
-                      tabIndex={-1}
-                      autoComplete="off"
-                      aria-hidden="true"
-                      style={{ position: 'absolute', left: '-9999px', width: '1px', height: '1px', opacity: 0 }}
-                    />
-                    <input id="lead-name" className="form-field" type="text" name="nombre" placeholder="Tu nombre" required minLength={2} />
-                    <input id="lead-email" className="form-field" type="email" name="email" placeholder="Tu email" required />
-                    <input id="lead-phone" className="form-field" type="tel" name="tel" placeholder="Tu teléfono (opcional)" />
-                    <textarea id="lead-message" className="form-field form-textarea" name="mensaje" placeholder="¿En qué podemos ayudarte?" required minLength={2} />
-                    <button id="lead-submit" type="submit" className="btn-submit">Enviar mensaje →</button>
-                    <p
-                      id="lead-status"
-                      role="status"
-                      aria-live="polite"
-                      style={{ display: 'none', marginTop: '0.75rem', fontSize: '0.85rem', fontWeight: 600 }}
-                    />
-                  </form>
-                </div>
-              </div>
-            </div>
-          </section>
+          <ContactSection
+            key="contact"
+            contact={bd.contact}
+            whatsappNumber={whatsappNum}
+            leadForm={
+              /*
+                Real lead capture. The old `mailto:` + method=get submitted
+                nothing (and nothing at all on mobile/webmail), so every lead
+                was silently lost. This posts to /api/site-leads, which stores
+                the lead against this project and notifies the owner. Progressive
+                enhancement via a vanilla script rather than a React island: the
+                published document nests its own <html> under the app's root
+                layout, where hydration is unreliable — the same reason the
+                hamburger above uses an inline script.
+
+                It stays here rather than inside ContactSection because its
+                element ids are a contract with that script, which only this
+                document emits.
+              */
+              <form id="lead-form">
+                {/* Honeypot — hidden from humans, catches bots (same contract as /api/inquiries) */}
+                <input
+                  id="lead-honeypot"
+                  type="text"
+                  name="company_website"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  aria-hidden="true"
+                  style={{ position: 'absolute', left: '-9999px', width: '1px', height: '1px', opacity: 0 }}
+                />
+                <input id="lead-name" className="form-field" type="text" name="nombre" placeholder="Tu nombre" required minLength={2} />
+                <input id="lead-email" className="form-field" type="email" name="email" placeholder="Tu email" required />
+                <input id="lead-phone" className="form-field" type="tel" name="tel" placeholder="Tu teléfono (opcional)" />
+                <textarea id="lead-message" className="form-field form-textarea" name="mensaje" placeholder="¿En qué podemos ayudarte?" required minLength={2} />
+                <button id="lead-submit" type="submit" className="btn-submit">Enviar mensaje →</button>
+                <p
+                  id="lead-status"
+                  role="status"
+                  aria-live="polite"
+                  style={{ display: 'none', marginTop: '0.75rem', fontSize: '0.85rem', fontWeight: 600 }}
+                />
+              </form>
+            }
+          />
         )
 
       default:
