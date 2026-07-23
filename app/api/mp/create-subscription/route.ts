@@ -103,9 +103,21 @@ export async function POST(req: NextRequest) {
     // MP redirige al back_url y agrega ?preapproval_id=XXX automáticamente
     const backUrl = `${baseUrl}/projects/${projectId}/checkout?mp_return=true`
 
-    // start_date: 1 minuto en el futuro para evitar rechazo por latencia de red
-    const startDate = new Date(Date.now() + 60_000).toISOString()
-
+    // Deliberately NO `start_date`: MercadoPago starts the billing cycle when
+    // the payer authorises the subscription, which is what we want.
+    //
+    // This field used to be `Date.now() + 60_000`, added to avoid a rejection
+    // for a start date in the past. It achieved the opposite: it gave the
+    // customer SIXTY SECONDS to complete MercadoPago's own checkout — log in,
+    // choose a card, confirm. Past that the start date was in the past and
+    // MercadoPago silently disabled its "Confirmar" button: no error shown to
+    // the customer, nothing logged on our side, and the sale simply died. Every
+    // real customer would have hit this; nobody completes that flow in a minute.
+    //
+    // Verified live on 2026-07-22 against the production API: the identical
+    // preapproval with a future start_date confirmed without a problem, and
+    // MercadoPago accepts the field being omitted entirely. Omitting it removes
+    // the time window rather than widening it.
     const body = {
       reason: config.title,
       external_reference: `${projectId}:${plan}`,
@@ -113,7 +125,6 @@ export async function POST(req: NextRequest) {
       auto_recurring: {
         frequency: isAnnual ? 12 : 1,
         frequency_type: 'months',
-        start_date: startDate,
         transaction_amount: isAnnual ? config.annual : config.monthly,
         currency_id: 'ARS',
       },
