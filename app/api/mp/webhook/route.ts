@@ -1438,7 +1438,15 @@ export async function POST(req: NextRequest) {
           },
         })
         if (count === 0) {
-          log.info(`Project ${projectId} already suspended — skipping (${status})`)
+          // Since the preapproval-id guard above, there are TWO ways to land
+          // here: the project was already suspended, or this cancellation
+          // belongs to a preapproval that is not the one on file. The old line
+          // claimed the first unconditionally, which reads as a flat lie in the
+          // logs of a project that is live and paying — the worst possible thing
+          // for whoever is reading this file during a billing incident.
+          log.info(
+            `Project ${projectId} left untouched by ${preapprovalId} (${status}) — either already suspended, or this preapproval is not the one on file`
+          )
         } else {
           log.info(`Project ${projectId} suspended (${status})`)
           // Reconcile the owner's account plan downward. Recompute rather than
