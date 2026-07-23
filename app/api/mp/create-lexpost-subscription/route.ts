@@ -72,7 +72,6 @@ export async function POST(req: NextRequest) {
     const baseUrl = configuredUrl ?? `${requestProto}://${requestHost}`
 
     const backUrl = `${baseUrl}/lexpost?mp_return=true&sub=${subscriptionId}`
-    const startDate = new Date(Date.now() + 120_000).toISOString() // 2 min buffer
 
     // external_reference format: "lexpost:subscriptionId:plan"
     const extRef = `lexpost:${subscriptionId}:${sub.plan}`
@@ -84,7 +83,10 @@ export async function POST(req: NextRequest) {
       auto_recurring: {
         frequency: 1,
         frequency_type: 'months',
-        start_date: startDate,
+        // No `start_date` on purpose: it caps how long the customer has to
+        // finish MercadoPago's checkout, and once it passes MercadoPago
+        // silently disables its own "Confirmar" button — no error, no log, the
+        // sale just dies. See app/api/mp/create-subscription/route.ts.
         transaction_amount: finalPrice,
         currency_id: 'ARS',
         ...(isFreeTrial
