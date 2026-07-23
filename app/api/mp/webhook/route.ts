@@ -169,7 +169,25 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid signature' }, { status: 403 })
     }
 
-    if (body.type === 'preapproval' && body.data?.id) {
+    // MercadoPago announces a preapproval status change under TWO different
+    // `type` strings, depending on which notification family the application has
+    // enabled. The legacy IPN uses `preapproval`; the "Planes y suscripciones"
+    // webhook event — the one actually enabled on this application — uses
+    // `subscription_preapproval`.
+    //
+    // Matching only `preapproval` meant every real notification was received,
+    // signature-verified, and then fell straight through to `{ received: true }`
+    // without touching the database. MercadoPago recorded a successful delivery,
+    // stopped retrying, and the customer's subscription was never activated —
+    // the failure is invisible from both ends.
+    //
+    // Confirmed live on 2026-07-22 from the body MercadoPago actually posted:
+    //   {"action":"created","entity":"preapproval",
+    //    "type":"subscription_preapproval","data":{"id":"83894b9d…"},…}
+    const isPreapprovalEvent =
+      body.type === 'preapproval' || body.type === 'subscription_preapproval'
+
+    if (isPreapprovalEvent && body.data?.id) {
       // Bounded read. Without a signal a hung MP connection pins this handler
       // (and its DB connection) open forever, and MP has already given up on the
       // notification by then anyway. A timeout is the same situation as a 5xx —
