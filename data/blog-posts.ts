@@ -42,19 +42,19 @@ export const blogPosts: BlogPost[] = [
 
       <h3>¿Qué sucede si no tenés sitio web?</h3>
 
-      <p>Imaginate este escenario: Un potencial cliente buscó tu barbershop en Google. No encontró nada. Así que fue a la competencia que sí aparecía. Eso no sucedió una sola vez este mes, sino probablemente decenas de veces.</p>
+      <p>Imaginate este escenario: Un potencial cliente buscó tu barbershop en Google. No encontró nada. Así que fue a la competencia que sí aparecía. Eso no sucedió una sola vez este mes, sino probablemente decenas de veces. Y si sos contador o abogado, no tener presencia digital daña tu <a href="/para/abogados" class="text-brand-600 underline">credibilidad profesional de manera directa</a>.</p>
 
       <p>El costo de NO tener un sitio web es invisible pero real. No se trata solo de ventas perdidas, sino de credibilidad erosionada. Cuando alguien no encuentra presencia online, asume que el negocio es pequeño, desactualizado o poco profesional.</p>
 
       <h3>Cómo un sitio web construye credibilidad</h3>
 
-      <p>Un sitio web profesional funciona como tu carta de presentación digital 24/7. Permite que los clientes te encuentren cuando te necesitan, no cuando vos decidís publicar en redes sociales.</p>
+      <p>Un sitio web profesional funciona como tu carta de presentación digital 24/7. Permite que los clientes te encuentren cuando te necesitan, no cuando vos decidís publicar en redes sociales. Combinalo con una sólida <a href="/servicios/email-marketing" class="text-brand-600 underline">estrategia de email marketing</a> y vas a ver cómo tus clientes regresan solos.</p>
 
       <ul>
         <li><strong>Aparecés en Google.</strong> La mayoría de las búsquedas comienzan en Google. Si no estás, no existes para el 87% de los argentinos.</li>
         <li><strong>Controlás tu narrativa.</strong> En redes sociales, el algoritmo decidí qué ven. En tu sitio, vos decidís qué información compartís.</li>
         <li><strong>Inspirás confianza.</strong> Un sitio web profesional comunica que tu negocio es serio y establecido.</li>
-        <li><strong>Funcionás como vendedor silencioso.</strong> Tu sitio trabaja mientras dormís, respondiendo preguntas y capturando leads.</li>
+        <li><strong>Funcionás como vendedor silencioso.</strong> Tu sitio trabaja mientras dormís, respondiendo preguntas y capturando leads. Y si sumás un sistema de turnos online, agendás citas en piloto automático.</li>
       </ul>
 
       <h3>El factor SEO que no podés pasar por alto</h3>
@@ -73,7 +73,7 @@ export const blogPosts: BlogPost[] = [
 
       <p>Ese era el problema hace 10 años. Ahora hay soluciones. Podés tener un sitio web profesional sin ser programador, sin contratar diseñadores caros, y sin pagar miles de pesos en desarrollo.</p>
 
-      <p>Con herramientas modernas como <strong>Automatic IA Lab</strong>, podés crear un sitio web en cuestión de minutos. Rellenás un formulario simple con información sobre tu negocio, la IA lo entiende todo, y automáticamente genera un sitio profesional, optimizado para móvil y listo para Google.</p>
+      <p>Con herramientas modernas como <strong>Automatic IA Lab</strong>, podés <a href="/gratis" class="text-brand-600 underline">crear un sitio web</a> en cuestión de minutos. Rellenás un formulario simple con información sobre tu negocio, la IA lo entiende todo, y automáticamente genera un sitio profesional, optimizado para móvil y listo para Google.</p>
 
       <h3>No es un gasto, es una inversión</h3>
 
@@ -140,7 +140,7 @@ export const blogPosts: BlogPost[] = [
 
       <h3>La solución moderna: IA que entiende tu negocio</h3>
 
-      <p>Bienvenido al futuro. Ahora podés crear un sitio web profesional usando IA que realmente entiende tu negocio.</p>
+      <p>Bienvenido al futuro. Ahora podés crear un sitio web profesional en minutos. Si sos un <a href="/para/medicos" class="text-brand-600 underline">psicólogo</a> o un abogado, ya hay plantillas pensadas para tu industria.</p>
 
       <p>Con <strong>Automatic IA Lab</strong>, el proceso es diferente. No estás armando un sitio manualmente con bloques. Estás diciéndole a la IA sobre tu negocio, y ella crea un sitio completo, optimizado y listo para funcionar.</p>
 
@@ -182,7 +182,7 @@ export const blogPosts: BlogPost[] = [
 
       <p>Acá viene lo mejor: podés crear tu primer sitio <strong>completamente gratis</strong>.</p>
 
-      <p>Sí, sin pagar nada. Probás, ves cómo funciona, editas si querés, y solo pagas si necesitás funcionalidades premium después (como dominio personalizado o integraciones adicionales).</p>
+      <p>Sí, sin pagar nada. Probás, ves cómo funciona, editas si querés, y solo pagas si necesitás funcionalidades premium después (como dominio personalizado o integraciones adicionales como el <a href="/monitoreo-judicial" class="text-brand-600 underline">monitoreo judicial</a> si sos abogado).</p>
 
       <h3>Pero espera, ¿puedo editar el sitio después?</h3>
 

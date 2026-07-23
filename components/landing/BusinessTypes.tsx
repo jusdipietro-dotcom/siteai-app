@@ -1,6 +1,28 @@
 'use client'
 import { motion } from 'framer-motion'
+import Link from 'next/link'
 import { businessTypes } from '@/data/mockBusinessTypes'
+
+/**
+ * Maps a business-type card to its `/para/{slug}` landing — but ONLY for the
+ * rubros that actually have a page in `data/rubros.ts`.
+ *
+ * The card ids and the rubro slugs do not match (singular vs plural, and
+ * `consultorio`→`medicos`, `contable`→`contadores`), and five of the twelve
+ * cards have no rubro page at all. Linking every card to `/para/{id}` — as a
+ * first pass did — pointed all twelve at 404s and filled the home page with
+ * dead links. A card only becomes a link when it resolves here; the rest render
+ * exactly as before. Add a slug to the map the day the matching page ships.
+ */
+const RUBRO_SLUG_BY_TYPE: Record<string, string> = {
+  restaurante: 'restaurantes',
+  abogado: 'abogados',
+  consultorio: 'medicos',
+  contable: 'contadores',
+  inmobiliaria: 'inmobiliarias',
+  gimnasio: 'gimnasios',
+  peluqueria: 'peluquerias',
+}
 
 export function BusinessTypes() {
   return (
@@ -35,38 +57,52 @@ export function BusinessTypes() {
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-          {businessTypes.map((type, i) => (
-            <motion.div
-              key={type.id}
-              initial={{ opacity: 0, scale: 0.95 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.05 }}
-              whileHover={{ y: -4 }}
-              className="group relative bg-white border border-surface-100 rounded-2xl p-5 cursor-pointer hover:shadow-card transition-all duration-200"
-            >
-              <div
-                className="w-12 h-12 rounded-xl flex items-center justify-center mb-3 text-2xl"
-                style={{ backgroundColor: type.color + '18' }}
+          {businessTypes.map((type, i) => {
+            const slug = RUBRO_SLUG_BY_TYPE[type.id]
+            const card = (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.05 }}
+                whileHover={{ y: -4 }}
+                className="group relative bg-white border border-surface-100 rounded-2xl p-5 cursor-pointer hover:shadow-card transition-all duration-200 h-full"
               >
-                {type.icon}
+                <div
+                  className="w-12 h-12 rounded-xl flex items-center justify-center mb-3 text-2xl"
+                  style={{ backgroundColor: type.color + '18' }}
+                >
+                  {type.icon}
+                </div>
+                <h3 className="font-semibold text-surface-900 text-sm mb-1 leading-tight">{type.name}</h3>
+                <p className="text-xs text-surface-400 leading-relaxed">{type.description}</p>
+                <div className="mt-3 flex flex-wrap gap-1">
+                  {type.keywords.slice(0, 2).map((kw: string) => (
+                    <span key={kw} className="text-xs bg-surface-50 text-surface-500 px-2 py-0.5 rounded-full border border-surface-100">
+                      {kw}
+                    </span>
+                  ))}
+                </div>
+                {/* Hover dot */}
+                <div
+                  className="absolute top-3 right-3 w-2 h-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                  style={{ backgroundColor: type.color }}
+                />
+              </motion.div>
+            )
+
+            // Only rubros with a real /para page become links; the rest stay as
+            // plain cards, so the grid never points at a 404.
+            return slug ? (
+              <Link key={type.id} href={`/para/${slug}`} className="h-full">
+                {card}
+              </Link>
+            ) : (
+              <div key={type.id} className="h-full">
+                {card}
               </div>
-              <h3 className="font-semibold text-surface-900 text-sm mb-1 leading-tight">{type.name}</h3>
-              <p className="text-xs text-surface-400 leading-relaxed">{type.description}</p>
-              <div className="mt-3 flex flex-wrap gap-1">
-                {type.keywords.slice(0, 2).map((kw: string) => (
-                  <span key={kw} className="text-xs bg-surface-50 text-surface-500 px-2 py-0.5 rounded-full border border-surface-100">
-                    {kw}
-                  </span>
-                ))}
-              </div>
-              {/* Hover dot */}
-              <div
-                className="absolute top-3 right-3 w-2 h-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                style={{ backgroundColor: type.color }}
-              />
-            </motion.div>
-          ))}
+            )
+          })}
         </div>
       </div>
     </section>
