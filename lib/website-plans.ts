@@ -31,13 +31,11 @@ export const WEBSITE_PLANS: Record<WebsitePlanId, WebsitePlanConfig> = {
   essential: {
     id: 'essential',
     name: 'Essential',
-    // TEMP 2026-07-22 — $20 test price for the live MercadoPago end-to-end test.
-    // $1 is impossible: MercadoPago rejects any preapproval below ARS $15
-    // ("Cannot pay an amount lower than $ 15.00"), and it validates the amount
-    // BEFORE the payer/collector checks. $20 is the cheapest value with margin.
-    // REVERT to monthly: 19000 / annual: 11400 as soon as the test is done.
-    monthly: 20,
-    annual: 20,
+    // Worth knowing before ever setting a promotional price here: MercadoPago
+    // rejects any preapproval below ARS 15 ("Cannot pay an amount lower than
+    // $ 15.00"), and it validates the amount BEFORE the payer/collector checks.
+    monthly: 19000,
+    annual: 11400,
     title: 'Plan Essential — Automatic IA Lab',
     description: 'Publica tu sitio y empeza a crecer',
     maxProjects: 1,
