@@ -46,6 +46,26 @@ function websitePlanRank(plan: unknown): number {
 }
 
 /**
+ * `where` fragment that stops a SUPERSEDED preapproval from cancelling the
+ * subscription that replaced it. Spread into every cancellation `updateMany`.
+ *
+ * `external_reference` carries only the record id, so two preapprovals pointing
+ * at the same subscription — an abandoned checkout the customer never finished,
+ * or the previous preapproval of a plan change — are indistinguishable by it.
+ * Without this guard, a cancellation for the dead one suspends the live, paying
+ * one. Seen for real on 2026-07-23: an abandoned checkout and the authorised
+ * subscription carried the identical external_reference, so tidying up the dead
+ * preapproval would have taken down a site that had just been paid for.
+ *
+ * Rows whose stored preapprovalId is null still match, deliberately. An id we
+ * cannot recognise has to fail towards honouring the customer's cancellation,
+ * never towards billing them forever — that asymmetry is the whole point.
+ */
+function notSupersededBy(preapprovalId: string) {
+  return { OR: [{ preapprovalId: null }, { preapprovalId }] }
+}
+
+/**
  * Recomputes and persists User.plan from the projects the user still holds.
  *
  * "Still holds" = a paid project whose EFFECTIVE billing status is not suspended
@@ -295,7 +315,11 @@ export async function POST(req: NextRequest) {
 
         if ((status === 'cancelled' || status === 'paused') && subscriptionId) {
           const { count } = await prisma.monitoringSubscription.updateMany({
-            where: { id: subscriptionId, status: { in: ['active', 'provisioning', 'pending_payment', 'trial'] } },
+            where: {
+              id: subscriptionId,
+              status: { in: ['active', 'provisioning', 'pending_payment', 'trial'] },
+              ...notSupersededBy(preapprovalId),
+            },
             data: { status: 'suspended' },
           })
           if (count === 0) {
@@ -383,7 +407,11 @@ export async function POST(req: NextRequest) {
 
         if ((status === 'cancelled' || status === 'paused') && reviewsSubId) {
           const { count: rCount } = await prisma.reviewsSubscription.updateMany({
-            where: { id: reviewsSubId, status: { in: ['active', 'provisioning', 'pending_payment', 'trial'] } },
+            where: {
+              id: reviewsSubId,
+              status: { in: ['active', 'provisioning', 'pending_payment', 'trial'] },
+              ...notSupersededBy(preapprovalId),
+            },
             data: { status: 'suspended' },
           })
           if (rCount === 0) {
@@ -487,7 +515,11 @@ export async function POST(req: NextRequest) {
 
         if ((status === 'cancelled' || status === 'paused') && linkedinSubId) {
           const { count: lCount } = await prisma.linkedInSubscription.updateMany({
-            where: { id: linkedinSubId, status: { in: ['active', 'provisioning', 'pending_payment', 'trial'] } },
+            where: {
+              id: linkedinSubId,
+              status: { in: ['active', 'provisioning', 'pending_payment', 'trial'] },
+              ...notSupersededBy(preapprovalId),
+            },
             data: { status: 'suspended' },
           })
           if (lCount === 0) {
@@ -568,7 +600,11 @@ export async function POST(req: NextRequest) {
 
         if ((status === 'cancelled' || status === 'paused') && tradingSubId) {
           const { count: tCount } = await prisma.tradingSubscription.updateMany({
-            where: { id: tradingSubId, status: { in: ['active', 'provisioning', 'pending_payment', 'trial'] } },
+            where: {
+              id: tradingSubId,
+              status: { in: ['active', 'provisioning', 'pending_payment', 'trial'] },
+              ...notSupersededBy(preapprovalId),
+            },
             data: { status: 'suspended' },
           })
           if (tCount === 0) {
@@ -649,7 +685,11 @@ export async function POST(req: NextRequest) {
 
         if ((status === 'cancelled' || status === 'paused') && leadsSubId) {
           const { count: ldCount } = await prisma.leadsSubscription.updateMany({
-            where: { id: leadsSubId, status: { in: ['active', 'provisioning', 'pending_payment', 'trial'] } },
+            where: {
+              id: leadsSubId,
+              status: { in: ['active', 'provisioning', 'pending_payment', 'trial'] },
+              ...notSupersededBy(preapprovalId),
+            },
             data: { status: 'suspended' },
           })
           if (ldCount === 0) {
@@ -740,7 +780,11 @@ export async function POST(req: NextRequest) {
 
         if ((status === 'cancelled' || status === 'paused') && emSubId) {
           const { count: emCount } = await prisma.emailMarketingSubscription.updateMany({
-            where: { id: emSubId, status: { in: ['active', 'provisioning', 'pending_payment', 'awaiting_contacts', 'trial'] } },
+            where: {
+              id: emSubId,
+              status: { in: ['active', 'provisioning', 'pending_payment', 'awaiting_contacts', 'trial'] },
+              ...notSupersededBy(preapprovalId),
+            },
             data: { status: 'suspended' },
           })
           if (emCount === 0) {
@@ -835,7 +879,11 @@ export async function POST(req: NextRequest) {
 
         if ((status === 'cancelled' || status === 'paused') && prospSubId) {
           const { count: pCount } = await prisma.prospeccionSubscription.updateMany({
-            where: { id: prospSubId, status: { in: ['active', 'provisioning', 'pending_payment', 'trial'] } },
+            where: {
+              id: prospSubId,
+              status: { in: ['active', 'provisioning', 'pending_payment', 'trial'] },
+              ...notSupersededBy(preapprovalId),
+            },
             data: { status: 'suspended' },
           })
           if (pCount === 0) {
@@ -933,7 +981,11 @@ export async function POST(req: NextRequest) {
 
         if ((status === 'cancelled' || status === 'paused') && turnosSubId) {
           const { count: tCount } = await prisma.turnosSubscription.updateMany({
-            where: { id: turnosSubId, status: { in: ['active', 'provisioning', 'pending_payment', 'trial'] } },
+            where: {
+              id: turnosSubId,
+              status: { in: ['active', 'provisioning', 'pending_payment', 'trial'] },
+              ...notSupersededBy(preapprovalId),
+            },
             data: { status: 'suspended' },
           })
           if (tCount > 0) {
@@ -1027,7 +1079,11 @@ export async function POST(req: NextRequest) {
 
         if ((status === 'cancelled' || status === 'paused') && causasSubId) {
           const { count: cCount } = await prisma.causasSubscription.updateMany({
-            where: { id: causasSubId, status: { in: ['active', 'provisioning', 'pending_payment', 'trial'] } },
+            where: {
+              id: causasSubId,
+              status: { in: ['active', 'provisioning', 'pending_payment', 'trial'] },
+              ...notSupersededBy(preapprovalId),
+            },
             data: { status: 'suspended' },
           })
           if (cCount === 0) {
@@ -1114,7 +1170,11 @@ export async function POST(req: NextRequest) {
 
         if ((status === 'cancelled' || status === 'paused') && factSubId) {
           const { count: fCount } = await prisma.facturacionSubscription.updateMany({
-            where: { id: factSubId, status: { in: ['active', 'provisioning', 'pending_payment', 'trial'] } },
+            where: {
+              id: factSubId,
+              status: { in: ['active', 'provisioning', 'pending_payment', 'trial'] },
+              ...notSupersededBy(preapprovalId),
+            },
             data: { status: 'suspended' },
           })
           if (fCount === 0) {
@@ -1220,7 +1280,11 @@ export async function POST(req: NextRequest) {
 
         if ((status === 'cancelled' || status === 'paused') && lexpostSubId) {
           const { count: lpCount } = await prisma.lexPostSubscription.updateMany({
-            where: { id: lexpostSubId, status: { in: ['active', 'provisioning', 'pending_payment', 'trial'] } },
+            where: {
+              id: lexpostSubId,
+              status: { in: ['active', 'provisioning', 'pending_payment', 'trial'] },
+              ...notSupersededBy(preapprovalId),
+            },
             data: { status: 'suspended' },
           })
           if (lpCount === 0) {
@@ -1304,7 +1368,11 @@ export async function POST(req: NextRequest) {
 
         if ((status === 'cancelled' || status === 'paused') && suiteSubId) {
           const { count: sCount } = await prisma.suiteJuridicaSubscription.updateMany({
-            where: { id: suiteSubId, status: { in: ['active', 'provisioning', 'pending_payment', 'pending_config', 'trial'] } },
+            where: {
+              id: suiteSubId,
+              status: { in: ['active', 'provisioning', 'pending_payment', 'pending_config', 'trial'] },
+              ...notSupersededBy(preapprovalId),
+            },
             data: { status: 'suspended' },
           })
           if (sCount === 0) {
@@ -1411,24 +1479,11 @@ export async function POST(req: NextRequest) {
         // subscription was cancelled" instead of the flatly wrong "you never
         // paid". The publish gate is closed by billingStatus, not by lying
         // about payment history.
-        // Match on the preapproval id as well as the project, not the project
-        // alone. `external_reference` only carries the project, so a
-        // cancellation belonging to a SUPERSEDED preapproval — an abandoned
-        // checkout the customer never completed, or the previous subscription
-        // of a plan change — would otherwise suspend the live, paying
-        // subscription that replaced it. Observed on 2026-07-23: an abandoned
-        // preapproval and the authorised one carried the identical
-        // external_reference, so cancelling the dead one would have taken down
-        // a site that had just been paid for.
-        //
-        // Rows whose stored preapprovalId is null still match: an unknown id
-        // has to fail towards honouring the customer's cancellation, never
-        // towards billing them forever.
         const { count } = await prisma.project.updateMany({
           where: {
             id: projectId,
             billingStatus: { not: 'suspended' },
-            OR: [{ preapprovalId: null }, { preapprovalId }],
+            ...notSupersededBy(preapprovalId),
           },
           data: {
             billingStatus: 'suspended',
