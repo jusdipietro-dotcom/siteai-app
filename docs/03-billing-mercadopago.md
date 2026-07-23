@@ -6,11 +6,18 @@
 > webhook → a recurring charge → a failed charge → a cancellation) before
 > onboarding a paying customer. Nothing below has been exercised against live
 > MP. This is the single most important open item — see [doc 8](./08-known-issues.md).
+>
+> **Level 1 (our-side) is now automated** in `tests/mp-webhook-flow.test.ts` — the
+> webhook state machine, idempotency, and signature self-consistency. That **does
+> not close this blocker**: it proves our half only, never that our signed payloads
+> and assumed MP shapes match real MercadoPago. See
+> [Testing levels](#testing-levels-what-level-1-proves-what-it-does-not).
 
 ## Contents
 - [Plans (single source of truth for prices)](#plans-single-source-of-truth-for-prices)
 - [The subscription / preapproval flow](#the-subscription--preapproval-flow)
 - [The webhook](#the-webhook)
+- [Testing levels: what Level 1 proves, what it does not](#testing-levels-what-level-1-proves-what-it-does-not)
 - [The billing lifecycle](#the-billing-lifecycle)
 - [Recurring charges: grace and suspension](#recurring-charges-grace-and-suspension)
 - [Coupons](#coupons)
@@ -92,6 +99,40 @@ Flask, scraper services) and sends confirmation/cancellation emails. Provisionin
 is **best-effort with retry** (`triggerProvisioning()` — 3 attempts, exponential
 backoff) and no-ops with a warning when its webhook env var is unset (some
 products send an admin alert as the manual fallback — LinkedIn, Turnos, LexPost).
+
+## Testing levels: what Level 1 proves, what it does not
+
+Confidence in this integration is layered. **Only Level 1 exists today.**
+
+**Level 1 — our-side, automated (DONE).** `tests/mp-webhook-flow.test.ts` drives
+`app/api/mp/webhook/route.ts` end to end with validly-signed notifications for the
+website-generator billing branch and asserts:
+
+- **Signature** — a payload signed with the test secret verifies; a tampered signature is rejected (403); a missing `MP_WEBHOOK_SECRET` fails closed (403).
+- **State machine** — authorized → `active` + `User.plan` + confirmation email; recurring approved → stays/recovers `active`; recurring failed → `grace` with a future `graceUntil` + owner email; grace elapsed → `suspended` (read-time `effectiveBillingStatus`, the `expireStaleGrace` pass, and the failed-charge webhook that persists it); cancellation → `suspended`/`cancelled` immediately.
+- **Idempotency under MP retries** — re-delivering the same notification does not slide a grace deadline, re-suspend, re-recover, or re-run the plan sync (the `count > 0` guards). One honest exception the suite documents: the website `authorized` branch has **no** count-guard on its confirmation email, so a re-delivered authorization re-sends it (state stays idempotent; the email does not).
+
+**Level 1 is deliberately circular and does NOT close the blocker.** Every payload
+and signature in that suite is authored from *our* reading of MercadoPago (the
+`assumedMp*` helpers are the single quarantined home of those assumptions). Proving
+our verifier accepts our signer proves **self-consistency**, not conformance: it
+does **not** prove MP signs with the manifest we assume
+(`id:{data.id};request-id:{x-request-id};ts:{ts};`), that MP's real
+preapproval / payment / authorized_payment JSON matches our field names and
+nesting, or that a real failed card emits a `subscription_authorized_payment` with
+a status in our `FAILED` set over MP's real billing cycle.
+
+**Level 2 — sandbox, agent-run (OPEN).** With MercadoPago **sandbox credentials**,
+replay real sandbox notifications (real signatures, real resource JSON) against the
+webhook to confirm the assumed manifest and shapes match what MP actually sends. No
+human card required; still not production.
+
+**Level 3 — one real cycle, human (OPEN).** A human runs one real preapproval end
+to end (authorize → a recurring charge → a failed charge → a cancellation) against
+live MP, exactly as the top-of-file warning requires. This is the only level that
+proves money actually moves and is billed correctly.
+
+Until Levels 2 and 3 are done, the blocker at the top of this document stands.
 
 ## The billing lifecycle
 
