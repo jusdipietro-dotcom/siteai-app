@@ -37,9 +37,19 @@ import {
  *     - it does NOT prove that over MP's real monthly billing cycle a failed
  *       card actually emits `subscription_authorized_payment` with a status in
  *       our FAILED set — that is only observable against MP itself.
- *   Closing those requires Level 2 (agent + MP sandbox credentials replaying
- *   real notifications) and Level 3 (a human, one real charge cycle). This file
- *   closes the OUR-SIDE half only. It does NOT close the billing blocker.
+ *   Closing those took a real charge against production MercadoPago, done on
+ *   2026-07-23 with one genuine ARS 20 subscription. It found FIVE fatal bugs
+ *   this suite was green through. Two are now covered by the REGRESSION blocks
+ *   at the bottom of this file. The other three lived outside the code and no
+ *   unit test could have caught them: MercadoPago's configured webhook URL
+ *   pointed at a different service that answered 200 and swallowed every
+ *   notification; the signing secret deployed on the server did not match the
+ *   one MercadoPago signs with; and `start_date` capped the customer's checkout
+ *   at sixty seconds, after which MercadoPago silently disabled its own confirm
+ *   button. See docs/03-billing-mercadopago.md.
+ *
+ *   The lesson worth keeping: this file passing is NECESSARY, NOT SUFFICIENT.
+ *   Every bug above sat behind 858 green tests.
  *
  * ISOLATION
  *   No network (global `fetch` is stubbed), no real DB (prisma is an in-memory
@@ -633,5 +643,77 @@ describe('MP re-fetch failure is not silently acknowledged', () => {
     expect(res.status).toBe(502)
     expect(H.counters.projectUpdateMany).toBe(0)
     expect(project().billingStatus).toBe('active')
+  })
+})
+
+// ═════════════════════════════════════════════════════════════════════════════
+//  REGRESSION — bugs this suite stayed green through, caught only by a real
+//  MercadoPago charge in production on 2026-07-23. Each test below fails
+//  against the code as it stood that morning.
+// ═════════════════════════════════════════════════════════════════════════════
+describe('REGRESSION: the notification envelope MercadoPago actually sends', () => {
+  /*
+    Every other test in this file posts `type: 'preapproval'`. MercadoPago does
+    not send that for the "Planes y suscripciones" event — it sends
+    `subscription_preapproval`. The route matched only the former, so a real
+    notification was signature-verified, entered the handler, matched no branch,
+    and fell through to `{ received: true }`. MercadoPago recorded a successful
+    delivery, stopped retrying, and the paid site never activated. The bug was
+    invisible from both ends, and this suite could not see it because every test
+    asserted against an envelope MercadoPago never sends.
+  */
+  it('activates on type "subscription_preapproval" — the string MP really posts', async () => {
+    installMp(assumedMpPreapproval({ id: PREAPPROVAL_ID, status: 'authorized', externalReference: `${PROJECT_ID}:professional` }))
+    const res = await POST(signedRequest({ type: 'subscription_preapproval', data: { id: PREAPPROVAL_ID } }))
+    expect(res.status).toBe(200)
+    expect(project().hasPaid).toBe(true)
+    expect(project().billingStatus).toBe('active')
+    expect(project().plan).toBe('professional')
+  })
+
+  it('still accepts the legacy type "preapproval", so both families keep working', async () => {
+    installMp(assumedMpPreapproval({ id: PREAPPROVAL_ID, status: 'authorized', externalReference: `${PROJECT_ID}:professional` }))
+    const res = await POST(signedRequest({ type: 'preapproval', data: { id: PREAPPROVAL_ID } }))
+    expect(res.status).toBe(200)
+    expect(project().hasPaid).toBe(true)
+  })
+})
+
+describe('REGRESSION: a superseded preapproval must not suspend the live subscription', () => {
+  /*
+    `external_reference` carries only the project id, so two preapprovals for the
+    same project — an abandoned checkout and the one the customer actually paid
+    for — are indistinguishable by it. Cancelling the dead one used to suspend
+    the live one. Observed for real on 2026-07-23: an abandoned checkout and the
+    authorised subscription carried the identical external_reference, so tidying
+    up the dead preapproval would have taken down a site that had just been paid.
+  */
+  const LIVE = 'pre_live'
+  const ABANDONED = 'pre_abandoned'
+
+  it('ignores the cancellation of a preapproval that is NOT the one on file', async () => {
+    seedProject({ hasPaid: true, plan: 'professional', billingStatus: 'active', preapprovalId: LIVE })
+    installMp(assumedMpPreapproval({ id: ABANDONED, status: 'cancelled', externalReference: `${PROJECT_ID}:professional` }))
+    const res = await POST(signedRequest({ type: 'subscription_preapproval', data: { id: ABANDONED } }))
+    expect(res.status).toBe(200)
+    expect(project().billingStatus).toBe('active')
+    expect(project().suspendedAt).toBeNull()
+  })
+
+  it('still suspends when the cancelled preapproval IS the one on file', async () => {
+    seedProject({ hasPaid: true, plan: 'professional', billingStatus: 'active', preapprovalId: LIVE })
+    installMp(assumedMpPreapproval({ id: LIVE, status: 'cancelled', externalReference: `${PROJECT_ID}:professional` }))
+    const res = await POST(signedRequest({ type: 'subscription_preapproval', data: { id: LIVE } }))
+    expect(res.status).toBe(200)
+    expect(project().billingStatus).toBe('suspended')
+    expect(project().suspendedReason).toBe('cancelled')
+  })
+
+  it('suspends a row with no preapprovalId on file — an unknown id must fail towards honouring the cancellation, never towards billing forever', async () => {
+    seedProject({ hasPaid: true, plan: 'professional', billingStatus: 'active', preapprovalId: null })
+    installMp(assumedMpPreapproval({ id: ABANDONED, status: 'cancelled', externalReference: `${PROJECT_ID}:professional` }))
+    const res = await POST(signedRequest({ type: 'subscription_preapproval', data: { id: ABANDONED } }))
+    expect(res.status).toBe(200)
+    expect(project().billingStatus).toBe('suspended')
   })
 })

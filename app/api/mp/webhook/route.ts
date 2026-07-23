@@ -1411,8 +1411,25 @@ export async function POST(req: NextRequest) {
         // subscription was cancelled" instead of the flatly wrong "you never
         // paid". The publish gate is closed by billingStatus, not by lying
         // about payment history.
+        // Match on the preapproval id as well as the project, not the project
+        // alone. `external_reference` only carries the project, so a
+        // cancellation belonging to a SUPERSEDED preapproval — an abandoned
+        // checkout the customer never completed, or the previous subscription
+        // of a plan change — would otherwise suspend the live, paying
+        // subscription that replaced it. Observed on 2026-07-23: an abandoned
+        // preapproval and the authorised one carried the identical
+        // external_reference, so cancelling the dead one would have taken down
+        // a site that had just been paid for.
+        //
+        // Rows whose stored preapprovalId is null still match: an unknown id
+        // has to fail towards honouring the customer's cancellation, never
+        // towards billing them forever.
         const { count } = await prisma.project.updateMany({
-          where: { id: projectId, billingStatus: { not: 'suspended' } },
+          where: {
+            id: projectId,
+            billingStatus: { not: 'suspended' },
+            OR: [{ preapprovalId: null }, { preapprovalId }],
+          },
           data: {
             billingStatus: 'suspended',
             suspendedAt: new Date(),
