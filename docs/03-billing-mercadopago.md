@@ -46,16 +46,73 @@ a price — only a plan id, re-validated server-side against this config.
 
 MercadoPago subscriptions use **preapprovals** (recurring authorizations). The
 `app/api/mp/create-*` route handlers open a preapproval with an
-`external_reference` that encodes which record it belongs to, and a
-`notification_url` pointing at the webhook.
+`external_reference` that encodes which record it belongs to.
+
+They send **no** `notification_url`. Until 2026-07-23 this document claimed they
+did, and the claim was false in a way that hid a fatal bug: anyone reading it
+would assume notifications were routed per subscription and never check the
+panel. MercadoPago **ignores** `notification_url` on a preapproval — verified by
+creating one with the field set and watching the notification arrive at the
+application-level URL regardless. For subscriptions there is exactly ONE
+notification URL, configured per application and per mode in the MercadoPago
+panel. See **Where notifications actually go** below.
+
+They also send **no** `start_date`, deliberately. See the comment in
+`create-subscription/route.ts`: the field caps how long the customer has to
+finish MercadoPago's checkout, and once it passes MercadoPago silently disables
+its own "Confirmar" button — no error to the customer, nothing in our logs.
+
+### Hard facts, each verified against the live API on 2026-07-23
+
+| Fact | How it was verified |
+| --- | --- |
+| Minimum amount is **ARS 15**. Below it: `Cannot pay an amount lower than $ 15.00` | Tried to create a preapproval at ARS 1 |
+| The amount is validated **before** the payer/collector checks | ARS 1 returned the amount error; ARS 20 returned the realm error |
+| Payer and collector must both be real, or both be test users | A `TEST-` token authenticates as the REAL owner account, so pairing it with a `test_user` payer fails |
+| MercadoPago posts `type: "subscription_preapproval"`, **not** `"preapproval"` | Read off the body of a real delivered notification |
+| `notification_url` on a preapproval is ignored | Set it, cancelled the preapproval, watched the notification land elsewhere |
 
 The `external_reference` format is a colon-delimited string the webhook parses:
 
 - Website generator: `"{projectId}:{plan}"`
 - The twelve subscription products: `"{product}:{subscriptionId}:{plan}"` where `product` is one of `monitoring`, `reviews`, `linkedin`, `trading`, `leads`, `emailmarketing`, `prospeccion`, `turnos`, `causas`, `facturacion`, `lexpost`, `suite`. Monitoring also supports a 4th part `:{replacesSubId}` for a plan change.
 
-`lib/mp-preapproval.ts` holds the shared preapproval helpers (unit-tested in
-`tests/mp-preapproval.test.ts`).
+`lib/mp-preapproval.ts` holds the shared **cancellation** helper (unit-tested in
+`tests/mp-preapproval.test.ts`). There is no shared *creation* helper: every
+`create-*` route builds its own preapproval body, which is why one bad field had
+to be fixed in thirteen places.
+
+### Where notifications actually go
+
+One MercadoPago **application** has one webhook URL per mode (test / production),
+set in the panel under *Webhooks → Configurar notificaciones*. For subscriptions
+that URL is the only routing that exists.
+
+Two services share this application: `siteai` (this app, thirteen subscription
+products) and `aj-payments-api` (AlertaJudicial). Until 2026-07-23 the
+**production** URL pointed at `aj-payments-api`, which looked each incoming
+subscription up in its own database, did not find it, logged `found: false` —
+and answered **200 OK**. MercadoPago treats 200 as delivered and never retries,
+so every payment notification for every product in this app was discarded in
+silence. Thirty days of its logs contain not one `found: true`.
+
+Current settings, identical in both modes:
+
+    URL:     https://automaticialab.com/api/mp/webhook
+    Events:  Planes y suscripciones (required) + Pagos, Alertas de fraude, Contracargos
+    Firma:   ONE secret, shared by test and production
+
+Two things follow, and both bite:
+
+1. **`MP_WEBHOOK_SECRET` on the server must equal the panel's *Clave secreta*.**
+   When they differ the webhook answers 403 to every real notification, and the
+   only visible symptom is a subscription that never activates. Changing it in
+   the EasyPanel UI is not enough on its own: `docker service update --force`
+   reuses the Swarm spec and never picks the new value up. `/root/deploy-siteai.sh`
+   now reconciles the two before building, and stops if it cannot.
+2. **AlertaJudicial will need its own MercadoPago application** before it sells.
+   One application cannot route to two services; whichever service owns the URL
+   swallows the other's notifications.
 
 ## The webhook
 
