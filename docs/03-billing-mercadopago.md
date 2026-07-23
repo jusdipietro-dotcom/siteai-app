@@ -1,0 +1,206 @@
+# 3. Billing & MercadoPago
+
+> ⚠️ **PENDING — BLOCKING BEFORE THE FIRST REAL CUSTOMER.** The MercadoPago
+> integration has **never been tested against the real MercadoPago API.** Run a
+> full **sandbox subscription** end-to-end (create preapproval → authorized
+> webhook → a recurring charge → a failed charge → a cancellation) before
+> onboarding a paying customer. Nothing below has been exercised against live
+> MP. This is the single most important open item — see [doc 8](./08-known-issues.md).
+
+## Contents
+- [Plans (single source of truth for prices)](#plans-single-source-of-truth-for-prices)
+- [The subscription / preapproval flow](#the-subscription--preapproval-flow)
+- [The webhook](#the-webhook)
+- [The billing lifecycle](#the-billing-lifecycle)
+- [Recurring charges: grace and suspension](#recurring-charges-grace-and-suspension)
+- [Coupons](#coupons)
+- [The plan-id prototype-pollution guard](#the-plan-id-prototype-pollution-guard)
+
+## Plans (single source of truth for prices)
+
+`lib/website-plans.ts` is the **only** place website-plan prices are defined.
+MercadoPago charges exactly what this module emits — the price must never be
+duplicated at a call site.
+
+| Plan id | Monthly (ARS) | Annual (ARS/mo) | maxProjects |
+|---|---|---|---|
+| `essential` | 19000 | 11400 | 1 |
+| `professional` | 29000 | 17400 | 3 |
+
+`WEBSITE_PLAN_IDS = ['essential', 'professional']` is the source of truth;
+`WebsitePlanId` is derived from it so the list and the type can't drift.
+`websitePlanPrice(planId, annual)` returns the amount; a client **never** sends
+a price — only a plan id, re-validated server-side against this config.
+
+(The twelve subscription products each have their own `lib/*-plans.ts` — e.g.
+`monitoreo-plans.ts`, `causas-plans.ts` — following the same pattern.)
+
+## The subscription / preapproval flow
+
+MercadoPago subscriptions use **preapprovals** (recurring authorizations). The
+`app/api/mp/create-*` route handlers open a preapproval with an
+`external_reference` that encodes which record it belongs to, and a
+`notification_url` pointing at the webhook.
+
+The `external_reference` format is a colon-delimited string the webhook parses:
+
+- Website generator: `"{projectId}:{plan}"`
+- The twelve subscription products: `"{product}:{subscriptionId}:{plan}"` where `product` is one of `monitoring`, `reviews`, `linkedin`, `trading`, `leads`, `emailmarketing`, `prospeccion`, `turnos`, `causas`, `facturacion`, `lexpost`, `suite`. Monitoring also supports a 4th part `:{replacesSubId}` for a plan change.
+
+`lib/mp-preapproval.ts` holds the shared preapproval helpers (unit-tested in
+`tests/mp-preapproval.test.ts`).
+
+## The webhook
+
+`app/api/mp/webhook/route.ts` is **the money path** — the file to open first in
+a billing incident. Key properties, all grounded in that file:
+
+**1. HMAC-verified.** `verifyMPSignature()` rebuilds MercadoPago's manifest
+`id:{data.id};request-id:{x-request-id};ts:{ts};`, HMAC-SHA256s it with
+`MP_WEBHOOK_SECRET`, and `timingSafeEqual`s it against the `v1` from the
+`x-signature` header. **If `MP_WEBHOOK_SECRET` is unset it rejects every webhook
+with 403** — this is why startup hard-fails without it (`instrumentation.ts`).
+The manifest depends on the inbound `x-request-id`, which is why middleware
+never rewrites that header (`lib/request-id.ts`).
+
+**2. Re-fetches from MP rather than trusting the body.** The notification is
+only a nudge. For `preapproval` events it fetches
+`GET /preapproval/{id}`; for `payment` / `subscription_authorized_payment` it
+fetches the payment detail. All reads are bounded by `AbortSignal.timeout(MP_API_TIMEOUT_MS)`.
+
+**3. Correct retry semantics.** `mpReadFailure()` decides the response status on
+a read failure: **404 → acknowledge** (`{received:true}` — the resource isn't
+ours, retrying is futile); **everything else (401/429/5xx/timeout) → 502/504** so
+MP keeps retrying. A read failure is never answered 200 — doing so once caused
+cancellations lost to a transient MP outage to leave sites published and
+unbilled forever.
+
+**4. Idempotent via `updateMany` state guards.** Every transition is a guarded
+`updateMany` — e.g. activation only fires `where: { status: { in: ['pending_payment','trial'] } }`,
+grace only fires `where: { billingStatus: 'active' }`. If `count === 0` the event
+was already processed and the handler skips. Coupon usage is incremented only
+inside the `count > 0` branch, so an MP re-delivery can't double-count. Emails
+and provisioning are likewise fired once per real transition.
+
+**5. Structured, redacted logging.** Every line is JSON carrying the request's
+`requestId` (which equals MP's own `x-request-id`), routed through the redacting
+logger (`lib/logger.ts`) so a notification that ever carries a token isn't logged
+in plaintext.
+
+Each product branch also triggers provisioning/deprovisioning (n8n webhooks,
+Flask, scraper services) and sends confirmation/cancellation emails. Provisioning
+is **best-effort with retry** (`triggerProvisioning()` — 3 attempts, exponential
+backoff) and no-ops with a warning when its webhook env var is unset (some
+products send an admin alert as the manual fallback — LinkedIn, Turnos, LexPost).
+
+## The billing lifecycle
+
+Applies to the **website generator** (`Project` model). Defined in
+`lib/project-billing.ts`. Three columns are kept independent on purpose so the
+dashboard can tell three different "site is down" reasons apart:
+
+- `hasPaid: false` → **never paid**
+- `status !== 'published'` → **owner unpublished it**
+- `billingStatus` → **we suspended it over billing**
+
+```mermaid
+stateDiagram-v2
+    [*] --> active: authorized preapproval\n(webhook)
+    active --> grace: failed recurring charge\n(rejected/cancelled/charged_back/refunded)
+    grace --> active: approved charge (recovery)
+    grace --> suspended: graceUntil elapsed\n(read-time, or expire-trials job)
+    active --> suspended: preapproval cancelled/paused\n(immediate, no grace)
+    suspended --> active: approved charge (recovery)
+```
+
+- **`active`** — paying normally.
+- **`grace`** — a recurring charge failed. The site **stays live** until `graceUntil` (`GRACE_PERIOD_MS = 7 days`). Window to fix the card.
+- **`suspended`** — down. Either grace elapsed (`suspendedReason: 'payment_failed'`) or the owner cancelled (`suspendedReason: 'cancelled'`, no grace — a deliberate act needs no recovery window).
+
+**Read-time enforcement is the crux.** `effectiveBillingStatus(project, now)`
+returns `'suspended'` for a row still stored as `'grace'` once `graceUntil` has
+passed. Every read path (the public gate, `deserializeProject()`, the publish
+endpoint) goes through it, so **an elapsed grace can never keep a site online
+even though no scheduler has rewritten the row.** `isGraceActive()` fails closed:
+a null `graceUntil` is not an open window.
+
+`siteDownReason()` produces the owner-facing reason, ordered by what they can act
+on: `suspended_payment_failed` / `suspended_cancelled` / `never_paid` /
+`unpublished`.
+
+**Cancellation is immediate** (webhook `preapproval` → `cancelled`/`paused`): the
+project goes straight to `suspended` with `suspendedReason: 'cancelled'`, no
+grace. `hasPaid` deliberately **stays true** — it records that the project ever
+paid, so the dashboard can say "your subscription was cancelled" instead of the
+wrong "you never paid". The gate is closed by `billingStatus`, not by lying about
+payment history.
+
+## Recurring charges: grace and suspension
+
+`preapproval` events only report the **subscription** state. Month-to-month
+charges arrive as `payment` / `subscription_authorized_payment` and are handled
+in a separate branch of the webhook:
+
+- Resolve the `Project` by `preapprovalId` (fallback: `external_reference`).
+- `approved` → **recovery**: `billingStatus` back to `active`, clears grace/suspend fields (guarded on `{ in: ['grace','suspended'] }`). No content is touched.
+- `FAILED = ['rejected','cancelled','charged_back','refunded']` → **enter grace** (guarded on `billingStatus: 'active'` so a second failed charge can't slide the deadline forward and grant a fresh 7 days).
+  - `'in_mediation'` is **deliberately excluded** — a disputed charge is not yet a lost one. The code flags this as a commercial-policy call for the business.
+  - If the row is already in grace **and the window has already elapsed**, this failed retry is the one webhook event on which the `grace → suspended` transition is observed and the owner emailed (that transition is otherwise read-time only, since there is no cron in the Dockerfile). Guarded so it fires at most once.
+
+Each real transition (`count > 0`) fires `notifySiteBillingEvent()` — owner email
++ operator alert — and re-syncs `User.plan` via `syncUserPlanFromProjects()`
+(the account reflects the **highest** plan across all the user's live projects).
+
+**The read-time-only gap, stated plainly:** grace→suspended is enforced on read
+but the *stored* row and the suspension email depend on either a failed-charge
+webhook arriving after expiry, or the daily `expire-trials` job running (see
+[doc 4 → Scheduled jobs](./04-deployment-operations.md#scheduled-jobs-n8n-not-the-dockerfile)).
+`expireStaleGrace()` (`lib/project-billing.ts`) is the persistence pass; it's an
+optimisation for reporting, not a correctness dependency.
+
+## Coupons
+
+`Coupon` model (`prisma/schema.prisma`): `code` unique, `discount` (%), `maxUses`,
+`usedCount`, `validFrom`/`validUntil`, `active`.
+
+Two very different redemption paths:
+
+- **The twelve subscription products** — a coupon adjusts the MercadoPago flow, and `usedCount` is incremented inside the webhook's activation branch.
+- **The website generator** — `POST /api/projects/[id]/redeem-coupon` (`app/api/projects/[id]/redeem-coupon/route.ts`). **Free-access only: `discount === 100` is required.** A partial discount would mean changing the preapproval amount, which this product does not do, so anything else is rejected with `partial_discount_unsupported`. A 100% coupon **does not open a MercadoPago preapproval** (you can't have a $0 recurring subscription) — it writes the paid state directly (`hasPaid`, `plan`, `billingStatus: 'active'`, `couponId`, `couponRedeemedAt`; `preapprovalId` stays null).
+
+Redemption safety (all in the redeem route):
+- Idempotency is checked **before** validity rules, so re-sending a code that already paid this project returns `alreadyRedeemed: true` instead of "Cupón agotado".
+- The use is consumed atomically inside a `$transaction`: `updateMany` with `usedCount: { lt: maxUses }` (Postgres evaluates the guard against the locked row, so two racers for the last use — exactly one wins). The plan grant is guarded on `hasPaid: false`. Either both happen or neither.
+- The plan's `maxProjects` ceiling is enforced so a free coupon can't bypass the project limit.
+
+Coupon **provenance** on `Project` is deliberately three separate signals so
+"who comped this?" always has a truthful answer:
+`grantedBy/grantedAt` (admin gift) vs `couponId/couponRedeemedAt` (100% coupon)
+vs neither (a real MP sale, `preapprovalId` set). A redemption trace is
+historical and stays set even if a later gift is revoked.
+
+## The plan-id prototype-pollution guard
+
+`isWebsitePlanId(value)` (`lib/website-plans.ts`) checks membership in the id
+**list** rather than indexing the `WEBSITE_PLANS` object directly. This is a real
+guard, not defensive noise:
+
+```ts
+// WHY: WEBSITE_PLANS is a plain object, so WEBSITE_PLANS['toString']
+// resolves through Object.prototype to a truthy function — enough to slip
+// past `if (!planConfig)` and reach the pricing math with an undefined `monthly`.
+export function isWebsitePlanId(value: unknown): value is WebsitePlanId {
+  return typeof value === 'string' && WEBSITE_PLAN_IDS.some((id) => id === value)
+}
+```
+
+Raw indexing of a plain object with untrusted input (a request body, a DB column)
+is dangerous because inherited `Object.prototype` keys (`toString`, `constructor`,
+`hasOwnProperty`) resolve truthy. The same defence appears in three more places
+with the same reasoning:
+
+- `websitePlanRank()` in the webhook (ranking the stored `Project.plan`);
+- `schemaTypeForBusinessType()` in `lib/site-seo.ts` (uses `Object.prototype.hasOwnProperty.call`);
+- `isSiteLeadStatus()` in `lib/site-leads.ts`.
+
+Covered by `tests/plan-guards.test.ts`.
