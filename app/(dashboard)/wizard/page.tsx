@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   ArrowLeft, ArrowRight, X, Plus, Trash2, Check, Sparkles,
   Phone, Mail, MapPin, Instagram, Facebook, Linkedin, Twitter,
-  Image as ImageIcon, Type, Globe, Search, Tag, Upload,
+  Image as ImageIcon, Type, Globe, Search, Tag, Upload, Loader2,
 } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
@@ -110,9 +110,80 @@ function Step1({ data, setField }: { data: any; setField: any }) {
 
 // ─── Step 2: Basic Info ───────────────────────────────────────────────────────
 
+// "Generá mi sitio con IA" — writes tagline, description, services, testimonials,
+// FAQ and stats from a name + rubro + one sentence. Falls back (server-side) to
+// the per-rubro starter content, so the button always fills the form.
+function AIGenerateBanner({ data, setField }: { data: any; setField: any }) {
+  const [generating, setGenerating] = useState(false)
+
+  const generate = async () => {
+    if (!data.name?.trim()) {
+      toast.error('Escribí primero el nombre del negocio')
+      return
+    }
+    setGenerating(true)
+    try {
+      const res = await fetch('/api/generate-site', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: data.name,
+          businessType: data.businessType,
+          description: data.description,
+        }),
+      })
+      const out = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(out.error || 'No se pudo generar el contenido')
+      const c = out.content ?? {}
+      if (c.tagline) setField('tagline', c.tagline)
+      if (c.description) setField('description', c.description)
+      if (c.services?.length) setField('services', c.services)
+      if (c.testimonials?.length) setField('testimonials', c.testimonials)
+      if (c.faqs?.length) setField('faqs', c.faqs)
+      if (c.stats?.length) setField('stats', c.stats)
+      toast.success(
+        out.source === 'ai'
+          ? '¡Listo! Generamos el contenido de tu sitio. Revisalo y ajustá lo que quieras.'
+          : 'Cargamos contenido de ejemplo para tu rubro. Editalo a gusto.'
+      )
+    } catch (err: any) {
+      toast.error(err?.message || 'No se pudo generar el contenido')
+    } finally {
+      setGenerating(false)
+    }
+  }
+
+  return (
+    <div className="rounded-2xl border border-brand-200 bg-gradient-to-br from-brand-50 to-white p-4 sm:p-5">
+      <div className="flex items-start gap-3">
+        <div className="h-9 w-9 rounded-xl bg-brand-500 flex items-center justify-center shrink-0">
+          <Sparkles className="h-5 w-5 text-white" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-surface-900">Generá el contenido con IA</p>
+          <p className="text-sm text-surface-500 mt-0.5">
+            Escribí el nombre y, si querés, una frase de a qué te dedicás. La IA arma el slogan,
+            la descripción, los servicios, testimonios y preguntas frecuentes. Después editás todo.
+          </p>
+          <button
+            type="button"
+            onClick={generate}
+            disabled={generating}
+            className="mt-3 inline-flex items-center gap-2 h-9 px-4 rounded-xl bg-brand-600 text-white text-sm font-semibold hover:bg-brand-700 transition-colors disabled:opacity-60"
+          >
+            {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+            {generating ? 'Generando...' : 'Generar con IA'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function Step2({ data, setField }: { data: any; setField: any }) {
   return (
     <div className="space-y-6">
+      <AIGenerateBanner data={data} setField={setField} />
       <div className="grid gap-5">
         {/* Name */}
         <div className="space-y-1.5">
@@ -1498,9 +1569,10 @@ export default function WizardPage() {
         businessType: data.businessType,
         services: hasOwnServices ? data.services : starter.services,
         team: data.team,
-        testimonials: starter.testimonials,
-        faqs: starter.faqs,
-        stats: starter.stats,
+        // AI-generated content wins when present; otherwise the per-rubro starter.
+        testimonials: data.testimonials?.length ? data.testimonials : starter.testimonials,
+        faqs: data.faqs?.length ? data.faqs : starter.faqs,
+        stats: data.stats?.length ? data.stats : starter.stats,
         contact: {
           phone: data.phone,
           whatsapp: data.whatsapp,

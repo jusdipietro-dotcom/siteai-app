@@ -14,6 +14,10 @@ const initialData: WizardData = {
   services: [],
   // Step 4
   team: [],
+  // Filled by "Generá mi sitio con IA" (no manual wizard step)
+  testimonials: [],
+  faqs: [],
+  stats: [],
   // Step 5
   phone: '',
   whatsapp: '',

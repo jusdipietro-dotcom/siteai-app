@@ -248,6 +248,11 @@ export interface WizardData {
   tone: string
   services: Service[]
   team: TeamMember[]
+  // Populated by "Generá mi sitio con IA" (the wizard has no manual step for
+  // these — they render from here or from the per-rubro starter set at create).
+  testimonials?: Testimonial[]
+  faqs?: FAQItem[]
+  stats?: BusinessStat[]
   phone: string
   whatsapp: string
   email: string
