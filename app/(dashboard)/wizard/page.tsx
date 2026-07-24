@@ -18,6 +18,7 @@ import { colorPresets, typographyOptions } from '@/config/themes'
 import { businessTypes, toneOptions } from '@/data/mockBusinessTypes'
 import { mockTemplates } from '@/data/mockTemplates'
 import { generateId, slugify, cn } from '@/lib/utils'
+import { contentForBusinessType } from '@/data/templateContent'
 import { SITES_DOMAIN } from '@/lib/site-domain'
 import type { Project, SectionConfig, SectionType, ColorTheme } from '@/types'
 
@@ -1446,6 +1447,28 @@ export default function WizardPage() {
 
     const selectedType = businessTypes.find((bt) => bt.id === data.businessType)
 
+    /*
+      Starter content for the rubro.
+
+      The wizard only ever captured a name, contacts and maybe a service or two,
+      so Testimonials/FAQ/Stats shipped EMPTY and a brand-new site looked
+      half-built until the owner filled every section by hand. We backfill the
+      fields left blank with on-topic example copy they can edit or replace.
+
+      Backfill only — anything the owner actually typed wins. `hasOwnServices`
+      ignores the blank rows the wizard's "add service" button leaves behind, so
+      an empty row doesn't count as real input and suppress the starter set.
+    */
+    const starter = contentForBusinessType(data.businessType)
+    const hasOwnServices = data.services.some((sv) => sv.name?.trim())
+
+    // The starter-filled sections have to be enabled too, or the content would
+    // exist and never render. Set preserves the owner's own picks and their
+    // order, and drops duplicates when they already chose one of these.
+    const enabledWithStarter = Array.from(
+      new Set<SectionType>([...data.enabledSections, 'testimonials', 'faq', 'stats'])
+    )
+
     const newProject: Project = {
       id: generateId(),
       name: data.name || 'Mi negocio',
@@ -1457,7 +1480,7 @@ export default function WizardPage() {
       coverImageId: data.heroImageId,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      sections: data.enabledSections.map((type, i) => {
+      sections: enabledWithStarter.map((type, i) => {
         const secMeta = ALL_SECTIONS.find((s) => s.id === type)
         return {
           id: type,
@@ -1470,13 +1493,14 @@ export default function WizardPage() {
       }),
       businessData: {
         name: data.name,
-        tagline: data.tagline,
-        description: data.description,
+        tagline: data.tagline || starter.tagline,
+        description: data.description || starter.description,
         businessType: data.businessType,
-        services: data.services,
+        services: hasOwnServices ? data.services : starter.services,
         team: data.team,
-        testimonials: [],
-        faqs: [],
+        testimonials: starter.testimonials,
+        faqs: starter.faqs,
+        stats: starter.stats,
         contact: {
           phone: data.phone,
           whatsapp: data.whatsapp,
