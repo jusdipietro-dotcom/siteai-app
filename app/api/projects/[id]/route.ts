@@ -10,6 +10,7 @@ import {
   InvalidStatusError,
 } from '@/lib/projectSerializer'
 import { isSubdomainConflict } from '@/lib/prismaErrors'
+import { deleteProjectWithBilling } from '@/lib/project-delete'
 
 async function getOwnedProject(projectId: string, userId: string) {
   return prisma.project.findFirst({ where: { id: projectId, userId } })
@@ -89,6 +90,10 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
   const existing = await getOwnedProject(params.id, session.user.id)
   if (!existing) return NextResponse.json({ error: 'Proyecto no encontrado' }, { status: 404 })
 
-  await prisma.project.delete({ where: { id: params.id } })
+  // Cancels the MercadoPago subscription before deleting, so the owner is never
+  // left paying for a site they just removed. Aborts the delete if MP can't
+  // confirm the cancellation. See lib/project-delete.ts.
+  const result = await deleteProjectWithBilling(params.id)
+  if (!result.ok) return NextResponse.json({ error: result.reason }, { status: 502 })
   return NextResponse.json({ deleted: true })
 }

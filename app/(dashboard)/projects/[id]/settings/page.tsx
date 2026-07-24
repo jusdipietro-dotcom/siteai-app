@@ -3,7 +3,7 @@ import { useState, useRef } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ArrowLeft, Save, Globe, Search, BarChart2, Share2, Upload, ExternalLink, Pencil, Inbox } from 'lucide-react'
+import { ArrowLeft, Save, Globe, Search, BarChart2, Share2, Upload, ExternalLink, Pencil, Inbox, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -133,6 +133,7 @@ export default function SettingsPage() {
   const { projects, updateProject } = useProjectStore()
   const project = projects.find((p) => p.id === id)
   const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   // General
   const [name, setName] = useState(project?.name ?? '')
@@ -213,6 +214,31 @@ export default function SettingsPage() {
       toast.error('Error al guardar')
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function handleDelete() {
+    if (!project) return
+    const ok = window.confirm(
+      `¿Eliminar el sitio "${project.name}" de forma permanente?\n\n` +
+        'Se cancela la suscripción de MercadoPago, se da de baja el subdominio y se borran sus mensajes. Esta acción NO se puede deshacer.'
+    )
+    if (!ok) return
+    setDeleting(true)
+    try {
+      const res = await fetch(`/api/projects/${id}`, { method: 'DELETE' })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        toast.error(data.error ?? 'No se pudo eliminar el sitio')
+        return
+      }
+      toast.success('Sitio eliminado')
+      // Full reload so the dashboard list refetches without the deleted project.
+      window.location.href = '/dashboard'
+    } catch {
+      toast.error('Error de conexión')
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -331,6 +357,27 @@ export default function SettingsPage() {
                 category="favicon"
                 previewClass="w-12 h-12"
               />
+            </div>
+
+            {/* Danger zone — permanent, billing-safe deletion. */}
+            <div className="bg-white rounded-2xl border border-red-200 p-6 space-y-4">
+              <div>
+                <h2 className="font-semibold text-red-700">Eliminar sitio</h2>
+                <p className="text-sm text-surface-500 mt-1">
+                  Se elimina el sitio de forma permanente: se cancela la suscripción de
+                  MercadoPago, se da de baja el subdominio y se borran sus mensajes. Esta acción
+                  no se puede deshacer.
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                className="border-red-300 text-red-600 hover:bg-red-50 gap-1.5"
+                loading={deleting}
+                onClick={handleDelete}
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Eliminar sitio permanentemente
+              </Button>
             </div>
           </TabsContent>
 

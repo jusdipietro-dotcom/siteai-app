@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Globe, Search, Loader2, Gift, RotateCcw, ExternalLink, Tag } from 'lucide-react'
+import { Globe, Search, Loader2, Gift, RotateCcw, ExternalLink, Tag, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
 import { toast } from 'sonner'
@@ -108,7 +108,7 @@ export default function AdminSitesClient() {
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('all')
   const [pendingId, setPendingId] = useState<string | null>(null)
-  const [confirm, setConfirm] = useState<{ project: AdminProject; action: 'gift' | 'revoke' } | null>(null)
+  const [confirm, setConfirm] = useState<{ project: AdminProject; action: 'gift' | 'revoke' | 'delete' } | null>(null)
 
   const fetchProjects = useCallback(async (q: string, f: string) => {
     setLoading(true)
@@ -142,6 +142,20 @@ export default function AdminSitesClient() {
     setConfirm(null)
     setPendingId(project.id)
     try {
+      if (action === 'delete') {
+        const res = await fetch(`/api/admin/projects/${project.id}`, { method: 'DELETE' })
+        const data = await res.json().catch(() => ({}))
+        if (!res.ok) {
+          toast.error(data.error ?? 'No se pudo eliminar el sitio')
+          return
+        }
+        // Drop the row and decrement the total — the site is gone.
+        setProjects((prev) => prev.filter((p) => p.id !== project.id))
+        setTotal((t) => Math.max(0, t - 1))
+        toast.success(`Sitio "${project.name}" eliminado`)
+        return
+      }
+
       const res = await fetch(`/api/admin/projects/${project.id}/gift`, {
         method: action === 'gift' ? 'POST' : 'DELETE',
       })
@@ -294,26 +308,39 @@ export default function AdminSitesClient() {
                     <td className="py-3 px-4 text-right">
                       {pendingId === p.id ? (
                         <Loader2 className="w-4 h-4 animate-spin text-surface-400 inline" />
-                      ) : p.grantedAt || p.hasPaid ? (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setConfirm({ project: p, action: 'revoke' })}
-                          className="gap-1.5"
-                        >
-                          <RotateCcw className="w-3.5 h-3.5" />
-                          Quitar regalo
-                        </Button>
                       ) : (
-                        <Button
-                          variant="gradient"
-                          size="sm"
-                          onClick={() => setConfirm({ project: p, action: 'gift' })}
-                          className="gap-1.5"
-                        >
-                          <Gift className="w-3.5 h-3.5" />
-                          Regalar
-                        </Button>
+                        <div className="flex items-center justify-end gap-2">
+                          {p.grantedAt || p.hasPaid ? (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setConfirm({ project: p, action: 'revoke' })}
+                              className="gap-1.5"
+                            >
+                              <RotateCcw className="w-3.5 h-3.5" />
+                              Quitar regalo
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="gradient"
+                              size="sm"
+                              onClick={() => setConfirm({ project: p, action: 'gift' })}
+                              className="gap-1.5"
+                            >
+                              <Gift className="w-3.5 h-3.5" />
+                              Regalar
+                            </Button>
+                          )}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setConfirm({ project: p, action: 'delete' })}
+                            className="gap-1.5 border-red-300 text-red-600 hover:bg-red-50"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            Eliminar
+                          </Button>
+                        </div>
                       )}
                     </td>
                   </tr>
@@ -327,14 +354,24 @@ export default function AdminSitesClient() {
       <ConfirmDialog
         open={!!confirm}
         onOpenChange={(open) => { if (!open) setConfirm(null) }}
-        title={confirm?.action === 'gift' ? 'Regalar sitio' : 'Quitar regalo'}
+        title={
+          confirm?.action === 'gift' ? 'Regalar sitio'
+          : confirm?.action === 'delete' ? 'Eliminar sitio'
+          : 'Quitar regalo'
+        }
         description={
           confirm?.action === 'gift'
             ? `El sitio "${confirm?.project.name}" de ${confirm?.project.user.email} va a quedar como pago (plan professional) y se va a levantar cualquier suspensión.`
-            : `El sitio "${confirm?.project.name}" de ${confirm?.project.user.email} vuelve a hasPaid=false y plan free. Si estaba publicado, sigue publicado.`
+            : confirm?.action === 'delete'
+              ? `Se elimina PERMANENTEMENTE el sitio "${confirm?.project.name}" de ${confirm?.project.user.email}. Se cancela su suscripción de MercadoPago y se borran sus mensajes. Esta acción no se puede deshacer.`
+              : `El sitio "${confirm?.project.name}" de ${confirm?.project.user.email} vuelve a hasPaid=false y plan free. Si estaba publicado, sigue publicado.`
         }
-        confirmLabel={confirm?.action === 'gift' ? 'Regalar' : 'Quitar regalo'}
-        variant={confirm?.action === 'revoke' ? 'destructive' : 'default'}
+        confirmLabel={
+          confirm?.action === 'gift' ? 'Regalar'
+          : confirm?.action === 'delete' ? 'Eliminar'
+          : 'Quitar regalo'
+        }
+        variant={confirm?.action === 'gift' ? 'default' : 'destructive'}
         onConfirm={runAction}
       />
     </div>
