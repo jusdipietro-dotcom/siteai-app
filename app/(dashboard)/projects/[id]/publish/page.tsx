@@ -16,14 +16,7 @@ import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
 import { WEBSITE_PLANS, formatARS } from '@/lib/website-plans'
 import { publishedSiteUrl } from '@/lib/site-domain'
 import { useProjectStore } from '@/store/useProjectStore'
-
-const CHECKLIST = [
-  { id: 'name', label: 'Nombre del negocio configurado', check: (p: any) => !!p.name },
-  { id: 'seo', label: 'Título SEO y descripción definidos', check: (p: any) => !!p.businessData?.seo?.title },
-  { id: 'sections', label: 'Al menos 3 secciones habilitadas', check: (p: any) => (p.sections?.filter((s: any) => s.enabled)?.length ?? 0) >= 3 },
-  { id: 'contact', label: 'Datos de contacto completos', check: (p: any) => !!(p.businessData?.contact?.phone || p.businessData?.contact?.email) },
-  { id: 'template', label: 'Template seleccionado', check: (p: any) => !!p.template },
-]
+import { evaluatePublishReadiness } from '@/lib/publish-readiness'
 
 export default function PublishPage() {
   const params = useParams()
@@ -141,8 +134,7 @@ export default function PublishPage() {
   // Single source of truth for the public URL. It flips between the path host
   // and the subdomain host on its own, so nothing here hardcodes a domain.
   const siteUrl = publishedSiteUrl({ slug: project.slug, subdomain: project.subdomain ?? null })
-  const checks = CHECKLIST.map((item) => ({ ...item, passed: item.check(project) }))
-  const allPassed = checks.every((c) => c.passed)
+  const readiness = evaluatePublishReadiness(project)
   // The server freezes the subdomain of a published project (409 on change).
   // Reflect that in the UI so nobody discovers the rule by hitting the error.
   const subdomainLocked = published && !!project.subdomain
@@ -268,24 +260,49 @@ export default function PublishPage() {
         <div className="bg-white rounded-2xl border border-surface-100 p-6 space-y-4">
           <h2 className="font-semibold text-surface-900">Revisión previa a la publicación</h2>
           <ul className="space-y-3">
-            {checks.map((item) => (
-              <li key={item.id} className="flex items-center gap-3">
+            {readiness.items.map((item) => (
+              <li key={item.id} className="flex items-start gap-3">
                 {item.passed ? (
-                  <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
+                  <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
+                ) : item.severity === 'required' ? (
+                  <AlertCircle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
                 ) : (
-                  <Circle className="w-5 h-5 text-surface-300 shrink-0" />
+                  <Circle className="w-5 h-5 text-surface-300 shrink-0 mt-0.5" />
                 )}
-                <span className={`text-sm ${item.passed ? 'text-surface-800' : 'text-surface-400'}`}>
-                  {item.label}
-                </span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className={`text-sm ${item.passed ? 'text-surface-800' : 'text-surface-700'}`}>
+                      {item.label}
+                    </span>
+                    {!item.passed && item.severity === 'required' && (
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">Obligatorio</span>
+                    )}
+                    {!item.passed && item.severity === 'recommended' && (
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-surface-400 bg-surface-100 px-1.5 py-0.5 rounded">Recomendado</span>
+                    )}
+                  </div>
+                  {!item.passed && item.hint && (
+                    <p className="text-xs text-surface-400 mt-0.5">{item.hint}</p>
+                  )}
+                </div>
               </li>
             ))}
           </ul>
 
-          {!allPassed && (
+          {!readiness.canPublish ? (
             <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm text-amber-700">
               <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-              Completá los items pendientes para publicar.
+              Completá los items obligatorios para poder publicar.
+            </div>
+          ) : readiness.recommendedPending > 0 ? (
+            <div className="flex items-start gap-2 bg-surface-50 border border-surface-200 rounded-xl p-3 text-sm text-surface-600">
+              <Sparkles className="w-4 h-4 mt-0.5 shrink-0 text-brand-500" />
+              Podés publicar ya. Hay {readiness.recommendedPending} mejora{readiness.recommendedPending > 1 ? 's' : ''} recomendada{readiness.recommendedPending > 1 ? 's' : ''} para que tu sitio no se vea a medio hacer.
+            </div>
+          ) : (
+            <div className="flex items-start gap-2 bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-sm text-emerald-700">
+              <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" />
+              ¡Todo listo! Tu sitio está completo para publicar.
             </div>
           )}
         </div>
@@ -364,7 +381,7 @@ export default function PublishPage() {
             className="w-full gap-2 shadow-brand"
             onClick={handlePublish}
             loading={publishing}
-            disabled={!allPassed || published}
+            disabled={!readiness.canPublish || published}
           >
             <Rocket className="w-5 h-5" />
             {published ? 'Sitio publicado' : 'Publicar ahora'}
