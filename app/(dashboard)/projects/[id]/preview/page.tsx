@@ -6,296 +6,8 @@ import { motion } from 'framer-motion'
 import { ArrowLeft, Monitor, Tablet, Smartphone, ExternalLink, Edit3, Lock, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useProjectStore } from '@/store/useProjectStore'
-import { resolveSiteFonts } from '@/lib/site-fonts'
-import { safeImg } from '@/lib/site-images'
 import { cn } from '@/lib/utils'
 import type { DevicePreview } from '@/types'
-import { primaryColorOf } from '@/lib/project-branding'
-
-// ── Full site preview with all sections using real project data ────────────────
-function SiteFullPreview({ project, device, color }: { project: any; device: DevicePreview; color: string }) {
-  const bd = project.businessData
-  const isMobile = device === 'mobile'
-  const px = isMobile ? '1rem' : '3rem'
-  const py = isMobile ? '2.5rem' : '5rem'
-
-  // Fonts from branding — resolved by the same helper the published renderer
-  // uses, so a font added to the catalogue reaches the preview too. The families
-  // come back scrubbed, which matters here: they are interpolated into the raw
-  // <style> string below, not into a React style attribute.
-  const { headingFamily, bodyFamily, urls: uniqueUrls } = resolveSiteFonts(bd.branding)
-
-  // Image URLs are owner input, so they go through the same validation the
-  // published renderer applies — a `javascript:` value yields null and the
-  // image is skipped rather than handed to the browser.
-  const heroImg = safeImg(bd.heroImage)
-  const galleryImgs = ((bd.galleryImages ?? []) as string[]).map(safeImg).filter((u): u is string => !!u)
-
-  // Sections sorted by order, only enabled ones (plus always show hero/footer)
-  const ordered = [...project.sections].sort((a: any, b: any) => a.order - b.order)
-
-  return (
-    <div style={{ fontFamily: `'${bodyFamily}', system-ui, sans-serif`, color: '#0f172a' }}>
-      <style>{`
-        ${uniqueUrls.map((u) => `@import url('${u}');`).join('\n')}
-        .sprev h1,.sprev h2,.sprev h3,.sprev h4 { font-family: '${headingFamily}', system-ui, sans-serif; }
-      `}</style>
-      <div className="sprev">
-      {/* NAV */}
-      <nav style={{ position: 'sticky', top: 0, background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(12px)', borderBottom: '1px solid #e8edf3', padding: `0 ${px}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '64px', zIndex: 10 }}>
-        <span style={{ fontSize: '1.2rem', fontWeight: '800', color }}>{bd.name}</span>
-        {!isMobile && (
-          <div style={{ display: 'flex', gap: '1.5rem' }}>
-            {ordered.filter((s: any) => s.enabled && s.id !== 'hero' && s.id !== 'footer').slice(0, 4).map((s: any) => (
-              <span key={s.id} style={{ fontSize: '0.875rem', color: '#64748b', cursor: 'pointer' }}>{s.label}</span>
-            ))}
-          </div>
-        )}
-        <button style={{ background: color, color: '#fff', padding: '0.5rem 1.25rem', borderRadius: '9999px', border: 'none', fontWeight: '600', fontSize: '0.875rem', cursor: 'pointer' }}>
-          Contactar
-        </button>
-      </nav>
-
-      {ordered.map((section: any) => {
-        if (!section.enabled) return null
-        switch (section.id) {
-          case 'hero':
-            return (
-              <section key="hero" style={{ background: heroImg ? undefined : `linear-gradient(135deg, ${color}ee, ${color}99)`, minHeight: '80vh', display: 'flex', alignItems: 'center', position: 'relative', overflow: 'hidden' }}>
-                {heroImg && <img src={heroImg} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.25 }} />}
-                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, rgba(0,0,0,0.3), rgba(0,0,0,0.1))' }} />
-                <div style={{ position: 'relative', padding: `4rem ${px}`, color: '#fff', maxWidth: '700px' }}>
-                  {bd.businessType && (
-                    <div style={{ display: 'inline-block', background: 'rgba(255,255,255,0.2)', padding: '0.375rem 1rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: '600', marginBottom: '1rem' }}>
-                      ✦ {bd.businessType}
-                    </div>
-                  )}
-                  <h1 style={{ fontSize: isMobile ? '2rem' : '3.5rem', fontWeight: '800', lineHeight: 1.05, marginBottom: '1rem' }}>{bd.name}</h1>
-                  {bd.tagline && (
-                    <p style={{ fontSize: '1.1rem', opacity: 0.9, marginBottom: '1.5rem', lineHeight: 1.7 }}>{bd.tagline}</p>
-                  )}
-                  <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                    <button style={{ background: '#fff', color, padding: '0.875rem 2rem', borderRadius: '9999px', fontWeight: '700', border: 'none', cursor: 'pointer' }}>Contactar ahora →</button>
-                    <button style={{ background: 'transparent', color: '#fff', padding: '0.875rem 2rem', borderRadius: '9999px', fontWeight: '700', border: '2px solid rgba(255,255,255,0.6)', cursor: 'pointer' }}>Ver servicios</button>
-                  </div>
-                </div>
-              </section>
-            )
-
-          case 'about':
-            if (!bd.description) return null
-            return (
-              <section key="about" style={{ padding: `${py} ${px}`, background: '#f8fafc', textAlign: 'center' }}>
-                <h2 style={{ fontSize: isMobile ? '1.75rem' : '2.25rem', fontWeight: '800', marginBottom: '1rem' }}>Sobre Nosotros</h2>
-                <p style={{ color: '#475569', lineHeight: 1.8, maxWidth: '680px', margin: '0 auto', fontSize: '1rem' }}>{bd.description}</p>
-              </section>
-            )
-
-          case 'services':
-          case 'features':
-            if (!bd.services.length) return null
-            return (
-              <section key={section.id} style={{ padding: `${py} ${px}`, background: '#fff' }}>
-                <p style={{ textAlign: 'center', color, fontWeight: '700', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.75rem' }}>Nuestros servicios</p>
-                <h2 style={{ textAlign: 'center', fontSize: isMobile ? '1.75rem' : '2.5rem', fontWeight: '800', marginBottom: '3rem' }}>Todo lo que necesitás</h2>
-                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: '1.5rem' }}>
-                  {bd.services.map((s: any) => (
-                    <div key={s.id} style={{ background: '#fff', border: '1px solid #e8edf3', borderRadius: '1.25rem', padding: '1.75rem', borderTop: `3px solid ${color}` }}>
-                      <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>{s.emoji ?? '✦'}</div>
-                      <h3 style={{ fontWeight: '700', fontSize: '1.05rem', marginBottom: '0.5rem' }}>{s.name}</h3>
-                      <p style={{ color: '#64748b', fontSize: '0.9rem', lineHeight: 1.75 }}>{s.description}</p>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            )
-
-          case 'pricing':
-            if (!bd.services.length) return null
-            return (
-              <section key="pricing" style={{ padding: `${py} ${px}`, background: '#f8fafc' }}>
-                <h2 style={{ textAlign: 'center', fontSize: isMobile ? '1.75rem' : '2.25rem', fontWeight: '800', marginBottom: '0.5rem' }}>Precios</h2>
-                <p style={{ textAlign: 'center', color: '#64748b', marginBottom: '3rem' }}>Elegí el plan que mejor se adapta a vos</p>
-                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: '1.5rem', maxWidth: '860px', margin: '0 auto' }}>
-                  {bd.services.slice(0, 3).map((s: any, i: number) => (
-                    <div key={s.id} style={{ background: '#fff', border: `2px solid ${i === 1 ? color : '#e8edf3'}`, borderRadius: '1.5rem', padding: '1.75rem', display: 'flex', flexDirection: 'column', gap: '1rem', transform: i === 1 ? 'scale(1.04)' : 'none', boxShadow: i === 1 ? `0 8px 30px ${color}30` : 'none' }}>
-                      {i === 1 && <span style={{ background: color, color: '#fff', fontSize: '0.7rem', fontWeight: '700', padding: '0.25rem 0.75rem', borderRadius: '9999px', alignSelf: 'flex-start', textTransform: 'uppercase' }}>Popular</span>}
-                      <div>
-                        <p style={{ fontWeight: '700', fontSize: '1.05rem' }}>{s.name}</p>
-                        <p style={{ fontSize: '1.75rem', fontWeight: '800', color, marginTop: '0.25rem' }}>{s.price || '—'}</p>
-                      </div>
-                      <p style={{ color: '#64748b', fontSize: '0.9rem', lineHeight: 1.6, flex: 1 }}>{s.description}</p>
-                      <button style={{ background: i === 1 ? color : 'transparent', color: i === 1 ? '#fff' : color, border: `2px solid ${color}`, padding: '0.7rem', borderRadius: '0.75rem', fontWeight: '700', cursor: 'pointer', fontSize: '0.9rem' }}>Contratar</button>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            )
-
-          case 'testimonials':
-            if (!bd.testimonials.length) return null
-            return (
-              <section key="testimonials" style={{ padding: `${py} ${px}`, background: section.id === 'testimonials' ? '#f8fafc' : '#fff' }}>
-                <h2 style={{ textAlign: 'center', fontSize: isMobile ? '1.75rem' : '2.25rem', fontWeight: '800', marginBottom: '3rem' }}>Lo que dicen nuestros clientes</h2>
-                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: '1.25rem' }}>
-                  {bd.testimonials.map((t: any) => (
-                    <div key={t.id} style={{ background: '#fff', borderRadius: '1.25rem', padding: '1.5rem', border: '1px solid #e8edf3' }}>
-                      {typeof t.rating === 'number' && t.rating > 0 && (
-                        <p style={{ color: '#f59e0b', fontSize: '1rem', marginBottom: '0.75rem' }}>{'★'.repeat(Math.min(5, Math.round(t.rating)))}</p>
-                      )}
-                      <p style={{ color: '#475569', fontStyle: 'italic', marginBottom: '1.25rem', fontSize: '0.9rem', lineHeight: 1.75 }}>"{t.content}"</p>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: '700', fontSize: '0.85rem', flexShrink: 0 }}>
-                          {(t.author || 'C')[0].toUpperCase()}
-                        </div>
-                        <div>
-                          <p style={{ fontWeight: '700', color: '#0f172a', fontSize: '0.875rem' }}>{t.author}</p>
-                          <p style={{ color: '#94a3b8', fontSize: '0.75rem' }}>{t.role}</p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            )
-
-          case 'team':
-            if (!bd.team.length) return null
-            return (
-              <section key="team" style={{ padding: `${py} ${px}`, background: '#fff' }}>
-                <h2 style={{ textAlign: 'center', fontSize: isMobile ? '1.75rem' : '2.25rem', fontWeight: '800', marginBottom: '3rem' }}>Nuestro Equipo</h2>
-                <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '2rem' }}>
-                  {bd.team.slice(0, 4).map((m: any) => (
-                    <div key={m.id} style={{ textAlign: 'center', maxWidth: '160px' }}>
-                      {safeImg(m.image)
-                        ? <img src={safeImg(m.image)!} alt={m.name} style={{ width: '80px', height: '80px', borderRadius: '1rem', objectFit: 'cover', margin: '0 auto 0.75rem' }} />
-                        : <div style={{ width: '80px', height: '80px', borderRadius: '1rem', background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: '700', fontSize: '1.5rem', margin: '0 auto 0.75rem' }}>{(m.name || 'N')[0]}</div>
-                      }
-                      <p style={{ fontWeight: '700', fontSize: '0.95rem' }}>{m.name}</p>
-                      <p style={{ color: '#64748b', fontSize: '0.8rem', marginTop: '0.25rem' }}>{m.role}</p>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            )
-
-          case 'gallery':
-            return (
-              <section key="gallery" style={{ padding: `${py} ${px}`, background: '#f8fafc' }}>
-                <h2 style={{ textAlign: 'center', fontSize: isMobile ? '1.75rem' : '2.25rem', fontWeight: '800', marginBottom: '3rem' }}>Galería</h2>
-                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: '0.75rem' }}>
-                  {galleryImgs.length > 0
-                    ? galleryImgs.map((url, i) => (
-                        <div key={i} style={{ aspectRatio: '1/1', borderRadius: '0.75rem', overflow: 'hidden' }}>
-                          <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        </div>
-                      ))
-                    : [...Array(6)].map((_, i) => (
-                        <div key={i} style={{ aspectRatio: '1/1', borderRadius: '0.75rem', background: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '1.5rem' }}>🖼</div>
-                      ))
-                  }
-                </div>
-              </section>
-            )
-
-          case 'faq':
-            if (!bd.faqs.length) return null
-            return (
-              <section key="faq" style={{ padding: `${py} ${px}`, background: '#fff' }}>
-                <h2 style={{ textAlign: 'center', fontSize: isMobile ? '1.75rem' : '2.25rem', fontWeight: '800', marginBottom: '3rem' }}>Preguntas Frecuentes</h2>
-                <div style={{ maxWidth: '680px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  {bd.faqs.map((faq: any) => (
-                    <div key={faq.id} style={{ border: '1px solid #e8edf3', borderRadius: '1rem', padding: '1.25rem 1.5rem' }}>
-                      <p style={{ fontWeight: '700', marginBottom: '0.5rem', fontSize: '0.95rem' }}>{faq.question}</p>
-                      <p style={{ color: '#64748b', fontSize: '0.875rem', lineHeight: 1.75 }}>{faq.answer}</p>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            )
-
-          case 'stats':
-            if (!bd.stats?.length) return null
-            return (
-              <section key="stats" style={{ padding: `${py} ${px}`, background: color }}>
-                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '2rem', textAlign: 'center', color: '#fff' }}>
-                  {bd.stats.map((s: any) => (
-                    <div key={s.id}><p style={{ fontSize: '2.5rem', fontWeight: '800', lineHeight: 1 }}>{s.number}</p><p style={{ opacity: 0.8, marginTop: '0.5rem', fontSize: '0.9rem' }}>{s.label}</p></div>
-                  ))}
-                </div>
-              </section>
-            )
-
-          case 'cta':
-            return (
-              <section key="cta" style={{ padding: `${py} ${px}`, background: `${color}12`, textAlign: 'center' }}>
-                <h2 style={{ fontSize: isMobile ? '1.75rem' : '2.25rem', fontWeight: '800', marginBottom: '1rem' }}>{bd.tagline || '¿Listo para empezar?'}</h2>
-                {bd.description && (
-                  <p style={{ color: '#64748b', marginBottom: '2rem', maxWidth: '560px', margin: '0 auto 2rem', lineHeight: 1.7 }}>{bd.description}</p>
-                )}
-                <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-                  <button style={{ background: color, color: '#fff', padding: '0.875rem 2.5rem', borderRadius: '9999px', fontWeight: '700', border: 'none', cursor: 'pointer' }}>Contactar ahora</button>
-                  <button style={{ background: 'transparent', color, padding: '0.875rem 2.5rem', borderRadius: '9999px', fontWeight: '700', border: `2px solid ${color}`, cursor: 'pointer' }}>Saber más</button>
-                </div>
-              </section>
-            )
-
-          case 'contact':
-            return (
-              <section key="contact" style={{ padding: `${py} ${px}`, background: '#fff' }}>
-                <h2 style={{ textAlign: 'center', fontSize: isMobile ? '1.75rem' : '2.25rem', fontWeight: '800', marginBottom: '3rem' }}>Contactate con nosotros</h2>
-                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '3rem', maxWidth: '800px', margin: '0 auto' }}>
-                  <div>
-                    {bd.contact.phone && <p style={{ color: '#475569', marginBottom: '0.75rem', fontSize: '0.9rem' }}>📞 {bd.contact.phone}</p>}
-                    {bd.contact.email && <p style={{ color: '#475569', marginBottom: '0.75rem', fontSize: '0.9rem' }}>✉️ {bd.contact.email}</p>}
-                    {bd.contact.address && <p style={{ color: '#475569', marginBottom: '0.75rem', fontSize: '0.9rem' }}>📍 {bd.contact.address}</p>}
-                    {bd.contact.city && <p style={{ color: '#475569', marginBottom: '1.5rem', fontSize: '0.9rem' }}>{bd.contact.city}</p>}
-                    {bd.contact.whatsapp && (
-                      <a href={`https://wa.me/${bd.contact.whatsapp}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: '#25D366', color: '#fff', padding: '0.75rem 1.5rem', borderRadius: '9999px', fontWeight: '700', fontSize: '0.875rem', textDecoration: 'none' }}>
-                        💬 WhatsApp
-                      </a>
-                    )}
-                  </div>
-                  <div style={{ background: '#f8fafc', borderRadius: '1.25rem', padding: '1.5rem', border: '1px solid #e8edf3' }}>
-                    <p style={{ fontWeight: '700', color: '#0f172a', marginBottom: '1rem', fontSize: '0.95rem' }}>Envianos un mensaje</p>
-                    {['Nombre', 'Email', 'Mensaje'].map((field) => (
-                      <div key={field} style={{ marginBottom: '0.75rem' }}>
-                        <div style={{ height: field === 'Mensaje' ? '80px' : '38px', background: '#fff', border: '1.5px solid #e8edf3', borderRadius: '0.625rem', display: 'flex', alignItems: field === 'Mensaje' ? 'flex-start' : 'center', padding: '0 0.75rem', paddingTop: field === 'Mensaje' ? '0.5rem' : 0 }}>
-                          <span style={{ color: '#94a3b8', fontSize: '0.8rem' }}>{field}...</span>
-                        </div>
-                      </div>
-                    ))}
-                    <button style={{ width: '100%', background: color, color: '#fff', padding: '0.75rem', borderRadius: '0.625rem', border: 'none', fontWeight: '700', cursor: 'pointer', fontSize: '0.9rem' }}>
-                      Enviar mensaje →
-                    </button>
-                  </div>
-                </div>
-              </section>
-            )
-
-          case 'footer':
-            return (
-              <footer key="footer" style={{ background: '#0f172a', color: '#94a3b8', padding: `2.5rem ${px}`, textAlign: 'center' }}>
-                <p style={{ fontSize: '1.1rem', fontWeight: '800', color, marginBottom: '0.5rem' }}>{bd.name}</p>
-                {bd.contact.city && <p style={{ fontSize: '0.8rem', marginBottom: '1rem' }}>{bd.contact.city}</p>}
-                {(bd.socials.instagram || bd.socials.facebook || bd.socials.twitter) && (
-                  <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', marginBottom: '1rem', fontSize: '0.875rem' }}>
-                    {bd.socials.instagram && <span style={{ color: '#94a3b8' }}>{bd.socials.instagram}</span>}
-                    {bd.socials.facebook && <span style={{ color: '#94a3b8' }}>{bd.socials.facebook}</span>}
-                  </div>
-                )}
-                <p style={{ fontSize: '0.75rem', color: '#475569' }}>© {new Date().getFullYear()} {bd.name} · Sitio creado con SiteAI</p>
-              </footer>
-            )
-
-          default:
-            return null
-        }
-      })}
-      </div>
-    </div>
-  )
-}
 
 const deviceConfig: { id: DevicePreview; icon: typeof Monitor; label: string; width: string; height: string }[] = [
   { id: 'desktop', icon: Monitor, label: 'Desktop', width: '100%', height: '100%' },
@@ -316,7 +28,6 @@ export default function PreviewPage() {
     return <div className="flex items-center justify-center h-screen text-surface-500">Proyecto no encontrado</div>
   }
 
-  const color = primaryColorOf(project.businessData)
 
   return (
     <div className="flex flex-col h-screen bg-surface-900">
@@ -385,15 +96,24 @@ export default function PreviewPage() {
       {/* Preview area */}
       <div className="flex-1 overflow-auto flex items-start justify-center py-6 px-4">
         <motion.div
-          animate={{
-            width: dConf.width === '100%' ? '100%' : dConf.width,
-            maxHeight: dConf.height === '100%' ? 'none' : dConf.height,
-          }}
+          animate={{ width: device === 'desktop' ? '100%' : dConf.width }}
           transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
           className="bg-white rounded-xl overflow-hidden shadow-[0_24px_80px_rgba(0,0,0,0.4)] border border-surface-700"
-          style={{ width: device === 'desktop' ? '100%' : dConf.width, maxWidth: '100%' }}
+          style={{
+            width: device === 'desktop' ? '100%' : dConf.width,
+            maxWidth: '100%',
+            height: device === 'desktop' ? 'calc(100vh - 8rem)' : dConf.height,
+          }}
         >
-          <SiteFullPreview project={project} device={device} color={color} />
+          {/* The REAL published-site renderer, in an iframe. No second
+              implementation to drift from what ships. key={device} reloads it so
+              the site re-runs its own responsive breakpoints at the new width. */}
+          <iframe
+            key={device}
+            src={`/preview/${id}`}
+            title="Vista previa del sitio"
+            className="w-full h-full border-0 block bg-white"
+          />
         </motion.div>
       </div>
     </div>
