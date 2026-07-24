@@ -22,6 +22,7 @@ import { resolveSiteFonts } from '@/lib/site-fonts'
 import { safeImg } from '@/lib/site-images'
 import type { SectionConfig, SectionType, DevicePreview, ColorTheme } from '@/types'
 import { primaryColorOf } from '@/lib/project-branding'
+import { stockSuggestionsFor } from '@/data/stockQueries'
 
 // Section icons map
 const SECTION_ICONS: Record<SectionType, React.ReactNode> = {
@@ -446,16 +447,32 @@ function SectionManager({ sections, selectedSection, onSelect, onChange, onToggl
 }
 
 // ── Image Picker ───────────────────────────────────────────────────────────────
-function ImagePicker({ value, onChange, mediaFiles, addFile, label = 'Imagen' }: {
+type StockPhoto = { id: string; thumb: string; src: string; alt: string; photographer: string }
+
+function ImagePicker({ value, onChange, mediaFiles, addFile, label = 'Imagen', businessType }: {
   value?: string
   onChange: (url: string) => void
   mediaFiles: any[]
   addFile: (file: any) => void
   label?: string
+  businessType?: string
 }) {
   const [open, setOpen] = useState(false)
   const [uploading, setUploading] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
+
+  /*
+    Stock image bank. Both search and import go through our own API: the Pexels
+    key must stay server-side, and the app's CSP connect-src does not include
+    Pexels, so the browser could not call it directly even if we wanted to.
+  */
+  const [tab, setTab] = useState<'library' | 'stock'>('library')
+  const [query, setQuery] = useState('')
+  const [photos, setPhotos] = useState<StockPhoto[]>([])
+  const [searching, setSearching] = useState(false)
+  const [stockError, setStockError] = useState('')
+  const [importingId, setImportingId] = useState<string | null>(null)
+  const suggestions = stockSuggestionsFor(businessType)
 
   const handleUpload = async (file: File) => {
     if (!file.type.startsWith('image/')) return
@@ -477,9 +494,66 @@ function ImagePicker({ value, onChange, mediaFiles, addFile, label = 'Imagen' }:
     }
   }
 
+  const runSearch = async (term: string) => {
+    const q = term.trim()
+    if (!q) return
+    setQuery(q)
+    setSearching(true)
+    setStockError('')
+    try {
+      const res = await fetch(`/api/stock-images?q=${encodeURIComponent(q)}`)
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setPhotos([])
+        // The API's own message is the useful one (e.g. bank not configured).
+        setStockError(data.error || 'No se pudo buscar. Intentá de nuevo.')
+        return
+      }
+      const found: StockPhoto[] = data.photos ?? []
+      setPhotos(found)
+      if (found.length === 0) setStockError('No encontramos imágenes para esa búsqueda.')
+    } catch {
+      setPhotos([])
+      setStockError('No se pudo buscar. Revisá tu conexión.')
+    } finally {
+      setSearching(false)
+    }
+  }
+
+  // Copies the photo into the owner's own library server-side, then selects it,
+  // so the published site serves our copy instead of hotlinking a third party.
+  const pickStock = async (photo: StockPhoto) => {
+    setImportingId(photo.id)
+    try {
+      const res = await fetch('/api/stock-images/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: photo.src, photographer: photo.photographer }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || 'No se pudo importar la imagen')
+      addFile({ ...data, usedIn: [] })
+      onChange(data.url)
+      setOpen(false)
+      toast.success('Imagen agregada a tu biblioteca')
+    } catch (err: any) {
+      toast.error(err?.message || 'No se pudo importar la imagen')
+    } finally {
+      setImportingId(null)
+    }
+  }
+
+  const openStockTab = () => {
+    setTab('stock')
+    // First visit lands on real photos for the rubro, not an empty search box.
+    if (photos.length === 0 && !searching && !stockError && suggestions[0]) {
+      runSearch(suggestions[0].query)
+    }
+  }
+
   return (
     <div className="space-y-2">
-      <label className="section-label">{label}</label>
+      {label && <label className="section-label">{label}</label>}
       {value ? (
         <div className="relative rounded-xl overflow-hidden border border-surface-200 group">
           <img src={value} alt="" className="w-full h-28 object-cover" />
@@ -500,46 +574,133 @@ function ImagePicker({ value, onChange, mediaFiles, addFile, label = 'Imagen' }:
       )}
 
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setOpen(false)}>
-          <div className="bg-white rounded-2xl p-5 w-[480px] max-h-[70vh] flex flex-col gap-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setOpen(false)}>
+          <div className="bg-white rounded-2xl p-5 w-full max-w-[560px] max-h-[82vh] flex flex-col gap-3 shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between">
               <p className="font-semibold text-surface-900">Seleccionar imagen</p>
               <button type="button" onClick={() => setOpen(false)} className="h-7 w-7 rounded-lg hover:bg-surface-100 flex items-center justify-center text-surface-500 text-xs">✕</button>
             </div>
 
-            <input
-              ref={inputRef}
-              type="file"
-              accept="image/*"
-              aria-label="Subir imagen"
-              className="hidden"
-              onChange={(e) => { if (e.target.files?.[0]) handleUpload(e.target.files[0]); e.target.value = '' }}
-            />
-            <button
-              type="button"
-              onClick={() => inputRef.current?.click()}
-              disabled={uploading}
-              className="flex items-center justify-center gap-2 h-9 rounded-xl border-2 border-dashed border-surface-200 text-sm text-surface-500 hover:border-brand-400 hover:text-brand-500 transition-all disabled:opacity-50"
-            >
-              {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-              {uploading ? 'Subiendo...' : 'Subir nueva imagen'}
-            </button>
+            <div className="flex items-center bg-surface-100 rounded-xl p-1 gap-1">
+              <button
+                type="button"
+                onClick={() => setTab('library')}
+                className={`flex-1 h-8 rounded-lg text-xs font-semibold transition-colors ${tab === 'library' ? 'bg-white text-surface-900 shadow-sm' : 'text-surface-500 hover:text-surface-800'}`}
+              >
+                Mi biblioteca
+              </button>
+              <button
+                type="button"
+                onClick={openStockTab}
+                className={`flex-1 h-8 rounded-lg text-xs font-semibold transition-colors ${tab === 'stock' ? 'bg-white text-surface-900 shadow-sm' : 'text-surface-500 hover:text-surface-800'}`}
+              >
+                Banco de imágenes
+              </button>
+            </div>
 
-            {mediaFiles.length === 0 ? (
-              <p className="text-sm text-surface-400 text-center py-4">No hay imágenes en tu biblioteca. Subí una arriba.</p>
+            {tab === 'library' ? (
+              <>
+                <input
+                  ref={inputRef}
+                  type="file"
+                  accept="image/*"
+                  aria-label="Subir imagen"
+                  className="hidden"
+                  onChange={(e) => { if (e.target.files?.[0]) handleUpload(e.target.files[0]); e.target.value = '' }}
+                />
+                <button
+                  type="button"
+                  onClick={() => inputRef.current?.click()}
+                  disabled={uploading}
+                  className="flex items-center justify-center gap-2 h-9 rounded-xl border-2 border-dashed border-surface-200 text-sm text-surface-500 hover:border-brand-400 hover:text-brand-500 transition-all disabled:opacity-50"
+                >
+                  {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                  {uploading ? 'Subiendo...' : 'Subir nueva imagen'}
+                </button>
+
+                {mediaFiles.length === 0 ? (
+                  <p className="text-sm text-surface-400 text-center py-4">
+                    No hay imágenes en tu biblioteca. Subí una o buscá en el banco de imágenes.
+                  </p>
+                ) : (
+                  <div className="overflow-y-auto grid grid-cols-4 gap-2">
+                    {mediaFiles.map((f) => (
+                      <button
+                        key={f.id}
+                        type="button"
+                        onClick={() => { onChange(f.url); setOpen(false) }}
+                        className={`aspect-square rounded-lg overflow-hidden border-2 transition-all hover:border-brand-500 ${value === f.url ? 'border-brand-500 ring-2 ring-brand-500/30' : 'border-surface-200'}`}
+                      >
+                        <img src={f.url} alt={f.name} className="w-full h-full object-cover" />
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </>
             ) : (
-              <div className="overflow-y-auto grid grid-cols-4 gap-2">
-                {mediaFiles.map((f) => (
+              <>
+                <div className="flex flex-wrap gap-1.5">
+                  {suggestions.map((s) => (
+                    <button
+                      key={s.query}
+                      type="button"
+                      onClick={() => runSearch(s.query)}
+                      className="px-2.5 h-7 rounded-full text-xs font-medium bg-surface-100 text-surface-600 hover:bg-brand-50 hover:text-brand-600 transition-colors"
+                    >
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+
+                <form onSubmit={(e) => { e.preventDefault(); runSearch(query) }} className="flex gap-2">
+                  <input
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="Buscar fotos (ej: cocina, oficina)"
+                    aria-label="Buscar en el banco de imágenes"
+                    className="flex-1 h-9 px-3 rounded-xl border border-surface-200 text-sm outline-none focus:border-brand-400"
+                  />
                   <button
-                    key={f.id}
-                    type="button"
-                    onClick={() => { onChange(f.url); setOpen(false) }}
-                    className={`aspect-square rounded-lg overflow-hidden border-2 transition-all hover:border-brand-500 ${value === f.url ? 'border-brand-500 ring-2 ring-brand-500/30' : 'border-surface-200'}`}
+                    type="submit"
+                    disabled={searching || !query.trim()}
+                    className="h-9 px-3 rounded-xl bg-surface-900 text-white text-xs font-semibold disabled:opacity-40"
                   >
-                    <img src={f.url} alt={f.name} className="w-full h-full object-cover" />
+                    {searching ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Buscar'}
                   </button>
-                ))}
-              </div>
+                </form>
+
+                {searching ? (
+                  <div className="flex items-center justify-center py-8 text-surface-400">
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  </div>
+                ) : stockError ? (
+                  <p className="text-sm text-surface-400 text-center py-6">{stockError}</p>
+                ) : (
+                  <div className="overflow-y-auto grid grid-cols-3 gap-2">
+                    {photos.map((p) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => pickStock(p)}
+                        disabled={!!importingId}
+                        title={p.alt}
+                        className="relative aspect-[4/3] rounded-lg overflow-hidden border-2 border-surface-200 hover:border-brand-500 transition-all disabled:opacity-60"
+                      >
+                        <img src={p.thumb} alt={p.alt} className="w-full h-full object-cover" loading="lazy" />
+                        {importingId === p.id && (
+                          <span className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                            <Loader2 className="h-5 w-5 animate-spin text-white" />
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                <p className="text-[10px] text-surface-400 text-center">
+                  Fotos gratuitas de Pexels. Al elegir una, se copia a tu biblioteca.
+                </p>
+              </>
             )}
           </div>
         </div>
@@ -585,6 +746,7 @@ function RightPanel({ section, project, onClose, onUpdate, mediaFiles, addFile }
               onChange={(url) => onUpdate({ heroImage: url })}
               mediaFiles={mediaFiles}
               addFile={addFile}
+              businessType={bd.businessType}
             />
           </>
         )}
@@ -816,6 +978,7 @@ function RightPanel({ section, project, onClose, onUpdate, mediaFiles, addFile }
                   mediaFiles={mediaFiles}
                   addFile={addFile}
                   label=""
+                  businessType={bd.businessType}
                 />
               )}
             </div>
