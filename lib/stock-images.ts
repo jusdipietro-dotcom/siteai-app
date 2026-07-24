@@ -8,6 +8,19 @@
 export const ALLOWED_STOCK_HOSTS = ['images.pexels.com']
 
 /**
+ * User-Agent for every server-side call to Pexels.
+ *
+ * Pexels sits behind Cloudflare, which answers 403 with error code 1010 to
+ * clients whose User-Agent it does not recognise — Node's default is one of
+ * them, so without this a perfectly valid API key looks rejected. Verified
+ * against the live API: same key, no UA → 403; with this UA → 200.
+ *
+ * /api/ai-image already carries the same workaround for Pollinations.
+ */
+export const STOCK_FETCH_UA =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0 Safari/537.36'
+
+/**
  * Validate a stock-photo URL before the server fetches it.
  *
  * The URL originates in our own search endpoint, but it round-trips through the

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { STOCK_FETCH_UA } from '@/lib/stock-images'
 
 /*
   Stock-photo search, proxied through us.
@@ -45,7 +46,12 @@ export async function GET(req: NextRequest) {
       `&per_page=${perPage}&page=${page}&orientation=${orientation}`
 
     const res = await fetch(url, {
-      headers: { Authorization: key },
+      headers: {
+        Authorization: key,
+        Accept: 'application/json',
+        // Not optional: without it Cloudflare 403s a valid key. See STOCK_FETCH_UA.
+        'User-Agent': STOCK_FETCH_UA,
+      },
       signal: AbortSignal.timeout(15_000),
     })
 

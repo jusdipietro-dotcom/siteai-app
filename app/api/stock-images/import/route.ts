@@ -5,7 +5,7 @@ import { writeFile, mkdir } from 'fs/promises'
 import { join } from 'path'
 import { generateId } from '@/lib/utils'
 import { prisma } from '@/lib/prisma'
-import { parseStockImageUrl } from '@/lib/stock-images'
+import { parseStockImageUrl, STOCK_FETCH_UA } from '@/lib/stock-images'
 
 /*
   Import a stock photo into the owner's own media library.
@@ -59,7 +59,11 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const res = await fetch(parsed.toString(), { signal: AbortSignal.timeout(20_000) })
+    // Same Cloudflare caveat as the search endpoint — the image host fronts on it too.
+    const res = await fetch(parsed.toString(), {
+      headers: { 'User-Agent': STOCK_FETCH_UA },
+      signal: AbortSignal.timeout(20_000),
+    })
     if (!res.ok) {
       return NextResponse.json({ error: 'No se pudo descargar la imagen' }, { status: 502 })
     }
