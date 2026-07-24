@@ -209,7 +209,9 @@ export function activeProviders(env: NodeJS.ProcessEnv = process.env): Provider[
   if (env.GROQ_API_KEY)
     list.push({ name: 'groq', paid: false, run: (p) => callOpenAICompatible('https://api.groq.com/openai/v1', env.GROQ_API_KEY!, 'llama-3.3-70b-versatile', p) })
   if (env.CEREBRAS_API_KEY)
-    list.push({ name: 'cerebras', paid: false, run: (p) => callOpenAICompatible('https://api.cerebras.ai/v1', env.CEREBRAS_API_KEY!, 'llama-3.3-70b', p) })
+    // gpt-oss-120b: the model this account actually serves (verified against
+    // /v1/models) and the one Hermes already uses on Cerebras.
+    list.push({ name: 'cerebras', paid: false, run: (p) => callOpenAICompatible('https://api.cerebras.ai/v1', env.CEREBRAS_API_KEY!, 'gpt-oss-120b', p) })
   if (env.GEMINI_API_KEY)
     list.push({ name: 'gemini', paid: false, run: (p) => callGemini(env.GEMINI_API_KEY!, p) })
   if (env.ANTHROPIC_API_KEY)
