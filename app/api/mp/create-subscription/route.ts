@@ -163,10 +163,32 @@ export async function POST(req: NextRequest) {
 
     if (!res.ok) {
       log.error('MercadoPago rejected the preapproval', { httpStatus: res.status, mpResponse: data })
-      const mpMessage = data.message ?? data.error ?? 'Error de MercadoPago'
       const mpCause = Array.isArray(data.cause)
         ? data.cause.map((c: { code?: string; description?: string }) => c.description ?? c.code).join(', ')
         : null
+
+      // MercadoPago answers a bare 500 "Internal server error" — instead of a
+      // clean 4xx — when it cannot process the payer_email (an address it does
+      // not recognise or cannot resolve). Verified 2026-07-24: the identical
+      // preapproval body 500s with one email and succeeds with another. Passing
+      // MP's raw "Internal server error" straight to the customer made it look
+      // like OUR checkout broke, when the fix is on their side (a valid email).
+      // Translate that case into something actionable, and answer 502 (an
+      // upstream failure) rather than echoing 500 (which reads as our bug).
+      const isUpstreamGeneric =
+        res.status >= 500 || /internal server error/i.test(String(data.message ?? ''))
+      if (isUpstreamGeneric && !mpCause) {
+        return NextResponse.json(
+          {
+            error:
+              'MercadoPago no pudo iniciar la suscripción con ese email. Verificá que sea el email de una cuenta de MercadoPago válida (distinta de la del vendedor) y volvé a intentar en unos minutos.',
+            mp_status: res.status,
+          },
+          { status: 502 }
+        )
+      }
+
+      const mpMessage = data.message ?? data.error ?? 'Error de MercadoPago'
       return NextResponse.json(
         { error: mpCause ? `${mpMessage}: ${mpCause}` : mpMessage, mp_status: res.status },
         { status: res.status }
