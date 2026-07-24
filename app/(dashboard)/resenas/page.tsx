@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useSession, signIn } from 'next-auth/react'
 import { MessageSquare, Mail, Globe, Tag, CheckCircle2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { WhatsAppServiceCTA } from '@/components/shared/WhatsAppServiceCTA'
@@ -25,16 +24,9 @@ type Subscription = {
 }
 
 export default function ResenasPage() {
-  const { data: session } = useSession()
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
   const [loadingSubs, setLoadingSubs] = useState(true)
 
-  // Redirect unauthenticated users to login
-  useEffect(() => {
-    if (session === null) {
-      signIn(undefined, { callbackUrl: '/resenas' })
-    }
-  }, [session])
 
   const fetchSubscriptions = () => {
     fetch('/api/resenas/status')

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useSession, signIn } from 'next-auth/react'
+import { useSession } from 'next-auth/react'
 import {
   Send, Loader2, AlertCircle, Clock, Mail, CheckCircle2,
   BarChart3, Users, Zap, Shield, Crown, Upload, FileSpreadsheet, X,
@@ -68,11 +68,6 @@ export default function EmailMarketingDashboard() {
   const [usage, setUsage] = useState<UsageInfo | null>(null)
   const [limits, setLimits] = useState<LimitsInfo | null>(null)
 
-  useEffect(() => {
-    if (session === null) {
-      signIn(undefined, { callbackUrl: '/email-marketing' })
-    }
-  }, [session])
 
   const fetchSubscriptions = useCallback(() => {
     setLoadingSubs(true)

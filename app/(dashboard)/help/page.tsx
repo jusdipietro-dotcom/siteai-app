@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils'
 // (see app/alertajudicial/*). A mailto keeps the flow reliable with zero new
 // backend surface: there is nothing to persist, no endpoint to fail, and the
 // message lands in the same inbox the rest of the site already directs users to.
-const SUPPORT_MAILTO = 'mailto:contacto@automaticialab.com?subject=Soporte%20-%20Automatic%20IA%20Lab'
+const SUPPORT_MAILTO = 'mailto:automaticialab@gmail.com?subject=Soporte%20-%20Automatic%20IA%20Lab'
 
 const FAQS = [
   {

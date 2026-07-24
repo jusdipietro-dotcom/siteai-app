@@ -126,6 +126,14 @@ export const PRODUCT_CATALOG: ProductCatalogEntry[] = [
       'Todo tu estudio automatizado en un solo lugar: monitoreo judicial, gestión de causas, turnos online y facturación electrónica, integrados y funcionando.',
     whatsappMessage: 'Hola, quiero implementar la Suite Jurídica completa en mi estudio. ¿Me pasás los detalles?',
   },
+  {
+    slug: 'jurisprudencia',
+    name: 'Jurisprudencia IA',
+    tagline: 'Buscador de jurisprudencia con +285.000 fallos',
+    description:
+      'Buscá jurisprudencia con IA sobre una base de más de 285.000 fallos (SAIJ, JUBA, SCBA y Corte Suprema) con texto completo: búsqueda avanzada con filtros, exportación a PDF y cita automática, actualizada todos los días.',
+    whatsappMessage: 'Hola, quiero acceder a Jurisprudencia IA (buscador de jurisprudencia). ¿Me pasás los detalles?',
+  },
 ]
 
 /** Lookup by slug. Returns undefined for an unknown slug. */

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useSession, signIn } from 'next-auth/react'
+import { useSession } from 'next-auth/react'
 import {
   Search, Mail, Tag, Loader2, CheckCircle2,
   BarChart3, FileSpreadsheet, ExternalLink,
@@ -34,12 +34,6 @@ export default function LeadsPage() {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
   const [loadingSubs, setLoadingSubs] = useState(true)
 
-  // Redirect unauthenticated users to login
-  useEffect(() => {
-    if (session === null) {
-      signIn(undefined, { callbackUrl: '/leads' })
-    }
-  }, [session])
 
   const fetchSubscriptions = useCallback(() => {
     setLoadingSubs(true)

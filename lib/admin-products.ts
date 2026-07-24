@@ -146,6 +146,14 @@ export interface AdminSubscriptionRow {
   trialEndsAt: string | null
   provisionedAt: string | null
   createdAt: string
+  /**
+   * Date the subscription went down (cancelled or suspended), or null while it
+   * is still live. For the twelve products it is the row's `updatedAt` read at
+   * the moment it is down — there is no dedicated cancellation-timestamp column,
+   * and the last write to a cancelled row is the cancellation. For the website
+   * generator it is the exact `Project.suspendedAt`.
+   */
+  cancelledAt: string | null
   user: { id: string; name: string | null; email: string }
 }
 

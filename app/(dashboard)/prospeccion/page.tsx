@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useSession, signIn } from 'next-auth/react'
+import { useSession } from 'next-auth/react'
 import {
   Target, Tag, Mail, CheckCircle2, Globe, Loader2,
 } from 'lucide-react'
@@ -36,11 +36,6 @@ export default function ProspeccionPage() {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
   const [loadingSubs, setLoadingSubs] = useState(true)
 
-  useEffect(() => {
-    if (session === null) {
-      signIn(undefined, { callbackUrl: '/prospeccion' })
-    }
-  }, [session])
 
   const fetchSubscriptions = useCallback(() => {
     setLoadingSubs(true)

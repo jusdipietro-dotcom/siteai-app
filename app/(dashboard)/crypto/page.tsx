@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useSession, signIn } from 'next-auth/react'
 import {
   TrendingUp, Mail, CheckCircle2, Activity, BarChart3, Tag,
 } from 'lucide-react'
@@ -28,16 +27,9 @@ type Subscription = {
 }
 
 export default function CryptoPage() {
-  const { data: session } = useSession()
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
   const [loadingSubs, setLoadingSubs] = useState(true)
 
-  // Redirect unauthenticated users to login
-  useEffect(() => {
-    if (session === null) {
-      signIn(undefined, { callbackUrl: '/crypto' })
-    }
-  }, [session])
 
   const fetchSubscriptions = () => {
     fetch('/api/trading/status')

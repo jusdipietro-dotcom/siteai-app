@@ -117,6 +117,10 @@ const BASE_SELECT = {
   trialEndsAt: true,
   provisionedAt: true,
   createdAt: true,
+  // Proxy for the cancellation date: the twelve products have no dedicated
+  // column, and the last write to a cancelled/suspended row is the one that
+  // brought it down. Only surfaced when the row is actually down (see toRow).
+  updatedAt: true,
   user: { select: { id: true, name: true, email: true } },
   coupon: { select: { code: true, discount: true } },
 } as const
@@ -129,6 +133,7 @@ type BaseSelected = {
   trialEndsAt: Date | null
   provisionedAt: Date | null
   createdAt: Date
+  updatedAt: Date
   user: { id: string; name: string | null; email: string }
   coupon: { code: string; discount: number } | null
 }
@@ -145,6 +150,7 @@ function toRow(product: AdminProductId, r: BaseSelected, extras: RowExtras = {})
   // Trial expiry is applied here, not trusted from the column: without a
   // scheduler a row can read 'trial' months after its deadline.
   const effective = effectiveSubscriptionStatus({ status: r.status, trialEndsAt: r.trialEndsAt }).status
+  const isDown = effective === 'cancelled' || effective === 'suspended'
   return {
     id: r.id,
     product,
@@ -161,6 +167,7 @@ function toRow(product: AdminProductId, r: BaseSelected, extras: RowExtras = {})
     trialEndsAt: r.trialEndsAt?.toISOString() ?? null,
     provisionedAt: r.provisionedAt?.toISOString() ?? null,
     createdAt: r.createdAt.toISOString(),
+    cancelledAt: isDown ? r.updatedAt.toISOString() : null,
     user: r.user,
   }
 }
@@ -375,7 +382,7 @@ export async function fetchProductRows(
       const rows = await prisma.project.findMany({
         select: {
           id: true, slug: true, subdomain: true, status: true, plan: true, hasPaid: true,
-          billingStatus: true, graceUntil: true, suspendedReason: true,
+          billingStatus: true, graceUntil: true, suspendedReason: true, suspendedAt: true,
           grantedBy: true, couponRedeemedAt: true, createdAt: true,
           user: { select: { id: true, name: true, email: true } },
           coupon: { select: { code: true, discount: true } },
@@ -409,6 +416,11 @@ export async function fetchProductRows(
           trialEndsAt: null,
           provisionedAt: null,
           createdAt: r.createdAt.toISOString(),
+          // The generator has a real suspension timestamp, unlike the twelve.
+          cancelledAt:
+            status === 'cancelled' || status === 'suspended'
+              ? (r.suspendedAt?.toISOString() ?? null)
+              : null,
           user: r.user,
         } satisfies AdminSubscriptionRow
       })

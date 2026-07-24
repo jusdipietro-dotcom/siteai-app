@@ -67,9 +67,14 @@ const emptyCounts = Object.fromEntries(
   ADMIN_PRODUCTS.map((p) => [p.id, 0])
 ) as Record<AdminProductId, number>
 
+// Fechas siempre en hora de Buenos Aires, sin depender de la zona del navegador
+// ni del contenedor (que corre en UTC): una baja de las 22:00 ART no debe
+// mostrarse con la fecha del día siguiente por el desfase con UTC.
+const BA_TZ = 'America/Argentina/Buenos_Aires'
+
 function formatDate(iso: string | null): string {
   if (!iso) return '—'
-  return new Date(iso).toLocaleDateString('es-AR')
+  return new Date(iso).toLocaleDateString('es-AR', { timeZone: BA_TZ })
 }
 
 export default function AdminSubscriptionsClient() {
@@ -179,12 +184,13 @@ export default function AdminSubscriptionsClient() {
                 <th className="text-center py-3 px-4 font-medium text-surface-500">Uso</th>
                 <th className="text-center py-3 px-4 font-medium text-surface-500">Cupón</th>
                 <th className="text-center py-3 px-4 font-medium text-surface-500">Alta</th>
+                <th className="text-center py-3 px-4 font-medium text-surface-500">Bajas</th>
               </tr>
             </thead>
             <tbody>
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="text-center py-8 text-surface-400">
+                  <td colSpan={8} className="text-center py-8 text-surface-400">
                     Sin suscripciones
                   </td>
                 </tr>
@@ -240,6 +246,11 @@ export default function AdminSubscriptionsClient() {
                     )}
                   </td>
                   <td className="py-3 px-4 text-center text-xs text-surface-500">{formatDate(row.createdAt)}</td>
+                  <td className="py-3 px-4 text-center text-xs text-surface-500">
+                    {row.cancelledAt
+                      ? <span className="text-red-500">{formatDate(row.cancelledAt)}</span>
+                      : <span className="text-surface-300">—</span>}
+                  </td>
                 </tr>
               ))}
             </tbody>
