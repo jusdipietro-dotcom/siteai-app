@@ -166,6 +166,51 @@ export function sectionOrderFor(template?: string | null): SectionType[] {
   return (template && SECTION_ORDER_BY_TEMPLATE[template]) || DEFAULT_ORDER
 }
 
+/*
+  Typography per rubro.
+
+  The catalogue has eight fonts but almost every site ends up on Inter because
+  nobody changes it, so a law firm and a gym read in the same neutral sans. Each
+  template now gets a heading+body pairing (ids from config/themes
+  typographyOptions) that fits the trade. Applied at render ONLY when the owner
+  is still on the generic default — an explicit font choice always wins (see
+  PublishedSite). A serif like Playfair on a legal site is the single biggest
+  "this looks designed" lift for the effort.
+*/
+export interface FontPair {
+  heading: string
+  body: string
+}
+
+const DEFAULT_FONTS: FontPair = { heading: 'inter', body: 'inter' }
+
+const FONTS_BY_TEMPLATE: Record<string, FontPair> = {
+  legal: { heading: 'playfair', body: 'lora' }, // serif elegante, autoridad
+  elegant: { heading: 'playfair', body: 'lora' }, // sofisticado
+  realty: { heading: 'playfair', body: 'manrope' }, // premium
+  restaurant: { heading: 'fraunces', body: 'dm-sans' }, // display con carácter
+  boutique: { heading: 'fraunces', body: 'manrope' }, // editorial, femenino
+  fitness: { heading: 'space-grotesk', body: 'manrope' }, // bold, energético
+  creative: { heading: 'space-grotesk', body: 'dm-sans' }, // moderno
+  corporate: { heading: 'space-grotesk', body: 'inter' }, // sólido, actual
+  medical: { heading: 'dm-sans', body: 'dm-sans' }, // limpio, confiable
+  minimal: { heading: 'geist', body: 'geist' }, // minimalista
+}
+
+/** The rubro's font pairing. Unknown/missing template → Inter/Inter (today's). */
+export function fontsForTemplate(template?: string | null): FontPair {
+  return (template && FONTS_BY_TEMPLATE[template]) || DEFAULT_FONTS
+}
+
+/**
+ * Whether a font id is the generic default (or unset), i.e. the owner never
+ * chose a font. Only then does the rubro pairing apply, so an explicit choice is
+ * never overridden.
+ */
+export function isDefaultFont(fontId?: string | null): boolean {
+  return !fontId || fontId === 'inter'
+}
+
 /**
  * Sort the enabled sections into the template's starting order. Sections the
  * template does not list keep their incoming relative order, placed after the

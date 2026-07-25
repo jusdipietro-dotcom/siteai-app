@@ -15,7 +15,7 @@ import { parseJSON } from '@/lib/published-site'
 import { resolveSiteFonts } from '@/lib/site-fonts'
 import { safeImg } from '@/lib/site-images'
 import { publishedSiteUrl } from '@/lib/site-domain'
-import { heroVariantFor, servicesLayoutFor, FEATURES_LAYOUT, resolveTemplateKey } from '@/lib/site-layout'
+import { heroVariantFor, servicesLayoutFor, FEATURES_LAYOUT, resolveTemplateKey, fontsForTemplate, isDefaultFont } from '@/lib/site-layout'
 import {
   absoluteSiteImageUrl,
   buildSiteStructuredData,
@@ -125,10 +125,17 @@ export function PublishedSite({ project: row }: { project: Project }) {
     .map((s) => ({ id: s.id, ...NAV_META[s.id]! }))
     .slice(0, 6)
 
-  // Fonts from branding. Resolution AND the family scrub are both shared with
-  // the two dashboard previews now — all three write the family into a raw CSS
-  // string, so the guard lives in the resolver rather than in one renderer.
-  const { headingFamily, bodyFamily, urls: fontUrls } = resolveSiteFonts(bd.branding)
+  // Fonts from branding, with the rubro's pairing filled in wherever the owner
+  // is still on the generic default (Inter) — so a legal site reads in Playfair
+  // without anyone touching a setting, while an explicit font choice is kept.
+  // Then resolved by the shared helper (family scrub + Google Font URLs).
+  const rubroFonts = fontsForTemplate(templateKey)
+  const brandingForFonts = {
+    ...bd.branding,
+    fontHeading: isDefaultFont(bd.branding?.fontHeading) ? rubroFonts.heading : bd.branding?.fontHeading,
+    fontBody: isDefaultFont(bd.branding?.fontBody) ? rubroFonts.body : bd.branding?.fontBody,
+  }
+  const { headingFamily, bodyFamily, urls: fontUrls } = resolveSiteFonts(brandingForFonts)
 
   const whatsappNum = bd.contact?.whatsapp?.replace(/\D/g, '')
   const rawGaId = row.plan === 'professional' && bd.gaId ? (bd.gaId as string).trim() : null
