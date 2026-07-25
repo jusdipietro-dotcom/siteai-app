@@ -14,10 +14,10 @@ const nextConfig = {
         permanent: true,
       },
       // Legacy SaaS auto-product URLs → /contacto (agency model now).
-      // /admin/* and /(dashboard)/* keep working (auth-gated, internal use).
+      // NOTE: do not add '/leads' here — it is the dashboard's "Captación Leads"
+      // screen (app/(dashboard)/leads), and a redirect bounced it to /contacto.
       { source: '/gratis', destination: '/contacto', permanent: true },
       { source: '/recursos', destination: '/contacto', permanent: true },
-      { source: '/leads', destination: '/contacto', permanent: true },
       { source: '/servicios/email-marketing', destination: '/servicios/marketing-digital', permanent: true },
       { source: '/servicios/prospeccion', destination: '/servicios/marketing-digital', permanent: true },
     ]
@@ -38,10 +38,12 @@ const nextConfig = {
               "font-src 'self' https://fonts.gstatic.com",
               "connect-src 'self' https://www.google-analytics.com https://vitals.vercel-insights.com https://api.automaticialab.com",
               // Google Maps embed (keyless output=embed) for the published-site
-              // location section. frame-ancestors below still forbids US being
-              // embedded; this only allows what WE embed.
+              // location section — what WE embed.
               "frame-src 'self' https://www.google.com https://maps.google.com",
-              "frame-ancestors 'none'",
+              // 'self' (not 'none') so the editor can embed its OWN /preview/[id]
+              // in an iframe — the preview screen showed a broken-frame icon under
+              // 'none'. Still blocks third-party embedding (clickjacking).
+              "frame-ancestors 'self'",
             ].join('; '),
           },
           {
@@ -49,8 +51,11 @@ const nextConfig = {
             value: 'max-age=63072000; includeSubDomains; preload',
           },
           {
+            // SAMEORIGIN (not DENY) so the editor's preview iframe of its own
+            // /preview/[id] renders. Older browsers use this; modern ones use the
+            // frame-ancestors 'self' above. Still blocks cross-origin framing.
             key: 'X-Frame-Options',
-            value: 'DENY',
+            value: 'SAMEORIGIN',
           },
           {
             key: 'X-Content-Type-Options',
