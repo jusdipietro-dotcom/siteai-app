@@ -19,6 +19,7 @@ import { businessTypes, toneOptions } from '@/data/mockBusinessTypes'
 import { mockTemplates } from '@/data/mockTemplates'
 import { generateId, slugify, cn } from '@/lib/utils'
 import { contentForBusinessType } from '@/data/templateContent'
+import { orderSections } from '@/lib/site-layout'
 import { SITES_DOMAIN } from '@/lib/site-domain'
 import type { Project, SectionConfig, SectionType, ColorTheme } from '@/types'
 
@@ -1539,6 +1540,9 @@ export default function WizardPage() {
     const enabledWithStarter = Array.from(
       new Set<SectionType>([...data.enabledSections, 'testimonials', 'faq', 'stats'])
     )
+    // Start the sections in the template's preferred order for the rubro. This
+    // only sets where a new project begins — the owner can still reorder later.
+    const orderedSections = orderSections(enabledWithStarter, data.template)
 
     const newProject: Project = {
       id: generateId(),
@@ -1551,7 +1555,7 @@ export default function WizardPage() {
       coverImageId: data.heroImageId,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      sections: enabledWithStarter.map((type, i) => {
+      sections: orderedSections.map((type, i) => {
         const secMeta = ALL_SECTIONS.find((s) => s.id === type)
         return {
           id: type,

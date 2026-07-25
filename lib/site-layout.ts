@@ -11,6 +11,8 @@
   nothing can render worse than it does now.
 */
 
+import type { SectionType } from '@/types'
+
 export type HeroVariant = 'centered' | 'fullphoto' | 'split' | 'sobrio'
 
 /*
@@ -89,4 +91,50 @@ const SERVICES_BY_TEMPLATE: Record<string, ServicesLayout> = {
 /** Services layout for a template. Unknown/missing → today's card grid + copy. */
 export function servicesLayoutFor(template?: string | null): ServicesLayout {
   return (template && SERVICES_BY_TEMPLATE[template]) || DEFAULT_SERVICES
+}
+
+/*
+  Slice 3 — section order.
+
+  Unlike the hero and services (render variants derived from the template), the
+  section order is OWNER DATA: it lives in project.sections[].order and the owner
+  reorders it by drag-and-drop. So the template only sets the STARTING order when
+  a project is created — it is never imposed on the render, which would undo the
+  owner's arrangement and rearrange already-published sites.
+
+  A restaurant opens leading with its gallery and menu; a law firm with its
+  practice areas and credentials. Sections not listed for a template keep their
+  incoming relative order, after the listed ones.
+*/
+const DEFAULT_ORDER: SectionType[] = [
+  'hero', 'services', 'about', 'gallery', 'pricing', 'testimonials', 'team', 'stats', 'faq', 'cta', 'contact', 'footer',
+]
+
+const SECTION_ORDER_BY_TEMPLATE: Record<string, SectionType[]> = {
+  restaurant: ['hero', 'gallery', 'services', 'pricing', 'testimonials', 'about', 'stats', 'faq', 'team', 'cta', 'contact', 'footer'],
+  legal: ['hero', 'services', 'about', 'stats', 'team', 'testimonials', 'faq', 'cta', 'contact', 'footer'],
+  medical: ['hero', 'services', 'about', 'team', 'stats', 'faq', 'testimonials', 'cta', 'contact', 'footer'],
+  realty: ['hero', 'gallery', 'services', 'about', 'testimonials', 'stats', 'faq', 'cta', 'contact', 'footer'],
+  fitness: ['hero', 'services', 'gallery', 'stats', 'pricing', 'testimonials', 'team', 'faq', 'cta', 'contact', 'footer'],
+  boutique: ['hero', 'gallery', 'services', 'testimonials', 'about', 'stats', 'faq', 'cta', 'contact', 'footer'],
+}
+
+/** Preferred section order for a template. Unknown/missing → the default order. */
+export function sectionOrderFor(template?: string | null): SectionType[] {
+  return (template && SECTION_ORDER_BY_TEMPLATE[template]) || DEFAULT_ORDER
+}
+
+/**
+ * Sort the enabled sections into the template's starting order. Sections the
+ * template does not list keep their incoming relative order, placed after the
+ * listed ones — so a new section id never silently disappears from a template
+ * whose order predates it.
+ */
+export function orderSections(enabled: SectionType[], template?: string | null): SectionType[] {
+  const pref = sectionOrderFor(template)
+  return [...enabled].sort((a, b) => {
+    const ia = pref.indexOf(a)
+    const ib = pref.indexOf(b)
+    return (ia === -1 ? pref.length : ia) - (ib === -1 ? pref.length : ib)
+  })
 }
