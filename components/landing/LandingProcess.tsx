@@ -8,13 +8,13 @@ const steps = [
   {
     num: '1',
     icon: Search,
-    title: 'Diagnostico inicial',
-    duration: 'Conversacion + relevamiento',
-    desc: 'Empezamos con una charla por WhatsApp o video para entender tu negocio, tu situacion actual y tus objetivos. Hacemos un relevamiento tecnico y proponemos un plan claro.',
+    title: 'Diagnóstico inicial',
+    duration: 'Conversación + relevamiento',
+    desc: 'Empezamos con una charla por WhatsApp o video para entender tu negocio, tu situación actual y tus objetivos. Hacemos un relevamiento técnico y proponemos un plan claro.',
     deliverables: [
-      'Reunion inicial sin costo',
+      'Reunión inicial sin costo',
       'Relevamiento de tu stack actual y procesos',
-      'Documento de diagnostico con propuesta',
+      'Documento de diagnóstico con propuesta',
       'Alcance, plazos y arquitectura definidos',
     ],
     color: 'from-blue-500 to-cyan-500',
@@ -25,14 +25,14 @@ const steps = [
   {
     num: '2',
     icon: Hammer,
-    title: 'Implementacion',
+    title: 'Implementación',
     duration: 'Desarrollo iterativo con avances semanales',
-    desc: 'Desarrollamos e implementamos la solucion acordada. Trabajamos de forma iterativa con avances semanales por video para que veas el progreso en tiempo real.',
+    desc: 'Desarrollamos e implementamos la solución acordada. Trabajamos de forma iterativa con avances semanales por video para que veas el progreso en tiempo real.',
     deliverables: [
-      'Desarrollo a medida con tecnologia moderna',
+      'Desarrollo a medida con tecnología moderna',
       'Integraciones con tus sistemas actuales',
-      'Testing, QA y puesta en produccion',
-      'Capacitacion para tu equipo y documentacion',
+      'Testing, QA y puesta en producción',
+      'Capacitación para tu equipo y documentación',
     ],
     color: 'from-violet-500 to-purple-600',
     accent: 'text-violet-600',
@@ -44,12 +44,12 @@ const steps = [
     num: '3',
     icon: RefreshCw,
     title: 'Soporte y mejoras',
-    duration: 'Acompaniamiento continuo',
-    desc: 'Una vez en produccion, te acompaniamos con soporte tecnico, actualizaciones de seguridad y mejoras continuas. Sin contratos rigidos: avanzamos a tu ritmo.',
+    duration: 'Acompañamiento continuo',
+    desc: 'Una vez en producción, te acompañamos con soporte técnico, actualizaciones de seguridad y mejoras continuas. Sin contratos rígidos: avanzamos a tu ritmo.',
     deliverables: [
-      'Soporte tecnico por WhatsApp y email',
+      'Soporte técnico por WhatsApp y email',
       'Actualizaciones de seguridad y dependencias',
-      'Mejoras y ajustes segun necesidad',
+      'Mejoras y ajustes según necesidad',
       'Monitoreo proactivo y reportes mensuales',
     ],
     color: 'from-emerald-500 to-teal-600',
@@ -60,7 +60,7 @@ const steps = [
 ]
 
 const processWa = waLink(
-  'Hola! Quiero coordinar una reunion para conocer el diagnostico inicial sin costo.'
+  '¡Hola! Quiero coordinar una reunión para conocer el diagnóstico inicial sin costo.'
 )
 
 export function LandingProcess() {
@@ -72,14 +72,14 @@ export function LandingProcess() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-3xl mx-auto mb-16">
           <p className="text-brand-600 font-semibold text-sm uppercase tracking-wider mb-3">
-            Como trabajamos
+            Cómo trabajamos
           </p>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-surface-900 mb-4">
-            Diagnostico - Implementacion - Soporte
+            Diagnóstico - Implementación - Soporte
           </h2>
           <p className="text-lg text-surface-500 leading-relaxed">
-            Un proceso claro en 3 pasos. Arrancamos con una conversacion sin compromiso y vos
-            decidis si avanzamos.
+            Un proceso claro en 3 pasos. Arrancamos con una conversación sin compromiso y vos
+            decidís si avanzamos.
           </p>
         </div>
 
@@ -119,7 +119,7 @@ export function LandingProcess() {
                   <p className="text-surface-600 text-sm leading-relaxed mb-5">{s.desc}</p>
 
                   <p className="text-xs uppercase tracking-wider text-surface-500 font-semibold mb-3">
-                    Que incluye
+                    Qué incluye
                   </p>
                   <ul className="space-y-2 flex-1">
                     {s.deliverables.map((d) => (
@@ -143,7 +143,7 @@ export function LandingProcess() {
             </Button>
           </a>
           <p className="text-sm text-surface-500 mt-3">
-            Te respondemos en menos de 24 horas - Reunion inicial gratuita
+            Te respondemos en menos de 24 horas - Reunión inicial gratuita
           </p>
         </div>
       </div>

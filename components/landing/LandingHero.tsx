@@ -17,18 +17,18 @@ const pillars = [
   {
     icon: Brain,
     label: 'Inteligencia Artificial',
-    desc: 'Agentes, chatbots y automatizacion con LLMs',
+    desc: 'Agentes, chatbots y automatización con LLMs',
     color: 'from-violet-500 to-purple-600',
   },
   {
     icon: Megaphone,
     label: 'Marketing Digital',
-    desc: 'Meta Ads, Google Ads y contenido organico',
+    desc: 'Meta Ads, Google Ads y contenido orgánico',
     color: 'from-orange-500 to-red-600',
   },
   {
     icon: Layout,
-    label: 'Diseno Web',
+    label: 'Diseño Web',
     desc: 'Sitios a medida, sin templates',
     color: 'from-blue-500 to-cyan-500',
   },
@@ -41,7 +41,7 @@ const pillars = [
 ]
 
 const heroWa = waLink(
-  'Hola! Quiero recibir mas informacion sobre los servicios de Automatic IA Lab.'
+  '¡Hola! Quiero recibir más información sobre los servicios de Automatic IA Lab.'
 )
 
 export function LandingHero() {
@@ -79,7 +79,7 @@ export function LandingHero() {
         >
           Hacemos crecer tu negocio con
           <span className="block bg-clip-text text-transparent bg-gradient-to-r from-brand-400 via-violet-400 to-cyan-400">
-            IA, marketing, diseno y SEO
+            IA, marketing, diseño y SEO
           </span>
         </motion.h1>
 
@@ -91,7 +91,7 @@ export function LandingHero() {
           className="text-lg sm:text-xl text-surface-400 max-w-2xl mx-auto mb-12 leading-relaxed"
         >
           Somos una agencia argentina especializada en cuatro pilares: inteligencia artificial
-          aplicada, marketing digital, diseno web a medida y posicionamiento SEO. Cada proyecto se
+          aplicada, marketing digital, diseño web a medida y posicionamiento SEO. Cada proyecto se
           planifica y se implementa de manera personalizada para tu negocio.
         </motion.p>
 
@@ -131,7 +131,7 @@ export function LandingHero() {
           <a href={heroWa} target="_blank" rel="noopener noreferrer">
             <Button size="xl" variant="gradient" className="gap-2 w-full sm:w-auto shadow-brand">
               <MessageCircle className="w-5 h-5" />
-              Consultanos por WhatsApp
+              Consultános por WhatsApp
               <ArrowRight className="w-4 h-4" />
             </Button>
           </a>

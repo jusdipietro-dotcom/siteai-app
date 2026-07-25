@@ -28,13 +28,13 @@ const productPricing = [
     name: 'LexPost Legal',
     price: 'Desde $15.000',
     period: '/mes',
-    note: 'Publicacion legal en Instagram',
+    note: 'Publicación legal en Instagram',
     gradient: 'from-indigo-600 to-blue-800',
     href: '/register?next=lexpost',
   },
   {
     icon: Target,
-    name: 'Prospeccion B2B',
+    name: 'Prospección B2B',
     price: 'Desde $25.000',
     period: '/mes',
     note: 'Leads + emails con IA',
@@ -43,7 +43,7 @@ const productPricing = [
   },
   {
     icon: Search,
-    name: 'Captacion de Leads',
+    name: 'Captación de Leads',
     price: 'Desde $18.000',
     period: '/mes',
     note: 'Leads ilimitados',
@@ -52,7 +52,7 @@ const productPricing = [
   },
   {
     icon: MessageSquare,
-    name: 'Resenas Google IA',
+    name: 'Reseñas Google IA',
     price: 'Desde $15.000',
     period: '/mes',
     note: 'Por perfil de Google Business',
@@ -79,7 +79,7 @@ const productPricing = [
   },
   {
     icon: CandlestickChart,
-    name: 'Senales Crypto',
+    name: 'Señales Crypto',
     price: '$20.000',
     period: '/mes',
     note: '18 pares | análisis técnico',
@@ -91,7 +91,7 @@ const productPricing = [
     name: 'Redes Sociales IA',
     price: 'A medida',
     period: '',
-    note: 'Setup + publicacion diaria',
+    note: 'Setup + publicación diaria',
     gradient: 'from-fuchsia-500 to-purple-600',
     href: 'https://wa.me/5491171311465?text=Hola,%20me%20interesa%20la%20automatizacion%20de%20redes%20sociales',
   },
@@ -170,7 +170,7 @@ export function Pricing() {
                 <p className="text-xs text-surface-400 mb-4 flex-1">{product.note}</p>
                 <Link href={product.href}>
                   <Button variant="outline" size="sm" className="w-full gap-1.5 text-xs">
-                    Ver mas <ArrowRight className="w-3 h-3" />
+                    Ver más <ArrowRight className="w-3 h-3" />
                   </Button>
                 </Link>
               </motion.div>
@@ -186,7 +186,7 @@ export function Pricing() {
           className="text-center mt-10"
         >
           <p className="text-sm text-surface-500 mb-4">
-            Necesitas algo diferente? Armate un combo de productos o pedinos un presupuesto a medida.
+            ¿Necesitás algo diferente? Armate un combo de productos o pedinos un presupuesto a medida.
           </p>
           <Link href="https://wa.me/5491171311465?text=Hola,%20quiero%20consultar%20por%20precios">
             <Button variant="gradient" className="gap-2">

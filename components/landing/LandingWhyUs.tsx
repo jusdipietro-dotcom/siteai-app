@@ -6,37 +6,37 @@ const reasons = [
   {
     icon: MapPin,
     title: 'Agencia argentina',
-    desc: 'Equipo local en Buenos Aires. Hablamos tu idioma, conocemos tu mercado y entendemos los desafios reales de un negocio en Argentina.',
+    desc: 'Equipo local en Buenos Aires. Hablamos tu idioma, conocemos tu mercado y entendemos los desafíos reales de un negocio en Argentina.',
     color: 'from-sky-500 to-blue-600',
   },
   {
     icon: Code2,
-    title: 'Sin templates ni soluciones genericas',
-    desc: 'Cada implementacion es a medida. No usamos plantillas: el sitio, el flujo y la automatizacion se disenan especificamente para tu negocio.',
+    title: 'Sin templates ni soluciones genéricas',
+    desc: 'Cada implementación es a medida. No usamos plantillas: el sitio, el flujo y la automatización se diseñan específicamente para tu negocio.',
     color: 'from-violet-500 to-purple-600',
   },
   {
     icon: Brain,
     title: 'IA aplicada al negocio',
-    desc: 'No vendemos hype: implementamos modelos LLM (GPT, Claude, Gemini, Groq) y agentes IA que generan valor concreto en tu operacion diaria.',
+    desc: 'No vendemos hype: implementamos modelos LLM (GPT, Claude, Gemini, Groq) y agentes IA que generan valor concreto en tu operación diaria.',
     color: 'from-emerald-500 to-teal-600',
   },
   {
     icon: Headphones,
     title: 'Soporte directo por WhatsApp',
-    desc: 'Te atendemos vos a nosotros, sin tickets ni call centers. Comunicacion directa con el equipo que implementa tu proyecto.',
+    desc: 'Te atendemos nosotros directamente, sin tickets ni call centers. Comunicación directa con el equipo que implementa tu proyecto.',
     color: 'from-pink-500 to-rose-600',
   },
   {
     icon: ShieldCheck,
     title: 'Sin contratos ni permanencia',
-    desc: 'Trabajamos por resultados, no por candado. Si la solucion no esta funcionando como esperabas, lo conversamos y ajustamos. Vos decidis hasta cuando.',
+    desc: 'Trabajamos por resultados, no por candado. Si la solución no está funcionando como esperabas, lo conversamos y ajustamos. Vos decidís hasta cuándo.',
     color: 'from-amber-500 to-orange-500',
   },
   {
     icon: Zap,
     title: 'Tiempos reales y predecibles',
-    desc: 'Cotizamos en 24 horas, arrancamos en dias y avanzamos con entregas semanales. Sin promesas vacias ni proyectos eternos.',
+    desc: 'Cotizamos en 24 horas, arrancamos en días y avanzamos con entregas semanales. Sin promesas vacías ni proyectos eternos.',
     color: 'from-cyan-500 to-blue-500',
   },
 ]
@@ -52,7 +52,7 @@ export function LandingWhyUs() {
             viewport={{ once: true }}
             className="text-brand-600 font-semibold text-sm uppercase tracking-wider mb-3"
           >
-            Por que Automatic IA Lab
+            Por qué Automatic IA Lab
           </motion.p>
           <motion.h2
             initial={{ opacity: 0, y: 16 }}
@@ -69,7 +69,7 @@ export function LandingWhyUs() {
             transition={{ delay: 0.1 }}
             className="text-lg text-surface-500"
           >
-            Cercania, calidad tecnica y resultados medibles. Eso es lo que nos diferencia.
+            Cercanía, calidad técnica y resultados medibles. Eso es lo que nos diferencia.
           </motion.p>
         </div>
 

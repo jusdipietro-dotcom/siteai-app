@@ -3,40 +3,40 @@ import { motion } from 'framer-motion'
 
 const faqs = [
   {
-    q: 'Como empezamos a trabajar juntos?',
-    a: 'Simple: nos escribis por WhatsApp y coordinamos una reunion inicial sin costo (por video o llamada). En esa reunion entendemos tu negocio, tu situacion y tus objetivos. Despues te enviamos una propuesta clara con alcance, plazos y costos.',
+    q: '¿Cómo empezamos a trabajar juntos?',
+    a: 'Simple: nos escribís por WhatsApp y coordinamos una reunión inicial sin costo (por video o llamada). En esa reunión entendemos tu negocio, tu situación y tus objetivos. Después te enviamos una propuesta clara con alcance, plazos y costos.',
   },
   {
-    q: 'Trabajan con negocios chicos o solo con empresas grandes?',
-    a: 'Trabajamos con todo tipo de negocios: profesionales independientes, PyMEs, estudios juridicos, comercios, e-commerces y empresas medianas. Lo que importa es que haya un problema concreto para resolver y voluntad de invertir en una solucion profesional.',
+    q: '¿Trabajan con negocios chicos o solo con empresas grandes?',
+    a: 'Trabajamos con todo tipo de negocios: profesionales independientes, PyMEs, estudios jurídicos, comercios, e-commerces y empresas medianas. Lo que importa es que haya un problema concreto para resolver y voluntad de invertir en una solución profesional.',
   },
   {
-    q: 'Que pasa si no estoy seguro de que servicio necesito?',
-    a: 'Justamente para eso esta la reunion inicial. Te ayudamos a diagnosticar la situacion, identificamos donde estan las oportunidades y te recomendamos por donde conviene empezar. Sin compromiso de avanzar.',
+    q: '¿Qué pasa si no estoy seguro de qué servicio necesito?',
+    a: 'Justamente para eso está la reunión inicial. Te ayudamos a diagnosticar la situación, identificamos dónde están las oportunidades y te recomendamos por dónde conviene empezar. Sin compromiso de avanzar.',
   },
   {
-    q: 'Cuanto tarda una implementacion?',
-    a: 'Depende del alcance. Un sitio web puede estar listo en 2 a 4 semanas, una automatizacion sencilla en pocos dias, y proyectos mas complejos pueden llevar 1 a 3 meses. En el diagnostico te damos plazos concretos.',
+    q: '¿Cuánto tarda una implementación?',
+    a: 'Depende del alcance. Un sitio web puede estar listo en 2 a 4 semanas, una automatización sencilla en pocos días, y proyectos más complejos pueden llevar 1 a 3 meses. En el diagnóstico te damos plazos concretos.',
   },
   {
-    q: 'Hace falta firmar un contrato de permanencia?',
-    a: 'No. Trabajamos sin contratos de permanencia. Si en algun momento la solucion no esta funcionando como esperabas, lo conversamos y ajustamos, o cerramos. Vos decidis hasta cuando.',
+    q: '¿Hace falta firmar un contrato de permanencia?',
+    a: 'No. Trabajamos sin contratos de permanencia. Si en algún momento la solución no está funcionando como esperabas, lo conversamos y ajustamos, o cerramos. Vos decidís hasta cuándo.',
   },
   {
-    q: 'Pueden integrar con los sistemas que ya uso?',
-    a: 'Si. Trabajamos con todo tipo de integraciones: WhatsApp Business, MercadoPago, Google Workspace, CRMs (HubSpot, Pipedrive), e-commerce (Tiendanube, Shopify), ERPs, planillas de calculo, APIs propias y mucho mas.',
+    q: '¿Pueden integrar con los sistemas que ya uso?',
+    a: 'Sí. Trabajamos con todo tipo de integraciones: WhatsApp Business, MercadoPago, Google Workspace, CRMs (HubSpot, Pipedrive), e-commerce (Tiendanube, Shopify), ERPs, planillas de cálculo, APIs propias y mucho más.',
   },
   {
-    q: 'Donde estan ubicados?',
-    a: 'Somos una agencia argentina con base en Buenos Aires. Trabajamos remoto con clientes de todo el pais y la region. Atendemos en castellano y nos manejamos en USD o pesos segun el caso.',
+    q: '¿Dónde están ubicados?',
+    a: 'Somos una agencia argentina con base en Buenos Aires. Trabajamos remoto con clientes de todo el país y la región. Atendemos en castellano y nos manejamos en USD o pesos según el caso.',
   },
   {
-    q: 'Como sigue el proyecto despues de implementado?',
-    a: 'Te acompaniamos con soporte tecnico, actualizaciones, mejoras continuas y monitoreo proactivo. Comunicacion directa por WhatsApp con el equipo que implemento tu proyecto, sin tickets ni call centers.',
+    q: '¿Cómo sigue el proyecto después de implementado?',
+    a: 'Te acompañamos con soporte técnico, actualizaciones, mejoras continuas y monitoreo proactivo. Comunicación directa por WhatsApp con el equipo que implementó tu proyecto, sin tickets ni call centers.',
   },
   {
-    q: 'Como hago para empezar?',
-    a: 'Escribinos por WhatsApp con una breve descripcion de lo que necesitas. Te respondemos en menos de 24 horas para coordinar la primera reunion sin compromiso.',
+    q: '¿Cómo hago para empezar?',
+    a: 'Escribinos por WhatsApp con una breve descripción de lo que necesitás. Te respondemos en menos de 24 horas para coordinar la primera reunión sin compromiso.',
   },
 ]
 
@@ -59,7 +59,7 @@ export function LandingFaq() {
             viewport={{ once: true }}
             className="text-4xl font-extrabold text-surface-900 mb-4"
           >
-            Lo que mas nos consultan
+            Lo que más nos consultan
           </motion.h2>
           <motion.p
             initial={{ opacity: 0, y: 16 }}
@@ -68,7 +68,7 @@ export function LandingFaq() {
             transition={{ delay: 0.1 }}
             className="text-lg text-surface-500"
           >
-            Si tu pregunta no esta aca, escribinos por WhatsApp y te respondemos.
+            Si tu pregunta no está acá, escribinos por WhatsApp y te respondemos.
           </motion.p>
         </div>
 

@@ -86,19 +86,19 @@ export function LandingNavbar() {
               )}
             >
               <LogIn className="w-4 h-4" />
-              Iniciar sesion
+              Iniciar sesión
             </Link>
             <a href={WA_GENERIC} target="_blank" rel="noopener noreferrer">
               <Button size="sm" variant="gradient" className="gap-1.5">
                 <MessageCircle className="w-4 h-4" />
-                Consultanos por WhatsApp
+                Consultános por WhatsApp
               </Button>
             </a>
           </div>
 
           <button
             type="button"
-            aria-label={mobileOpen ? 'Cerrar menu' : 'Abrir menu'}
+            aria-label={mobileOpen ? 'Cerrar menú' : 'Abrir menú'}
             className={cn(
               'md:hidden p-2 rounded-lg',
               scrolled ? 'text-surface-600 hover:bg-surface-100' : 'text-white hover:bg-white/10'
@@ -133,13 +133,13 @@ export function LandingNavbar() {
                 <a href={WA_GENERIC} target="_blank" rel="noopener noreferrer" onClick={() => setMobileOpen(false)}>
                   <Button variant="gradient" className="w-full gap-1.5">
                     <MessageCircle className="w-4 h-4" />
-                    Consultanos por WhatsApp
+                    Consultános por WhatsApp
                   </Button>
                 </a>
                 <Link href="/login" onClick={() => setMobileOpen(false)}>
                   <Button variant="outline" className="w-full gap-1.5">
                     <LogIn className="w-4 h-4" />
-                    Iniciar sesion
+                    Iniciar sesión
                   </Button>
                 </Link>
               </div>

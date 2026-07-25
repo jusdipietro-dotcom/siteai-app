@@ -31,7 +31,7 @@ export function LandingVerticals() {
             className="text-lg text-surface-500"
           >
             Estrategias y soluciones adaptadas a la realidad de tu industria, en Argentina y la
-            region.
+            región.
           </motion.p>
         </div>
 

@@ -3,14 +3,14 @@ import { motion } from 'framer-motion'
 import { Zap, Bot, Globe, Shield, Clock, TrendingUp, Wallet, HeadphonesIcon } from 'lucide-react'
 
 const features = [
-  { icon: Zap, title: 'Activacion inmediata', desc: 'La mayoria de nuestros productos se activan en minutos. Sin esperas, sin burocracia.', color: 'text-amber-500 bg-amber-50' },
-  { icon: Bot, title: 'IA en todo', desc: 'Cada producto usa inteligencia artificial para generar contenido, respuestas, analisis y decisiones.', color: 'text-violet-500 bg-violet-50' },
-  { icon: Globe, title: '100% en la nube', desc: 'Todo corre en nuestros servidores. No necesitas instalar nada ni tener computadora prendida.', color: 'text-brand-500 bg-brand-50' },
+  { icon: Zap, title: 'Activación inmediata', desc: 'La mayoría de nuestros productos se activan en minutos. Sin esperas, sin burocracia.', color: 'text-amber-500 bg-amber-50' },
+  { icon: Bot, title: 'IA en todo', desc: 'Cada producto usa inteligencia artificial para generar contenido, respuestas, análisis y decisiones.', color: 'text-violet-500 bg-violet-50' },
+  { icon: Globe, title: '100% en la nube', desc: 'Todo corre en nuestros servidores. No necesitás instalar nada ni tener computadora prendida.', color: 'text-brand-500 bg-brand-50' },
   { icon: Shield, title: 'Seguridad y privacidad', desc: 'Datos encriptados, credenciales protegidas y acceso seguro a todos los servicios.', color: 'text-emerald-500 bg-emerald-50' },
-  { icon: Clock, title: 'Funciona 24/7', desc: 'Automatizaciones que trabajan todo el dia, todos los dias. Vos descansas, ellas no.', color: 'text-cyan-500 bg-cyan-50' },
-  { icon: TrendingUp, title: 'Resultados medibles', desc: 'Cada producto incluye metricas y seguimiento. Sabes exactamente que esta pasando.', color: 'text-green-500 bg-green-50' },
-  { icon: Wallet, title: 'Precios en pesos', desc: 'Sin dolares, sin tarjetas internacionales. Paga en ARS con MercadoPago o transferencia.', color: 'text-orange-500 bg-orange-50' },
-  { icon: HeadphonesIcon, title: 'Soporte humano', desc: 'Atencion directa por WhatsApp. Sin bots, sin tickets, sin esperar dias por una respuesta.', color: 'text-rose-500 bg-rose-50' },
+  { icon: Clock, title: 'Funciona 24/7', desc: 'Automatizaciones que trabajan todo el día, todos los días. Vos descansás, ellas no.', color: 'text-cyan-500 bg-cyan-50' },
+  { icon: TrendingUp, title: 'Resultados medibles', desc: 'Cada producto incluye métricas y seguimiento. Sabés exactamente qué está pasando.', color: 'text-green-500 bg-green-50' },
+  { icon: Wallet, title: 'Precios en pesos', desc: 'Sin dólares, sin tarjetas internacionales. Pagá en ARS con MercadoPago o transferencia.', color: 'text-orange-500 bg-orange-50' },
+  { icon: HeadphonesIcon, title: 'Soporte humano', desc: 'Atención directa por WhatsApp. Sin bots, sin tickets, sin esperar días por una respuesta.', color: 'text-rose-500 bg-rose-50' },
 ]
 
 export function Features() {
@@ -24,7 +24,7 @@ export function Features() {
             viewport={{ once: true }}
             className="text-brand-600 font-semibold text-sm uppercase tracking-wider mb-3"
           >
-            Por que elegirnos
+            Por qué elegirnos
           </motion.p>
           <motion.h2
             initial={{ opacity: 0, y: 16 }}
@@ -32,7 +32,7 @@ export function Features() {
             viewport={{ once: true }}
             className="text-4xl font-extrabold text-surface-900 mb-4"
           >
-            Todo lo que necesitas para escalar
+            Todo lo que necesitás para escalar
           </motion.h2>
           <motion.p
             initial={{ opacity: 0, y: 16 }}

@@ -6,9 +6,9 @@ const steps = [
   {
     step: '01',
     icon: MessageSquare,
-    title: 'Elegis tu producto',
+    title: 'Elegís tu producto',
     description:
-      'Explora nuestro catalogo de 11 productos. Sitios web, monitoreo judicial, prospeccion B2B, email marketing, resenas, LinkedIn, trading y mas. Cada uno resuelve un problema real.',
+      'Explorá nuestro catálogo de 11 productos. Sitios web, monitoreo judicial, prospección B2B, email marketing, reseñas, LinkedIn, trading y más. Cada uno resuelve un problema real.',
     color: 'from-brand-500 to-brand-600',
     bg: 'bg-brand-50',
   },
@@ -24,9 +24,9 @@ const steps = [
   {
     step: '03',
     icon: Rocket,
-    title: 'Funciona en piloto automatico',
+    title: 'Funciona en piloto automático',
     description:
-      'Tu producto trabaja 24/7 sin intervencion. Recibes resultados, alertas y reportes. Vos te enfocas en lo que importa.',
+      'Tu producto trabaja 24/7 sin intervención. Recibís resultados, alertas y reportes. Vos te enfocás en lo que importa.',
     color: 'from-emerald-500 to-emerald-600',
     bg: 'bg-emerald-50',
   },
@@ -62,7 +62,7 @@ export function HowItWorks() {
             transition={{ delay: 0.2 }}
             className="text-lg text-surface-500"
           >
-            Sin conocimientos tecnicos, sin equipos, sin demoras.
+            Sin conocimientos técnicos, sin equipos, sin demoras.
           </motion.p>
         </div>
 

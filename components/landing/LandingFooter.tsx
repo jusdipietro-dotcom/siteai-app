@@ -8,12 +8,12 @@ const sections = [
     items: [
       { label: 'Inteligencia Artificial', href: '#servicios' },
       { label: 'Marketing Digital', href: '#servicios' },
-      { label: 'Diseno Web', href: '#servicios' },
+      { label: 'Diseño Web', href: '#servicios' },
       { label: 'Posicionamiento SEO', href: '#servicios' },
     ],
   },
   {
-    title: 'Navegacion',
+    title: 'Navegación',
     items: [
       { label: 'Soluciones', href: '#soluciones' },
       { label: 'Para tu rubro', href: '#rubros' },
@@ -41,7 +41,7 @@ export function LandingFooter() {
             </div>
             <p className="text-sm text-surface-500 leading-relaxed max-w-md mb-6">
               Agencia digital argentina especializada en inteligencia artificial aplicada, marketing
-              digital, diseno web a medida y posicionamiento SEO.
+              digital, diseño web a medida y posicionamiento SEO.
             </p>
             <div className="space-y-2.5 text-sm">
               <a
@@ -89,7 +89,7 @@ export function LandingFooter() {
           <p className="text-sm text-surface-600">
             &copy; {new Date().getFullYear()} Automatic IA Lab - Buenos Aires, Argentina
           </p>
-          <p className="text-sm text-surface-600">Automatizacion inteligente para tu negocio</p>
+          <p className="text-sm text-surface-600">Automatización inteligente para tu negocio</p>
         </div>
       </div>
     </footer>

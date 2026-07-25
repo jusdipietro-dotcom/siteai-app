@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { waLink } from '@/lib/whatsapp'
 
 const ctaWa = waLink(
-  'Hola! Quiero coordinar una reunion para conversar sobre un proyecto con Automatic IA Lab.'
+  '¡Hola! Quiero coordinar una reunión para conversar sobre un proyecto con Automatic IA Lab.'
 )
 
 export function LandingCta() {
@@ -20,15 +20,15 @@ export function LandingCta() {
         >
           <div className="inline-flex items-center gap-2 bg-brand-500/15 border border-brand-500/30 rounded-full px-4 py-2 text-sm font-medium text-brand-300 mb-8">
             <Sparkles className="w-3.5 h-3.5" />
-            Reunion inicial sin costo - Respondemos en menos de 24 horas
+            Reunión inicial sin costo - Respondemos en menos de 24 horas
           </div>
           <h2 className="text-4xl sm:text-5xl font-extrabold text-white mb-6 leading-tight">
             Hablemos de tu proyecto.
-            <span className="block text-brand-400">Una sola conversacion alcanza para empezar.</span>
+            <span className="block text-brand-400">Una sola conversación alcanza para empezar.</span>
           </h2>
           <p className="text-lg text-surface-400 mb-10">
-            Inteligencia artificial, marketing digital, diseno web y SEO. 4 pilares de una agencia
-            argentina pensada para acompaniar a tu negocio.
+            Inteligencia artificial, marketing digital, diseño web y SEO. 4 pilares de una agencia
+            argentina pensada para acompañar a tu negocio.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <a href={ctaWa} target="_blank" rel="noopener noreferrer">

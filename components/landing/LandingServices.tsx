@@ -25,20 +25,20 @@ const services = [
     icon: Brain,
     accentIcons: [Bot, Workflow, BarChart3],
     title: 'Inteligencia Artificial',
-    tagline: 'Consultoria e implementacion de IA aplicada al negocio',
+    tagline: 'Consultoría e implementación de IA aplicada al negocio',
     description:
-      'Diseno e implementacion de soluciones con modelos de lenguaje (GPT, Claude, Gemini, Groq), agentes autonomos, chatbots conversacionales y automatizaciones inteligentes para tu operacion.',
+      'Diseño e implementación de soluciones con modelos de lenguaje (GPT, Claude, Gemini, Groq), agentes autónomos, chatbots conversacionales y automatizaciones inteligentes para tu operación.',
     bullets: [
       'Agentes IA que atienden, califican y derivan leads 24/7',
       'Chatbots para sitios web, WhatsApp, Instagram y Telegram',
       'Automatizaciones con n8n + LLMs (workflows a medida)',
-      'Integracion con tus sistemas (CRM, ERP, planillas, APIs)',
-      'Procesamiento de documentos, OCR, extraccion de datos',
+      'Integración con tus sistemas (CRM, ERP, planillas, APIs)',
+      'Procesamiento de documentos, OCR, extracción de datos',
     ],
     gradient: 'from-violet-500 to-purple-600',
     bg: 'bg-violet-50',
     border: 'border-violet-100',
-    waMsg: 'Hola! Me interesa el servicio de Inteligencia Artificial. Quiero recibir mas informacion.',
+    waMsg: '¡Hola! Me interesa el servicio de Inteligencia Artificial. Quiero recibir más información.',
   },
   {
     id: 'marketing',
@@ -47,38 +47,38 @@ const services = [
     title: 'Marketing Digital',
     tagline: 'Meta Ads, Google Ads y contenido que convierte',
     description:
-      'Estrategia y gestion de campanas pagas en Meta (Facebook + Instagram), Google Ads y TikTok. Contenido organico, copywriting profesional y embudos de conversion para escalar tus ventas.',
+      'Estrategia y gestión de campañas pagas en Meta (Facebook + Instagram), Google Ads y TikTok. Contenido orgánico, copywriting profesional y embudos de conversión para escalar tus ventas.',
     bullets: [
-      'Setup y gestion mensual de campanas Meta + Google Ads',
+      'Setup y gestión mensual de campañas Meta + Google Ads',
       'Pixel + Conversions API, GA4 y tracking completo',
       'Creativos publicitarios (carousel, video, UGC, Reels)',
       'Email marketing y automatizaciones de nurturing',
-      'Reportes y optimizacion continua sobre ROAS / CPA',
+      'Reportes y optimización continua sobre ROAS / CPA',
     ],
     gradient: 'from-orange-500 to-red-600',
     bg: 'bg-orange-50',
     border: 'border-orange-100',
-    waMsg: 'Hola! Me interesa el servicio de Marketing Digital. Quiero recibir mas informacion.',
+    waMsg: '¡Hola! Me interesa el servicio de Marketing Digital. Quiero recibir más información.',
   },
   {
     id: 'web',
     icon: Layout,
     accentIcons: [Smartphone, ShoppingBag, BarChart3],
-    title: 'Diseno Web',
+    title: 'Diseño Web',
     tagline: 'Sitios a medida en Next.js, sin templates',
     description:
-      'Desarrollamos sitios web profesionales, landing pages de alta conversion y tiendas online. Tecnologia moderna (Next.js + Tailwind), performance optimizado, SEO base y conectados a tus herramientas.',
+      'Desarrollamos sitios web profesionales, landing pages de alta conversión y tiendas online. Tecnología moderna (Next.js + Tailwind), performance optimizado, SEO base y conectados a tus herramientas.',
     bullets: [
       'Landing pages y sitios institucionales a medida',
       'E-commerce: Tiendanube, Shopify y desarrollos propios',
       'Integraciones con WhatsApp, formularios y CRM',
-      'Disenos pensados para conversion, no para portfolio',
+      'Diseños pensados para conversión, no para portfolio',
       'Hosting, dominio y mantenimiento incluido',
     ],
     gradient: 'from-blue-500 to-cyan-500',
     bg: 'bg-blue-50',
     border: 'border-blue-100',
-    waMsg: 'Hola! Me interesa el servicio de Diseno Web. Quiero recibir mas informacion.',
+    waMsg: '¡Hola! Me interesa el servicio de Diseño Web. Quiero recibir más información.',
   },
   {
     id: 'seo',
@@ -87,18 +87,18 @@ const services = [
     title: 'Posicionamiento SEO',
     tagline: 'Aparece primero cuando te buscan',
     description:
-      'Auditoria tecnica completa, optimizacion on-page, SEO local con Google Business Profile, generacion de contenido optimizado y estrategia de enlaces. Resultados sostenidos en el tiempo.',
+      'Auditoría técnica completa, optimización on-page, SEO local con Google Business Profile, generación de contenido optimizado y estrategia de enlaces. Resultados sostenidos en el tiempo.',
     bullets: [
-      'Auditoria SEO tecnica y diagnostico inicial',
-      'Optimizacion on-page (meta tags, schema, performance)',
-      'SEO local: ficha Google Business + resenas + mapas',
-      'Generacion de contenido optimizado para tu nicho',
-      'Reporte mensual de posiciones y trafico organico',
+      'Auditoría SEO técnica y diagnóstico inicial',
+      'Optimización on-page (meta tags, schema, performance)',
+      'SEO local: ficha Google Business + reseñas + mapas',
+      'Generación de contenido optimizado para tu nicho',
+      'Reporte mensual de posiciones y tráfico orgánico',
     ],
     gradient: 'from-emerald-500 to-teal-600',
     bg: 'bg-emerald-50',
     border: 'border-emerald-100',
-    waMsg: 'Hola! Me interesa el servicio de Posicionamiento SEO. Quiero recibir mas informacion.',
+    waMsg: '¡Hola! Me interesa el servicio de Posicionamiento SEO. Quiero recibir más información.',
   },
 ]
 
@@ -131,7 +131,7 @@ export function LandingServices() {
             className="text-lg text-surface-500"
           >
             Cada servicio se contrata por separado o combinados. Empezamos siempre con una
-            conversacion para entender tu situacion.
+            conversación para entender tu situación.
           </motion.p>
         </div>
 

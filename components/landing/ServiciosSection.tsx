@@ -8,8 +8,8 @@ const services = [
   {
     id: 'diseno-web',
     icon: Layout,
-    title: 'Diseno Web a medida',
-    desc: 'Sitios web profesionales con codigo propio y diseno unico. Landing pages, sitios institucionales o tiendas online.',
+    title: 'Diseño Web a medida',
+    desc: 'Sitios web profesionales con código propio y diseño único. Landing pages, sitios institucionales o tiendas online.',
     priceFrom: 180000,
     href: '/servicios/diseno-web',
     gradient: 'from-blue-500 to-cyan-600',
@@ -20,12 +20,12 @@ const services = [
     id: 'seo',
     icon: Search,
     title: 'Posicionamiento SEO',
-    desc: 'Aparece primero en Google. SEO tecnico, local y organico con reportes mensuales transparentes.',
+    desc: 'Aparece primero en Google. SEO técnico, local y orgánico con reportes mensuales transparentes.',
     priceFrom: 45000,
     href: '/servicios/seo',
     gradient: 'from-emerald-500 to-teal-600',
     accent: 'text-emerald-600',
-    cta: 'Pedir auditoria',
+    cta: 'Pedir auditoría',
   },
   {
     id: 'chatbot-ia',
@@ -47,7 +47,7 @@ const services = [
     href: '/contacto',
     gradient: 'from-amber-500 to-orange-600',
     accent: 'text-orange-600',
-    cta: 'Contactanos',
+    cta: 'Contactános',
   },
 ]
 
@@ -60,10 +60,10 @@ export function ServiciosSection() {
             Servicios a medida
           </p>
           <h2 className="text-3xl sm:text-4xl font-extrabold text-surface-900 mb-4">
-            Cuando necesitas algo unico
+            Cuando necesitás algo único
           </h2>
           <p className="text-surface-500">
-            Ademas de nuestros productos automaticos, ofrecemos servicios personalizados con implementacion manual: diseno web a medida, posicionamiento SEO, email marketing y workflows hechos para tu negocio.
+            Además de nuestros productos automáticos, ofrecemos servicios personalizados con implementación manual: diseño web a medida, posicionamiento SEO, email marketing y workflows hechos para tu negocio.
           </p>
         </div>
 
@@ -104,9 +104,9 @@ export function ServiciosSection() {
         <div className="mt-12 grid md:grid-cols-2 gap-6">
           <div className="bg-gradient-to-br from-amber-600 via-yellow-600 to-orange-600 rounded-2xl p-8 text-white">
             <Crown className="w-9 h-9 mb-4 opacity-90" />
-            <h3 className="text-2xl font-bold mb-2">Implementacion Premium</h3>
+            <h3 className="text-2xl font-bold mb-2">Implementación Premium</h3>
             <p className="text-white/90 text-sm leading-relaxed mb-5">
-              Sistemas completos hechos a medida con onboarding 1:1: Pipeline de Noticias multi-agente, Avatar IA Influencer, ERP Indumentaria, Suite Juridica White-Label. Desde $1.200.000 ARS.
+              Sistemas completos hechos a medida con onboarding 1:1: Pipeline de Noticias multi-agente, Avatar IA Influencer, ERP Indumentaria, Suite Jurídica White-Label. Desde $1.200.000 ARS.
             </p>
             <Link
               href="/premium"
@@ -117,9 +117,9 @@ export function ServiciosSection() {
           </div>
 
           <div className="bg-gradient-to-br from-surface-900 to-surface-800 rounded-2xl p-8 text-center text-white flex flex-col justify-center">
-            <h3 className="text-2xl font-bold mb-2">Tenes un proyecto distinto?</h3>
+            <h3 className="text-2xl font-bold mb-2">¿Tenés un proyecto distinto?</h3>
             <p className="text-surface-300 mb-6 max-w-xl mx-auto text-sm">
-              Si necesitas algo que no esta en nuestro catalogo, hablemos. Cotizamos cualquier proyecto de software, automatizacion o IA.
+              Si necesitás algo que no está en nuestro catálogo, hablemos. Cotizamos cualquier proyecto de software, automatización o IA.
             </p>
             <Link
               href="/contacto"

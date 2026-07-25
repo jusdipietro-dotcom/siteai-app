@@ -27,7 +27,7 @@ const stats = [
   {
     icon: Star,
     value: '4.9/5',
-    label: 'calificacion promedio',
+    label: 'calificación promedio',
     color: 'text-violet-400',
     bg: 'bg-violet-500/10',
   },

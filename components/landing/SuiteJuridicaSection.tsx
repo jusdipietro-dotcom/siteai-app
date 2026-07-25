@@ -22,7 +22,7 @@ const services = [
   },
   {
     icon: Receipt,
-    name: 'Facturacion Electronica ARCA',
+    name: 'Facturación Electrónica ARCA',
     desc: 'Facturas A, B, NC, ND — todo digital',
   },
   {
@@ -33,7 +33,7 @@ const services = [
   {
     icon: CalendarDays,
     name: 'Turnos Online',
-    desc: 'Agenda publica con confirmacion automatica',
+    desc: 'Agenda pública con confirmación automática',
   },
 ]
 
@@ -53,11 +53,11 @@ const plans = [
     individualPrice: '112.000',
     savings: '38%',
     popular: true,
-    highlights: ['Facturas A+B', '100 causas', '5 areas de practica'],
+    highlights: ['Facturas A+B', '100 causas', '5 áreas de práctica'],
   },
   {
     id: 'estudio',
-    name: 'Estudio Juridico',
+    name: 'Estudio Jurídico',
     price: '149.000',
     individualPrice: '230.000',
     savings: '35%',
@@ -84,7 +84,7 @@ export function SuiteJuridicaSection() {
             className="inline-flex items-center gap-2 bg-violet-500/15 border border-violet-500/30 rounded-full px-4 py-2 text-sm font-medium text-violet-300 mb-6"
           >
             <Crown className="w-4 h-4" />
-            Exclusivo para abogados y estudios juridicos
+            Exclusivo para abogados y estudios jurídicos
           </motion.div>
 
           <motion.h2
@@ -94,7 +94,7 @@ export function SuiteJuridicaSection() {
             transition={{ delay: 0.1 }}
             className="text-4xl sm:text-5xl font-extrabold text-white mb-4 leading-tight"
           >
-            Suite Juridica
+            Suite Jurídica
             <span className="block bg-clip-text text-transparent bg-gradient-to-r from-violet-400 via-purple-400 to-fuchsia-400">
               Todo-en-uno para tu estudio
             </span>
@@ -107,7 +107,7 @@ export function SuiteJuridicaSection() {
             transition={{ delay: 0.2 }}
             className="text-lg text-surface-400 leading-relaxed"
           >
-            4 herramientas esenciales en una sola suscripcion.
+            4 herramientas esenciales en una sola suscripción.
             Ahorra hasta un 38% vs contratarlas por separado.
           </motion.p>
         </div>
@@ -160,7 +160,7 @@ export function SuiteJuridicaSection() {
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                   <span className="bg-gradient-to-r from-violet-500 to-purple-600 text-white text-xs font-bold px-4 py-1 rounded-full flex items-center gap-1">
                     <Sparkles className="w-3 h-3" />
-                    Mas elegido
+                    Más elegido
                   </span>
                 </div>
               )}

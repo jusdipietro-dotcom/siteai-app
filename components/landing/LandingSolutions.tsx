@@ -48,20 +48,20 @@ type Solution = {
 const solutions: Solution[] = [
   {
     id: 'sitios-web',
-    badge: 'Diseno web',
+    badge: 'Diseño web',
     icon: Globe,
     title: 'Sitios web profesionales con IA',
-    subtitle: 'Tu negocio online listo en dias, no en meses',
+    subtitle: 'Tu negocio online listo en días, no en meses',
     description:
-      'Disenamos e implementamos sitios web profesionales con tecnologia moderna (Next.js + Tailwind). SEO base, SSL, dominio propio, formularios conectados a WhatsApp/email y panel para que actualices contenido.',
+      'Diseñamos e implementamos sitios web profesionales con tecnología moderna (Next.js + Tailwind). SEO base, SSL, dominio propio, formularios conectados a WhatsApp/email y panel para que actualices contenido.',
     highlights: [
-      'Diseno responsive adaptado a tu rubro',
-      'SEO optimizado para Google desde el dia 1',
+      'Diseño responsive adaptado a tu rubro',
+      'SEO optimizado para Google desde el día 1',
       'WhatsApp, formularios y CRM integrados',
     ],
     gradient: 'from-brand-500 to-cyan-500',
     bgGlow: 'bg-brand-500/10',
-    waMsg: 'Hola! Me interesa el desarrollo de un sitio web profesional. Quiero recibir mas informacion.',
+    waMsg: '¡Hola! Me interesa el desarrollo de un sitio web profesional. Quiero recibir más información.',
     selfServe: {
       href: '/servicios/creador-de-sitios',
       label: 'Armarlo yo mismo',
@@ -73,102 +73,102 @@ const solutions: Solution[] = [
     badge: 'Para abogados',
     icon: BookOpen,
     title: 'JurisArgentina - Buscador de jurisprudencia',
-    subtitle: 'Mas de 285.000 fallos con texto completo',
+    subtitle: 'Más de 285.000 fallos con texto completo',
     description:
-      'Plataforma propia con fallos de SAIJ, JUBA, SCBA y Corte Suprema. Busqueda avanzada con operadores booleanos, filtros por jurisdiccion, materia y tribunal. Exportacion PDF y cita automatica. Actualizada todos los dias.',
+      'Plataforma propia con fallos de SAIJ, JUBA, SCBA y Corte Suprema. Búsqueda avanzada con operadores booleanos, filtros por jurisdicción, materia y tribunal. Exportación PDF y cita automática. Actualizada todos los días.',
     highlights: [
       '+285.000 fallos indexados con texto completo',
-      'Busqueda booleana, filtros y favoritos',
+      'Búsqueda booleana, filtros y favoritos',
       'Exportar a PDF y copiar cita lista',
     ],
     gradient: 'from-blue-600 to-indigo-700',
     bgGlow: 'bg-blue-500/10',
-    waMsg: 'Hola! Quiero recibir informacion sobre JurisArgentina (buscador de jurisprudencia).',
+    waMsg: '¡Hola! Quiero recibir información sobre JurisArgentina (buscador de jurisprudencia).',
   },
   {
     id: 'monitoreo-judicial',
     badge: 'Para abogados',
     icon: Scale,
     title: 'Monitoreo judicial (PJN y SCBA)',
-    subtitle: 'Cada proveido y notificacion, directo a tu email',
+    subtitle: 'Cada proveído y notificación, directo a tu email',
     description:
-      'Monitoreamos automaticamente las notificaciones del Poder Judicial de la Nacion y la Suprema Corte de Buenos Aires. Recibis alertas por email con el texto completo de cada documento, sin necesidad de entrar al portal.',
+      'Monitoreamos automáticamente las notificaciones del Poder Judicial de la Nación y la Suprema Corte de Buenos Aires. Recibís alertas por email con el texto completo de cada documento, sin necesidad de entrar al portal.',
     highlights: [
-      'Alertas multiples veces por dia (L-V)',
-      'Texto completo del PDF extraido',
-      'Deduplicacion inteligente, cero ruido',
+      'Alertas múltiples veces por día (L-V)',
+      'Texto completo del PDF extraído',
+      'Deduplicación inteligente, cero ruido',
     ],
     gradient: 'from-violet-500 to-purple-600',
     bgGlow: 'bg-violet-500/10',
-    waMsg: 'Hola! Quiero recibir informacion sobre el servicio de monitoreo judicial (PJN/SCBA).',
+    waMsg: '¡Hola! Quiero recibir información sobre el servicio de monitoreo judicial (PJN/SCBA).',
   },
   {
     id: 'lexpost',
     badge: 'Para abogados',
     icon: FileText,
-    title: 'LexPost - Publicacion legal en Instagram',
+    title: 'LexPost - Publicación legal en Instagram',
     subtitle: 'De la sentencia al posteo en 5 minutos',
     description:
-      'Subis un PDF de sentencia, resolucion o dictamen. La IA censura datos personales automaticamente (Ley 25.326), genera una caratula profesional con el branding de tu estudio, escribe el copy y lo publica como carousel en Instagram.',
+      'Subís un PDF de sentencia, resolución o dictamen. La IA censura datos personales automáticamente (Ley 25.326), genera una carátula profesional con el branding de tu estudio, escribe el copy y lo publica como carousel en Instagram.',
     highlights: [
-      'Censura automatica de datos personales (OCR + IA)',
-      'Caratula profesional con tu branding',
-      'Publicacion directa como carousel en Instagram',
+      'Censura automática de datos personales (OCR + IA)',
+      'Carátula profesional con tu branding',
+      'Publicación directa como carousel en Instagram',
     ],
     gradient: 'from-indigo-600 to-blue-800',
     bgGlow: 'bg-indigo-500/10',
-    waMsg: 'Hola! Quiero recibir informacion sobre LexPost (publicacion legal automatizada en Instagram).',
+    waMsg: '¡Hola! Quiero recibir información sobre LexPost (publicación legal automatizada en Instagram).',
   },
   {
     id: 'prospeccion',
     badge: 'Ventas B2B',
     icon: Target,
-    title: 'Prospeccion B2B con IA',
-    subtitle: 'Leads reales y emails personalizados en piloto automatico',
+    title: 'Prospección B2B con IA',
+    subtitle: 'Leads reales y emails personalizados en piloto automático',
     description:
-      'Sistema que busca prospectos en tu nicho, extrae emails verificados de sus webs y envia mensajes unicos generados por IA. Cada email menciona datos reales del negocio destinatario. Todo automatico, con seguimiento centralizado.',
+      'Sistema que busca prospectos en tu nicho, extrae emails verificados de sus webs y envía mensajes únicos generados por IA. Cada email menciona datos reales del negocio destinatario. Todo automático, con seguimiento centralizado.',
     highlights: [
-      'Captacion automatica por nicho y ciudad',
+      'Captación automática por nicho y ciudad',
       'Emails personalizados generados por IA',
       'Anti-spam profesional con unsubscribe',
     ],
     gradient: 'from-orange-500 to-red-600',
     bgGlow: 'bg-orange-500/10',
-    waMsg: 'Hola! Quiero recibir informacion sobre Prospeccion B2B con IA.',
+    waMsg: '¡Hola! Quiero recibir información sobre Prospección B2B con IA.',
   },
   {
     id: 'captacion-leads',
     badge: 'LeadGen',
     icon: Search,
-    title: 'Captacion automatica de leads',
+    title: 'Captación automática de leads',
     subtitle: 'Base de datos de prospectos reales, sin mover un dedo',
     description:
-      'Sistema que busca negocios reales en toda Argentina, extrae sus datos de contacto y arma una base de leads lista para vender. Trabaja 24/7: elegis nichos, ciudades y valida cada email contra el dominio del negocio.',
+      'Sistema que busca negocios reales en toda Argentina, extrae sus datos de contacto y arma una base de leads lista para vender. Trabaja 24/7: elegís nichos, ciudades y valida cada email contra el dominio del negocio.',
     highlights: [
       'Emails verificados contra dominio real',
-      'Cobertura de mas de 45 nichos y 25 ciudades',
-      'Captura automatica 24/7 sin limites',
+      'Cobertura de más de 45 nichos y 25 ciudades',
+      'Captura automática 24/7 sin límites',
     ],
     gradient: 'from-rose-500 to-pink-600',
     bgGlow: 'bg-rose-500/10',
-    waMsg: 'Hola! Quiero recibir informacion sobre Captacion Automatica de Leads.',
+    waMsg: '¡Hola! Quiero recibir información sobre Captación Automática de Leads.',
   },
   {
     id: 'resenas-google',
-    badge: 'Reputacion online',
+    badge: 'Reputación online',
     icon: MessageSquare,
-    title: 'Resenas de Google con IA',
-    subtitle: 'Responde cada resena en minutos, no en dias',
+    title: 'Reseñas de Google con IA',
+    subtitle: 'Responde cada reseña en minutos, no en días',
     description:
-      'Un agente de IA monitorea tus resenas de Google Business y responde automaticamente con el tono de tu marca. Respuestas personalizadas segun la puntuacion, el contenido y el nombre del cliente. Tu reputacion online, siempre atendida.',
+      'Un agente de IA monitorea tus reseñas de Google Business y responde automáticamente con el tono de tu marca. Respuestas personalizadas según la puntuación, el contenido y el nombre del cliente. Tu reputación online, siempre atendida.',
     highlights: [
-      'Respuestas automaticas con IA',
+      'Respuestas automáticas con IA',
       'Monitoreo cada pocos minutos',
       'Tono personalizado por negocio',
     ],
     gradient: 'from-amber-500 to-orange-500',
     bgGlow: 'bg-amber-500/10',
-    waMsg: 'Hola! Quiero recibir informacion sobre las respuestas automaticas a resenas de Google.',
+    waMsg: '¡Hola! Quiero recibir información sobre las respuestas automáticas a reseñas de Google.',
   },
   {
     id: 'linkedin-optimizer',
@@ -177,92 +177,92 @@ const solutions: Solution[] = [
     title: 'LinkedIn Optimizer IA',
     subtitle: 'Publicaciones que posicionan, perfil que convierte',
     description:
-      'Un asistente de IA analiza tu perfil de LinkedIn, genera recomendaciones de optimizacion y crea publicaciones profesionales de alto impacto. Confirmas desde Telegram y se publica automaticamente.',
+      'Un asistente de IA analiza tu perfil de LinkedIn, genera recomendaciones de optimización y crea publicaciones profesionales de alto impacto. Confirmás desde Telegram y se publica automáticamente.',
     highlights: [
-      'Optimizacion completa de perfil con IA',
+      'Optimización completa de perfil con IA',
       'Publicaciones automaticas previa aprobacion',
       'Plan de contenido semanal personalizado',
     ],
     gradient: 'from-blue-600 to-sky-500',
     bgGlow: 'bg-blue-500/10',
-    waMsg: 'Hola! Quiero recibir informacion sobre LinkedIn Optimizer IA.',
+    waMsg: '¡Hola! Quiero recibir información sobre LinkedIn Optimizer IA.',
   },
   {
     id: 'email-marketing',
     badge: 'Marketing',
     icon: Send,
     title: 'Email marketing automatizado',
-    subtitle: 'Llega a toda tu base sin plataformas en dolares',
+    subtitle: 'Llega a toda tu base sin plataformas en dólares',
     description:
-      'Sistema que envia emails promocionales personalizados a toda tu base de contactos, de forma automatica. Template profesional con tu marca, anti-spam integrado, desuscripcion automatica y seguimiento en tiempo real.',
+      'Sistema que envía emails promocionales personalizados a toda tu base de contactos, de forma automática. Template profesional con tu marca, anti-spam integrado, desuscripción automática y seguimiento en tiempo real.',
     highlights: [
       'Personalizado por nombre del contacto',
       'Anti-spam: ritmo controlado y template optimizado',
-      'Desuscripcion automatica en cada email',
+      'Desuscripción automática en cada email',
     ],
     gradient: 'from-pink-500 to-rose-600',
     bgGlow: 'bg-pink-500/10',
-    waMsg: 'Hola! Quiero recibir informacion sobre el servicio de Email Marketing Automatizado.',
+    waMsg: '¡Hola! Quiero recibir información sobre el servicio de Email Marketing Automatizado.',
   },
   {
     id: 'senales-crypto',
     badge: 'Trading',
     icon: CandlestickChart,
-    title: 'Senales crypto con IA',
-    subtitle: 'Trading inteligente con analisis tecnico automatizado',
+    title: 'Señales crypto con IA',
+    subtitle: 'Trading inteligente con análisis técnico automatizado',
     description:
-      'Bot de senales crypto que analiza multiples pares con 7 indicadores tecnicos (RSI, MACD, EMA, Bollinger, ADX, volumen, velas) mas 3 indicadores macro (Fear & Greed, Funding Rate, BTC Dominance). Alertas en Telegram con Stop Loss y Take Profit.',
+      'Bot de señales crypto que analiza múltiples pares con 7 indicadores técnicos (RSI, MACD, EMA, Bollinger, ADX, volumen, velas) más 3 indicadores macro (Fear & Greed, Funding Rate, BTC Dominance). Alertas en Telegram con Stop Loss y Take Profit.',
     highlights: [
-      'Mas de 18 pares analizados 24/7',
-      '7 indicadores tecnicos + 3 macro',
+      'Más de 18 pares analizados 24/7',
+      '7 indicadores técnicos + 3 macro',
       'Alertas Telegram con SL/TP y score de confianza',
     ],
     gradient: 'from-emerald-500 to-green-600',
     bgGlow: 'bg-emerald-500/10',
-    waMsg: 'Hola! Quiero recibir informacion sobre las Senales Crypto con IA.',
+    waMsg: '¡Hola! Quiero recibir información sobre las Señales Crypto con IA.',
   },
   {
     id: 'redes-sociales',
     badge: 'Social media',
     icon: Instagram,
-    title: 'Automatizacion de redes sociales',
-    subtitle: 'Contenido en Instagram todos los dias, sin tocar el celular',
+    title: 'Automatización de redes sociales',
+    subtitle: 'Contenido en Instagram todos los días, sin tocar el celular',
     description:
-      'Sistema 100% automatizado que busca noticias o contenido de tu nicho, lo procesa con IA, genera imagenes y lo publica en Instagram automaticamente. Ideal para canales de noticias, marcas y cuentas tematicas.',
+      'Sistema 100% automatizado que busca noticias o contenido de tu nicho, lo procesa con IA, genera imágenes y lo publica en Instagram automáticamente. Ideal para canales de noticias, marcas y cuentas temáticas.',
     highlights: [
-      'Publicaciones diarias programadas y automaticas',
-      'Imagenes generadas con IA',
-      'Contenido curado de multiples fuentes',
+      'Publicaciones diarias programadas y automáticas',
+      'Imágenes generadas con IA',
+      'Contenido curado de múltiples fuentes',
     ],
     gradient: 'from-fuchsia-500 to-purple-600',
     bgGlow: 'bg-fuchsia-500/10',
-    waMsg: 'Hola! Quiero recibir informacion sobre la Automatizacion de Redes Sociales.',
+    waMsg: '¡Hola! Quiero recibir información sobre la Automatización de Redes Sociales.',
   },
   {
     id: 'turnos-online',
     badge: 'Agenda digital',
     icon: CalendarCheck,
     title: 'Turnos online',
-    subtitle: 'Tus clientes reservan solos, vos atendes',
+    subtitle: 'Tus clientes reservan solos, vos atendés',
     description:
-      'Plataforma web de reserva de turnos con confirmacion automatica, integracion con Google Calendar y notificaciones por email. Tus clientes eligen dia, hora y servicio desde el celular.',
+      'Plataforma web de reserva de turnos con confirmación automática, integración con Google Calendar y notificaciones por email. Tus clientes eligen día, hora y servicio desde el celular.',
     highlights: [
-      'Integracion con Google Calendar',
-      'Confirmacion por email al instante',
+      'Integración con Google Calendar',
+      'Confirmación por email al instante',
       'Disponibilidad en tiempo real',
     ],
     gradient: 'from-teal-500 to-cyan-600',
     bgGlow: 'bg-teal-500/10',
-    waMsg: 'Hola! Quiero recibir informacion sobre el sistema de Turnos Online.',
+    waMsg: '¡Hola! Quiero recibir información sobre el sistema de Turnos Online.',
   },
   {
     id: 'automatizaciones',
     badge: 'A medida',
     icon: Bot,
     title: 'Automatizaciones IA a medida',
-    subtitle: 'Flujos inteligentes para tu operacion',
+    subtitle: 'Flujos inteligentes para tu operación',
     description:
-      'Disenamos e implementamos automatizaciones personalizadas con IA: scraping, procesamiento de datos, integraciones API, agentes LLM, notificaciones y mas. Pensado para empresas que quieren escalar sin sumar personal.',
+      'Diseñamos e implementamos automatizaciones personalizadas con IA: scraping, procesamiento de datos, integraciones API, agentes LLM, notificaciones y más. Pensado para empresas que quieren escalar sin sumar personal.',
     highlights: [
       'Integraciones API ilimitadas',
       'Agentes IA con GPT, Claude, Gemini y Groq',
@@ -270,7 +270,7 @@ const solutions: Solution[] = [
     ],
     gradient: 'from-slate-600 to-slate-800',
     bgGlow: 'bg-slate-500/10',
-    waMsg: 'Hola! Necesito una automatizacion a medida. Quiero recibir mas informacion.',
+    waMsg: '¡Hola! Necesito una automatización a medida. Quiero recibir más información.',
   },
 ]
 
@@ -285,7 +285,7 @@ export function LandingSolutions() {
             viewport={{ once: true }}
             className="text-brand-600 font-semibold text-sm uppercase tracking-wider mb-3"
           >
-            Soluciones especificas
+            Soluciones específicas
           </motion.p>
           <motion.h2
             initial={{ opacity: 0, y: 16 }}
@@ -303,7 +303,7 @@ export function LandingSolutions() {
             className="text-lg text-surface-500"
           >
             Implementaciones que ya hicimos para otros clientes y que adaptamos a tu negocio. Cada
-            solucion se cotiza segun tu caso.
+            solución se cotiza según tu caso.
           </motion.p>
         </div>
 

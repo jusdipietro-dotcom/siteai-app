@@ -37,7 +37,7 @@ export function Footer() {
               <span className="text-lg font-bold text-white">Automatic IA Lab</span>
             </div>
             <p className="text-sm text-surface-500 leading-relaxed max-w-xs">
-              Plataforma de automatizacion con IA. 11 productos para escalar tu negocio: sitios web, monitoreo judicial, prospeccion B2B, email marketing, resenas, LinkedIn, trading y mas.
+              Plataforma de automatización con IA. 11 productos para escalar tu negocio: sitios web, monitoreo judicial, prospección B2B, email marketing, reseñas, LinkedIn, trading y más.
             </p>
           </div>
 
