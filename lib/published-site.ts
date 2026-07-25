@@ -18,6 +18,7 @@ import {
   parseSeoKeywords,
 } from '@/lib/site-seo'
 import { normalizeSubdomain, validateSubdomain } from '@/lib/subdomain'
+import { normalizeCustomDomain, isValidCustomDomain } from '@/lib/custom-domain'
 import type { BusinessData } from '@/types'
 
 /**
@@ -94,6 +95,24 @@ export async function findPublishedProjectBySubdomain(
   if (!validateSubdomain(normalized).valid) return null
   return prisma.project.findFirst({
     where: { subdomain: normalized, ...publishedGate() },
+  })
+}
+
+/**
+ * Resolves a published project by its custom domain, or null.
+ *
+ * Only an ACTIVE custom domain matches: a 'pending'/'verified' domain has no
+ * cert/route in Traefik yet, so traffic could not reach us on it anyway, and
+ * refusing to serve it here keeps the render gate honest. The host is
+ * normalized (scheme/port/www stripped) the same way it is stored.
+ */
+export async function findPublishedProjectByCustomDomain(
+  host: string
+): Promise<Project | null> {
+  const normalized = normalizeCustomDomain(host)
+  if (!normalized || !isValidCustomDomain(normalized)) return null
+  return prisma.project.findFirst({
+    where: { customDomain: normalized, customDomainStatus: 'active', ...publishedGate() },
   })
 }
 

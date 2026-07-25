@@ -188,6 +188,8 @@ export function deserializeProject(row: any): Project {
     name: row.name,
     slug: row.slug,
     subdomain: row.subdomain ?? undefined,
+    customDomain: row.customDomain ?? undefined,
+    customDomainStatus: row.customDomainStatus ?? 'none',
     status: row.status,
     plan: row.plan,
     hasPaid: row.hasPaid,

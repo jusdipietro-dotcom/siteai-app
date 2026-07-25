@@ -88,11 +88,23 @@ export function extractSiteSubdomain(host: string): string | null {
   return null
 }
 
-/** Canonical public URL of a published project. Subdomain wins when set. */
+/**
+ * Canonical public URL of a published project.
+ *
+ * Precedence: an ACTIVE custom domain wins (it is the client's real home and
+ * what should be canonical for SEO), then the subdomain, then the path URL. A
+ * custom domain that is not yet 'active' is ignored — it does not resolve yet,
+ * so declaring it canonical would point search engines at a dead host.
+ */
 export function publishedSiteUrl(project: {
   slug: string
   subdomain: string | null
+  customDomain?: string | null
+  customDomainStatus?: string | null
 }): string {
+  if (project.customDomain && project.customDomainStatus === 'active') {
+    return `https://${project.customDomain}`
+  }
   return project.subdomain
     ? `https://${project.subdomain}.${SITES_SUBDOMAIN_BASE}`
     : `https://${SITES_DOMAIN}/${project.slug}`

@@ -493,6 +493,17 @@ model Project {
   // case-sensitive, so normalization is what stops "Foo" and "foo" coexisting.
   // Nullable and plan-agnostic on purpose — free projects keep the path URL.
   subdomain     String?  @unique
+  // Custom domain (Professional): the client's own domain, e.g. "tunegocio.com.ar".
+  // Lowercase and unique. Routing + TLS are provisioned in Traefik out of band
+  // (the app never holds panel credentials — see the domain flow), and the
+  // status column tracks that lifecycle:
+  //   'none'     — not configured
+  //   'pending'  — entered, DNS not yet pointing at us
+  //   'verified' — DNS resolves to our IP, ready to activate in Traefik
+  //   'active'   — activated (certificate issued), serving over the domain
+  customDomain            String?   @unique
+  customDomainStatus      String    @default("none")
+  customDomainVerifiedAt  DateTime?
   status        String   @default("draft")
   plan          String   @default("free")
   hasPaid       Boolean  @default(false)

@@ -9,9 +9,8 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { SubdomainPicker } from '@/components/dashboard/SubdomainPicker'
+import { CustomDomainCard } from '@/components/dashboard/CustomDomainCard'
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
 import { WEBSITE_PLANS, formatARS } from '@/lib/website-plans'
 import { publishedSiteUrl } from '@/lib/site-domain'
@@ -28,7 +27,6 @@ export default function PublishPage() {
   const [publishing, setPublishing] = useState(false)
   const [published, setPublished] = useState(project?.status === 'published')
   const [showSuccess, setShowSuccess] = useState(false)
-  const [customDomain, setCustomDomain] = useState('')
   const [confirmUnpublish, setConfirmUnpublish] = useState(false)
   const [unpublishing, setUnpublishing] = useState(false)
   const [confirmCancel, setConfirmCancel] = useState(false)
@@ -330,26 +328,12 @@ export default function PublishPage() {
           )}
         </div>
 
-        {/* Custom domain — not implemented yet, deliberately disabled */}
-        <div className="bg-white rounded-2xl border border-surface-100 p-6 space-y-4">
-          <div>
-            <h2 className="font-semibold text-surface-900">Dominio personalizado</h2>
-            <p className="text-xs text-surface-400 mt-0.5">Todavía no está disponible. Por ahora tu sitio usa la dirección de arriba.</p>
-          </div>
-          <div className="space-y-1.5">
-            <Label>Tu dominio</Label>
-            <div className="flex gap-2">
-              <Input
-                value={customDomain}
-                onChange={(e) => setCustomDomain(e.target.value)}
-                placeholder="tunegocio.com"
-                className="flex-1"
-                disabled
-              />
-              <Button variant="outline" disabled>Conectar</Button>
-            </div>
-          </div>
-        </div>
+        {/* Custom domain — assisted-activation flow */}
+        <CustomDomainCard
+          projectId={id}
+          initialDomain={project.customDomain}
+          initialStatus={project.customDomainStatus}
+        />
 
         {/* Publish button */}
         <div className="bg-white rounded-2xl border border-surface-100 p-6 space-y-4">

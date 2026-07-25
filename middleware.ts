@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 import { extractSiteSubdomain, isSitesPathHost } from '@/lib/site-domain'
+import { isCustomDomainHost, normalizeCustomDomain } from '@/lib/custom-domain'
 import {
   REQUEST_ID_HEADER,
   resolveRequestId,
@@ -149,6 +150,26 @@ async function route(req: NextRequest, resolved: ResolvedRequestId): Promise<Nex
     }
 
     return forward(req, resolved)
+  }
+
+  // ── Site routing by custom domain: cliente.com → /d/{host} ──────────────────
+  //
+  // Any host that is not the platform (automaticialab.com and its subdomains)
+  // yet reached this service was routed here by Traefik because it is a client's
+  // own domain. Host parsing only — the project lookup by customDomain happens
+  // in the /d route, since Prisma cannot run on the Edge. `isCustomDomainHost`
+  // already excludes platform hosts and malformed values, so a stray host falls
+  // through to the app untouched.
+  if (isCustomDomainHost(hostname)) {
+    if (isFrameworkPath(pathname) || (pathname !== '/' && STATIC_FILE_RE.test(pathname))) {
+      return forward(req, resolved)
+    }
+    const host = normalizeCustomDomain(hostname)
+    const url = req.nextUrl.clone()
+    url.pathname = pathname === '/' ? `/d/${host}` : `/d/${host}${pathname}`
+    return NextResponse.rewrite(url, {
+      request: { headers: withCorrelationHeaders(req.headers, resolved) },
+    })
   }
 
   // ── Public routes that start with a protected prefix ────────────────────────

@@ -127,6 +127,12 @@ export interface Project {
   slug: string
   /** Custom subdomain, always lowercase. null clears it. */
   subdomain?: string | null
+  /**
+   * Custom domain (Professional). Server-controlled — written only via
+   * /api/domains (never client-writable), so it is read-only for the dashboard.
+   */
+  customDomain?: string | null
+  customDomainStatus?: 'none' | 'pending' | 'verified' | 'active'
   status: ProjectStatus
   plan: Plan
   hasPaid?: boolean
