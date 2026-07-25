@@ -6,7 +6,7 @@ export type DevicePreview = 'desktop' | 'tablet' | 'mobile'
 export type SectionType =
   | 'hero' | 'about' | 'services' | 'gallery' | 'testimonials'
   | 'faq' | 'contact' | 'cta' | 'stats' | 'features' | 'team'
-  | 'pricing' | 'footer'
+  | 'pricing' | 'hours' | 'footer'
 
 export interface SectionConfig {
   id: SectionType

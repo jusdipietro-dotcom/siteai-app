@@ -51,6 +51,7 @@ const ALL_SECTIONS: { id: SectionType; label: string; desc: string; required?: b
   { id: 'pricing',      label: 'Precios',            desc: 'Tabla de planes o tarifas',           emoji: '💰' },
   { id: 'stats',        label: 'Estadísticas',       desc: 'Números que transmiten confianza',    emoji: '📊' },
   { id: 'cta',          label: 'Llamada a la acción', desc: 'Sección con botón de contacto',      emoji: '📣' },
+  { id: 'hours',        label: 'Horarios y ubicación', desc: 'Mapa, dirección y horarios',        emoji: '📍' },
   { id: 'contact',      label: 'Contacto',           desc: 'Formulario y datos de contacto',      required: true,  emoji: '📞' },
   { id: 'footer',       label: 'Footer',             desc: 'Pie de página con links y legal',     required: true,  emoji: '📌' },
 ]

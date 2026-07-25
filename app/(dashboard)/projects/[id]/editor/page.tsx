@@ -38,6 +38,7 @@ const SECTION_ICONS: Record<SectionType, React.ReactNode> = {
   features:     <CheckSquare className="h-3.5 w-3.5" />,
   team:         <Star className="h-3.5 w-3.5" />,
   pricing:      <Star className="h-3.5 w-3.5" />,
+  hours:        <MapPin className="h-3.5 w-3.5" />,
   footer:       <AlignLeft className="h-3.5 w-3.5" />,
 }
 

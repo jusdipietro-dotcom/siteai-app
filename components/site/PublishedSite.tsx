@@ -5,6 +5,7 @@ import { CtaSection } from '@/components/site/sections/CtaSection'
 import { FaqSection } from '@/components/site/sections/FaqSection'
 import { GallerySection } from '@/components/site/sections/GallerySection'
 import { HeroSection } from '@/components/site/sections/HeroSection'
+import { LocationSection } from '@/components/site/sections/LocationSection'
 import { PricingSection } from '@/components/site/sections/PricingSection'
 import { ServicesSection } from '@/components/site/sections/ServicesSection'
 import { StatsSection } from '@/components/site/sections/StatsSection'
@@ -39,6 +40,7 @@ const NAV_META: Partial<Record<SectionType, { anchor: string; label: string }>> 
   testimonials: { anchor: 'testimonios', label: 'Testimonios' },
   team: { anchor: 'equipo', label: 'Equipo' },
   faq: { anchor: 'faq', label: 'Preguntas' },
+  hours: { anchor: 'ubicacion', label: 'Ubicación' },
   contact: { anchor: 'contacto', label: 'Contacto' },
 }
 
@@ -89,6 +91,10 @@ export function PublishedSite({ project: row }: { project: Project }) {
         return !!bd.faqs?.length
       case 'stats':
         return !!bd.stats?.length
+      case 'hours':
+        // The location section is worth rendering only when there is an address
+        // to map. Schedule/phone alone would have nothing to show on a map.
+        return !!bd.contact?.address?.trim()
       case 'hero':
       case 'cta':
       case 'contact':
@@ -253,6 +259,9 @@ export function PublishedSite({ project: row }: { project: Project }) {
 
       case 'cta':
         return <CtaSection key="cta" showContact={showContact} />
+
+      case 'hours':
+        return <LocationSection key="hours" anchor={NAV_META.hours!.anchor} contact={bd.contact} color={color} />
 
       case 'contact':
         return (
@@ -443,6 +452,17 @@ export function PublishedSite({ project: row }: { project: Project }) {
           .svc-list-desc { font-size: 0.9rem; }
           .svc-list-price { font-weight: 700; font-size: 0.9rem; margin-top: 0.4rem; }
           @media (max-width: 768px) { .svc-list { grid-template-columns: 1fr; gap: 1.25rem; } }
+          /* Location (horarios y ubicación) — map + info card */
+          .location-section { background: #f8fafc; }
+          .location-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 2rem; align-items: stretch; }
+          .location-map { border-radius: 1.25rem; overflow: hidden; min-height: 340px; box-shadow: 0 12px 40px rgba(0,0,0,.1); }
+          .location-map iframe { width: 100%; height: 100%; min-height: 340px; border: 0; display: block; }
+          .location-info { display: flex; flex-direction: column; gap: 1.25rem; justify-content: center; }
+          .location-item { display: flex; gap: 0.85rem; align-items: flex-start; }
+          .location-icon { font-size: 1.25rem; flex-shrink: 0; line-height: 1.3; }
+          .location-item-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #94a3b8; margin-bottom: 0.15rem; }
+          .location-item-value { color: #334155; font-size: 0.95rem; line-height: 1.5; }
+          @media (max-width: 768px) { .location-grid { grid-template-columns: 1fr; } .location-map, .location-map iframe { min-height: 260px; } }
           /* Gallery */
           .gallery-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 0.75rem; }
           .gallery-item { aspect-ratio: 1/1; border-radius: 0.75rem; overflow: hidden; background: #e2e8f0; }

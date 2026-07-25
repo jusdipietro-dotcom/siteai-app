@@ -49,6 +49,7 @@ const SECTION_LABELS: Partial<Record<SectionType, string>> = {
   team: 'Equipo',
   faq: 'Preguntas frecuentes',
   stats: 'Estadísticas',
+  hours: 'Horarios y ubicación',
   contact: 'Contacto',
 }
 
@@ -77,6 +78,9 @@ function sectionHasContent(id: SectionType, bd: BusinessData): boolean {
       return !!bd.faqs?.length
     case 'stats':
       return !!bd.stats?.length
+    case 'hours':
+      // Mirrors PublishedSite: the location section needs an address to map.
+      return !!bd.contact?.address?.trim()
     // Always-render sections and anything outside the content gate.
     default:
       return true

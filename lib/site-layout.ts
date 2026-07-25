@@ -107,16 +107,16 @@ export function servicesLayoutFor(template?: string | null): ServicesLayout {
   incoming relative order, after the listed ones.
 */
 const DEFAULT_ORDER: SectionType[] = [
-  'hero', 'services', 'about', 'gallery', 'pricing', 'testimonials', 'team', 'stats', 'faq', 'cta', 'contact', 'footer',
+  'hero', 'services', 'about', 'gallery', 'pricing', 'testimonials', 'team', 'stats', 'faq', 'cta', 'hours', 'contact', 'footer',
 ]
 
 const SECTION_ORDER_BY_TEMPLATE: Record<string, SectionType[]> = {
-  restaurant: ['hero', 'gallery', 'services', 'pricing', 'testimonials', 'about', 'stats', 'faq', 'team', 'cta', 'contact', 'footer'],
-  legal: ['hero', 'services', 'about', 'stats', 'team', 'testimonials', 'faq', 'cta', 'contact', 'footer'],
-  medical: ['hero', 'services', 'about', 'team', 'stats', 'faq', 'testimonials', 'cta', 'contact', 'footer'],
-  realty: ['hero', 'gallery', 'services', 'about', 'testimonials', 'stats', 'faq', 'cta', 'contact', 'footer'],
-  fitness: ['hero', 'services', 'gallery', 'stats', 'pricing', 'testimonials', 'team', 'faq', 'cta', 'contact', 'footer'],
-  boutique: ['hero', 'gallery', 'services', 'testimonials', 'about', 'stats', 'faq', 'cta', 'contact', 'footer'],
+  restaurant: ['hero', 'gallery', 'services', 'pricing', 'testimonials', 'about', 'stats', 'faq', 'team', 'cta', 'hours', 'contact', 'footer'],
+  legal: ['hero', 'services', 'about', 'stats', 'team', 'testimonials', 'faq', 'cta', 'hours', 'contact', 'footer'],
+  medical: ['hero', 'services', 'about', 'team', 'stats', 'faq', 'testimonials', 'cta', 'hours', 'contact', 'footer'],
+  realty: ['hero', 'gallery', 'services', 'about', 'testimonials', 'stats', 'faq', 'cta', 'hours', 'contact', 'footer'],
+  fitness: ['hero', 'services', 'gallery', 'stats', 'pricing', 'testimonials', 'team', 'faq', 'cta', 'hours', 'contact', 'footer'],
+  boutique: ['hero', 'gallery', 'services', 'testimonials', 'about', 'stats', 'faq', 'cta', 'hours', 'contact', 'footer'],
 }
 
 /** Preferred section order for a template. Unknown/missing → the default order. */

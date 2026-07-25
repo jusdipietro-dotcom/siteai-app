@@ -37,6 +37,10 @@ const nextConfig = {
               "img-src 'self' data: https: blob:",
               "font-src 'self' https://fonts.gstatic.com",
               "connect-src 'self' https://www.google-analytics.com https://vitals.vercel-insights.com https://api.automaticialab.com",
+              // Google Maps embed (keyless output=embed) for the published-site
+              // location section. frame-ancestors below still forbids US being
+              // embedded; this only allows what WE embed.
+              "frame-src 'self' https://www.google.com https://maps.google.com",
               "frame-ancestors 'none'",
             ].join('; '),
           },
