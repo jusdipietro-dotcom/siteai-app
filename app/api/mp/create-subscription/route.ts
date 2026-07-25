@@ -125,7 +125,11 @@ export async function POST(req: NextRequest) {
       auto_recurring: {
         frequency: isAnnual ? 12 : 1,
         frequency_type: 'months',
-        transaction_amount: isAnnual ? config.annual : config.monthly,
+        // `annual` is the per-MONTH equivalent price; the annual charge bills the
+        // whole year up front (frequency 12 months), so it must be ×12. Without
+        // this MercadoPago would charge one month's price once a year — the
+        // annual plan would cost less than a twelfth of what it should.
+        transaction_amount: isAnnual ? config.annual * 12 : config.monthly,
         currency_id: 'ARS',
       },
       back_url: backUrl,

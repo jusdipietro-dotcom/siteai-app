@@ -57,7 +57,9 @@ function CheckoutContent() {
   const project = projects.find((p) => p.id === id)
 
   const billingParam = searchParams.get('billing')
-  const isAnnual = billingParam === 'annual'
+  // Local state (not a bare param) so the plan screen can offer a monthly/annual
+  // toggle. Initialised from ?billing=annual for links that arrive pre-set.
+  const [isAnnual, setIsAnnual] = useState(billingParam === 'annual')
 
   const [selectedPlan, setSelectedPlan] = useState<Plan>('essential')
   /**
@@ -330,6 +332,13 @@ function CheckoutContent() {
   }
 
   const plan = PLANS.find((p) => p.id === selectedPlan)!
+  // What MercadoPago charges TODAY: the monthly price, or the full year up front
+  // for annual (per-month price ×12). The card shows the per-month figure; the
+  // summary and button show what actually gets charged so nothing surprises the
+  // customer at MercadoPago.
+  const chargedToday = formatARS(
+    isAnnual ? websitePlanPrice(selectedPlan, true) * 12 : websitePlanPrice(selectedPlan, false)
+  )
 
   return (
     <div className="min-h-screen bg-surface-50">
@@ -414,9 +423,32 @@ function CheckoutContent() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
             >
-              <p className="text-sm text-surface-500 text-center mb-8">
+              <p className="text-sm text-surface-500 text-center mb-6">
                 La vista previa es gratuita. Para publicar tu sitio, elegí el plan que mejor se adapta.
               </p>
+
+              {/* Monthly / annual toggle. Annual is the price promoted on the
+                  register screen, so it has to be selectable here — not only via
+                  a ?billing=annual link. Both plans are 40% cheaper annually. */}
+              <div className="flex justify-center mb-8">
+                <div className="inline-flex items-center bg-surface-100 rounded-xl p-1 gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setIsAnnual(false)}
+                    className={`px-5 h-9 rounded-lg text-sm font-semibold transition-colors ${!isAnnual ? 'bg-white text-surface-900 shadow-sm' : 'text-surface-500 hover:text-surface-800'}`}
+                  >
+                    Mensual
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsAnnual(true)}
+                    className={`px-5 h-9 rounded-lg text-sm font-semibold transition-colors flex items-center gap-2 ${isAnnual ? 'bg-white text-surface-900 shadow-sm' : 'text-surface-500 hover:text-surface-800'}`}
+                  >
+                    Anual
+                    <span className="text-[10px] font-bold text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded-full">−40%</span>
+                  </button>
+                </div>
+              </div>
 
               {/* Says out loud that the choice was carried over, and that it is
                   still the customer's to change. Nothing is auto-submitted: this
@@ -534,7 +566,7 @@ function CheckoutContent() {
                       value={payerEmail}
                       onChange={(e) => setPayerEmail(e.target.value)}
                       placeholder="tunombre@email.com"
-                      className="field-input pl-9"
+                      className="field-input-icon pl-9"
                     />
                   </div>
                   <p className="text-xs text-surface-400 mt-1">
@@ -549,7 +581,7 @@ function CheckoutContent() {
                     {[
                       'Te redirigimos al checkout seguro de MercadoPago',
                       'Ingresás tu tarjeta de crédito o débito (único medio disponible para suscripciones)',
-                      `MP te cobra ${plan.price} hoy y luego automáticamente cada mes`,
+                      `MP te cobra ${chargedToday} hoy y luego automáticamente cada ${isAnnual ? 'año' : 'mes'}`,
                       'Volvés aquí con tu suscripción activa y el sitio listo para publicar',
                     ].map((item, i) => (
                       <li key={i} className="flex gap-2.5">
@@ -587,7 +619,7 @@ function CheckoutContent() {
                         <circle cx="24" cy="24" r="24" fill="white" />
                         <path d="M10 24C10 16.268 16.268 10 24 10C27.866 10 31.366 11.567 33.9 14.1L37.8 10.2C34.267 6.933 29.383 5 24 5C13.507 5 5 13.507 5 24C5 34.493 13.507 43 24 43C34.493 43 43 34.493 43 24H37.5C37.5 31.456 31.456 37.5 24 37.5C16.544 37.5 10.5 31.456 10.5 24H10Z" fill="#009EE3" />
                       </svg>
-                      Suscribirse con MercadoPago — {plan.price}/mes
+                      Suscribirse con MercadoPago — {chargedToday}{isAnnual ? '/año' : '/mes'}
                     </>
                   )}
                 </button>
@@ -691,11 +723,11 @@ function CheckoutContent() {
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-surface-600">Frecuencia</span>
-                      <span className="text-surface-500 text-xs">Mensual · automático</span>
+                      <span className="text-surface-500 text-xs">{isAnnual ? 'Anual · automático' : 'Mensual · automático'}</span>
                     </div>
                     <div className="border-t border-surface-100 pt-3 flex justify-between font-bold">
                       <span className="text-surface-900">Total hoy</span>
-                      <span className="text-brand-600">{plan.price}</span>
+                      <span className="text-brand-600">{chargedToday}</span>
                     </div>
                   </div>
                 </div>
