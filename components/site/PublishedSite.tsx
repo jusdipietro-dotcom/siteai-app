@@ -14,6 +14,7 @@ import { parseJSON } from '@/lib/published-site'
 import { resolveSiteFonts } from '@/lib/site-fonts'
 import { safeImg } from '@/lib/site-images'
 import { publishedSiteUrl } from '@/lib/site-domain'
+import { heroVariantFor } from '@/lib/site-layout'
 import {
   absoluteSiteImageUrl,
   buildSiteStructuredData,
@@ -189,6 +190,7 @@ export function PublishedSite({ project: row }: { project: Project }) {
             heroImage={heroImg}
             showContact={showContact}
             showServices={shows('services')}
+            variant={heroVariantFor(row.template)}
           />
         )
 
@@ -380,6 +382,31 @@ export function PublishedSite({ project: row }: { project: Project }) {
           .hero h1 { font-size: clamp(2.25rem, 6vw, 4rem); font-weight: 900; line-height: 1.04; margin-bottom: 1rem; }
           .hero-tagline { font-size: 1.1rem; opacity: 0.9; margin-bottom: 2rem; line-height: 1.7; }
           .hero-cta { display: flex; gap: 1rem; flex-wrap: wrap; }
+          /* Hero variants (per-template composition — lib/site-layout.ts).
+             centered is the base above; these three redefine composition only. */
+          /* fullphoto: photo carries the page, text centered */
+          .hero--fullphoto .hero-bg { opacity: 0.62; }
+          .hero--fullphoto::before { background: linear-gradient(180deg, rgba(0,0,0,.5) 0%, rgba(0,0,0,.32) 100%); }
+          .hero--fullphoto .hero-content { max-width: 760px; margin: 0 auto; text-align: center; }
+          .hero--fullphoto .hero-cta { justify-content: center; }
+          /* sobrio: typographic, photo reduced to a faint texture, dark text on light */
+          .hero--sobrio { background: linear-gradient(135deg, ${color}14 0%, #ffffff 100%); }
+          .hero--sobrio .hero-bg { opacity: 0.07; }
+          .hero--sobrio::before { background: none; }
+          .hero--sobrio .hero-content { color: #0f172a; max-width: 820px; margin: 0 auto; text-align: center; }
+          .hero--sobrio .hero-badge { background: ${color}18; color: ${color}; }
+          .hero--sobrio .hero-tagline { color: #475569; opacity: 1; }
+          .hero--sobrio .btn-outline { color: ${color}; border-color: ${color}66; }
+          .hero--sobrio .btn-outline:hover { background: ${color}12; }
+          /* split: text panel beside a framed photo (no background photo) */
+          .hero--split { min-height: auto; padding: 4.5rem 0; }
+          .hero--split .hero-split-inner { display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; align-items: center; width: 100%; position: relative; z-index: 2; }
+          .hero--split .hero-content { max-width: 100%; }
+          .hero--split .hero-split-media img { width: 100%; height: 100%; max-height: 440px; object-fit: cover; border-radius: 1.5rem; box-shadow: 0 24px 60px rgba(0,0,0,.28); }
+          @media (max-width: 768px) {
+            .hero--split .hero-split-inner { grid-template-columns: 1fr; gap: 2rem; }
+            .hero--split .hero-split-media img { max-height: 240px; }
+          }
           /* Services */
           .service-card { border-top: 3px solid ${color}; }
           .service-emoji { font-size: 2rem; margin-bottom: 1rem; }
