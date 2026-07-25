@@ -218,6 +218,20 @@ export async function sendInquiryNotificationEmail(
  * public contact email, falling back to the account email. replyTo is the
  * visitor so the owner can answer with one tap.
  */
+/**
+ * Escapes HTML so a visitor-supplied value renders as text in the email instead
+ * of running. Public lead/inquiry forms feed straight into these templates, so
+ * a name like `<img src=x onerror=...>` must never reach the owner's inbox live.
+ */
+function escHtml(value: unknown): string {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 export async function sendSiteLeadNotificationEmail(params: {
   to: string
   businessName: string
@@ -231,10 +245,11 @@ export async function sendSiteLeadNotificationEmail(params: {
 }) {
   const { to, businessName, lead } = params
 
+  // Every lead value is visitor-supplied via the public form — HTML-escape all.
   const rows: Array<[string, string]> = [
-    ['Nombre', lead.name],
-    ['Email', lead.email],
-    ...(lead.phone ? [['Telefono', lead.phone] as [string, string]] : []),
+    ['Nombre', escHtml(lead.name)],
+    ['Email', escHtml(lead.email)],
+    ...(lead.phone ? [['Telefono', escHtml(lead.phone)] as [string, string]] : []),
   ]
   const rowsHtml = rows
     .map(
@@ -244,13 +259,13 @@ export async function sendSiteLeadNotificationEmail(params: {
     .join('')
 
   const html = emailWrapper(`Nuevo mensaje desde ${businessName}`, `
-    <p style="margin:0 0 12px"><strong>${lead.name}</strong> te dejo un mensaje desde el formulario de contacto de tu sitio.</p>
+    <p style="margin:0 0 12px"><strong>${escHtml(lead.name)}</strong> te dejo un mensaje desde el formulario de contacto de tu sitio.</p>
     <table style="width:100%;border-collapse:collapse;background:white;border-radius:8px;overflow:hidden;margin:16px 0">
       ${rowsHtml}
     </table>
     <p style="font-size:13px;color:#444;margin-top:16px"><strong>Mensaje:</strong></p>
-    <p style="background:white;padding:12px;border-radius:8px;font-size:14px;color:#222;white-space:pre-wrap">${lead.message}</p>
-    <p style="font-size:12px;color:#999;margin-top:16px">Respondele directamente a <a href="mailto:${lead.email}" style="color:#0099ff">${lead.email}</a>${lead.phone ? ` o llamalo al <strong>${lead.phone}</strong>` : ''}.</p>
+    <p style="background:white;padding:12px;border-radius:8px;font-size:14px;color:#222;white-space:pre-wrap">${escHtml(lead.message)}</p>
+    <p style="font-size:12px;color:#999;margin-top:16px">Respondele directamente a <a href="mailto:${encodeURIComponent(lead.email)}" style="color:#0099ff">${escHtml(lead.email)}</a>${lead.phone ? ` o llamalo al <strong>${escHtml(lead.phone)}</strong>` : ''}.</p>
   `)
 
   await transporter.sendMail({

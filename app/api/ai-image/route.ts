@@ -1,19 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
+import { checkRateLimit } from '@/lib/rate-limit'
 
-// Proxy for Pollinations.ai — avoids browser-side CORS/CSP restrictions
+// Proxy for Pollinations.ai — avoids browser-side CORS/CSP restrictions.
+// Gated: an unauthenticated, unlimited proxy to an expensive upstream (retries
+// with long timeouts, full response buffered in memory) is a cost/DoS vector.
+// Every other AI/media route requires a session; so does this now.
 export async function GET(req: NextRequest) {
-  const prompt = req.nextUrl.searchParams.get('prompt')
-  const seed = req.nextUrl.searchParams.get('seed') ?? '0'
-  const w = req.nextUrl.searchParams.get('w') ?? '1280'
-  const h = req.nextUrl.searchParams.get('h') ?? '720'
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+  }
+  const rl = checkRateLimit(`ai-image:${session.user.id}`, { maxRequests: 15, windowSeconds: 60 })
+  if (!rl.allowed) {
+    return NextResponse.json({ error: 'Demasiadas solicitudes. Esperá un momento.' }, { status: 429 })
+  }
 
-  if (!prompt) return new NextResponse(null, { status: 400 })
+  const prompt = req.nextUrl.searchParams.get('prompt')
+  const seed = String(parseInt(req.nextUrl.searchParams.get('seed') ?? '0', 10) || 0)
+  // Clamp dimensions — these go straight into the upstream URL, never trust raw.
+  const w = Math.min(Math.max(parseInt(req.nextUrl.searchParams.get('w') ?? '1280', 10) || 1280, 64), 2048)
+  const h = Math.min(Math.max(parseInt(req.nextUrl.searchParams.get('h') ?? '720', 10) || 720, 64), 2048)
+
+  if (!prompt || prompt.length > 800) return new NextResponse(null, { status: 400 })
 
   const pollinationsUrl =
     `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}` +
     `?width=${w}&height=${h}&nologo=true&model=flux&seed=${seed}&private=true`
 
-  const MAX_RETRIES = 4
+  const MAX_RETRIES = 2
   let lastError = ''
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
@@ -25,7 +41,7 @@ export async function GET(req: NextRequest) {
 
     try {
       const res = await fetch(urlForAttempt, {
-        signal: AbortSignal.timeout(60_000),
+        signal: AbortSignal.timeout(30_000),
         headers: { 'User-Agent': 'Mozilla/5.0' },
       })
 

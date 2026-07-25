@@ -31,6 +31,8 @@ export function CustomDomainCard({
   const [domain, setDomain] = useState(initialDomain ?? '')
   const [status, setStatus] = useState<DomainStatus>(initialStatus ?? 'none')
   const [targetIp, setTargetIp] = useState<string | null>(null)
+  const [verifyToken, setVerifyToken] = useState<string | null>(null)
+  const [verifyHost, setVerifyHost] = useState<string | null>(null)
   const [busy, setBusy] = useState<'' | 'set' | 'verify' | 'remove'>('')
   const [checkMsg, setCheckMsg] = useState('')
 
@@ -44,6 +46,8 @@ export function CustomDomainCard({
         if (!alive) return
         setTargetIp(d.targetIp ?? null)
         if (d.status) setStatus(d.status)
+        if (d.verifyToken) setVerifyToken(d.verifyToken)
+        if (d.verifyHost) setVerifyHost(d.verifyHost)
         if (d.domain) {
           setDomain(d.domain)
           setInput(d.domain)
@@ -77,6 +81,8 @@ export function CustomDomainCard({
       setDomain(d.domain)
       setStatus(d.status)
       setTargetIp(d.targetIp ?? targetIp)
+      setVerifyToken(d.verifyToken ?? null)
+      setVerifyHost(d.verifyHost ?? null)
       setCheckMsg('')
       toast.success('Dominio guardado. Configurá el DNS y verificá.')
     } catch (e) {
@@ -89,6 +95,8 @@ export function CustomDomainCard({
       const d = await call('verify')
       setStatus(d.status)
       setTargetIp(d.targetIp ?? targetIp)
+      if (d.verifyToken) setVerifyToken(d.verifyToken)
+      if (d.verifyHost) setVerifyHost(d.verifyHost)
       setCheckMsg(d.message || '')
       if (d.verified) toast.success('DNS verificado')
     } catch (e) {
@@ -102,6 +110,8 @@ export function CustomDomainCard({
       setDomain('')
       setInput('')
       setStatus('none')
+      setVerifyToken(null)
+      setVerifyHost(null)
       setCheckMsg('')
       toast.success('Dominio quitado')
     } catch (e) {
@@ -113,6 +123,13 @@ export function CustomDomainCard({
     if (targetIp) {
       navigator.clipboard.writeText(targetIp)
       toast.success('IP copiada')
+    }
+  }
+
+  const copyText = (value: string | null, label: string) => {
+    if (value) {
+      navigator.clipboard.writeText(value)
+      toast.success(`${label} copiado`)
     }
   }
 
@@ -165,23 +182,51 @@ export function CustomDomainCard({
 
           {status === 'pending' && (
             <>
-              <div className="rounded-xl border border-surface-200 bg-surface-50 p-4 space-y-3">
-                <p className="text-sm font-medium text-surface-800">1. Creá este registro en tu proveedor de dominio:</p>
-                <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-sm font-mono">
-                  <span className="text-surface-400">Tipo</span><span className="text-surface-800">A</span>
-                  <span className="text-surface-400">Nombre</span><span className="text-surface-800">@</span>
-                  <span className="text-surface-400">Valor</span>
-                  <span className="text-surface-800 flex items-center gap-2">
-                    {targetIp ?? 'cargando…'}
-                    {targetIp && (
-                      <button type="button" onClick={copyIp} title="Copiar IP" className="text-surface-400 hover:text-surface-700">
-                        <Copy className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                  </span>
+              <div className="rounded-xl border border-surface-200 bg-surface-50 p-4 space-y-4">
+                <div className="space-y-3">
+                  <p className="text-sm font-medium text-surface-800">1. Verificá que el dominio es tuyo con este registro TXT:</p>
+                  <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-sm font-mono">
+                    <span className="text-surface-400">Tipo</span><span className="text-surface-800">TXT</span>
+                    <span className="text-surface-400">Nombre</span>
+                    <span className="text-surface-800 flex items-center gap-2 break-all">
+                      {verifyHost ?? 'cargando…'}
+                      {verifyHost && (
+                        <button type="button" onClick={() => copyText(verifyHost, 'Nombre')} title="Copiar nombre" className="text-surface-400 hover:text-surface-700 shrink-0">
+                          <Copy className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </span>
+                    <span className="text-surface-400">Valor</span>
+                    <span className="text-surface-800 flex items-center gap-2 break-all">
+                      {verifyToken ?? 'cargando…'}
+                      {verifyToken && (
+                        <button type="button" onClick={() => copyText(verifyToken, 'Valor')} title="Copiar valor" className="text-surface-400 hover:text-surface-700 shrink-0">
+                          <Copy className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </span>
+                  </div>
                 </div>
+
+                <div className="space-y-3 border-t border-surface-200 pt-3">
+                  <p className="text-sm font-medium text-surface-800">2. Apuntá el dominio a nuestro servidor con este registro A:</p>
+                  <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-sm font-mono">
+                    <span className="text-surface-400">Tipo</span><span className="text-surface-800">A</span>
+                    <span className="text-surface-400">Nombre</span><span className="text-surface-800">@</span>
+                    <span className="text-surface-400">Valor</span>
+                    <span className="text-surface-800 flex items-center gap-2">
+                      {targetIp ?? 'cargando…'}
+                      {targetIp && (
+                        <button type="button" onClick={copyIp} title="Copiar IP" className="text-surface-400 hover:text-surface-700">
+                          <Copy className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </span>
+                  </div>
+                </div>
+
                 <p className="text-xs text-surface-400">
-                  2. Esperá a que propague (puede tardar hasta 48 hs) y verificá acá abajo.
+                  3. Esperá a que propague (puede tardar hasta 48 hs) y verificá acá abajo.
                 </p>
               </div>
 

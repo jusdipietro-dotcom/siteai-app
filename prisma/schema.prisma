@@ -504,6 +504,12 @@ model Project {
   customDomain            String?   @unique
   customDomainStatus      String    @default("none")
   customDomainVerifiedAt  DateTime?
+  // Per-project ownership challenge. The A record only proves the domain points
+  // at our SHARED host — not that the requester controls the domain. This random
+  // token must be published as a TXT record at _automaticialab-verify.{domain},
+  // which only the real DNS owner can do. Verify requires it in addition to the A
+  // record, so a paid user cannot squat a domain they don't actually own.
+  customDomainVerifyToken String?
   status        String   @default("draft")
   plan          String   @default("free")
   hasPaid       Boolean  @default(false)

@@ -100,8 +100,10 @@ export async function POST(req: NextRequest) {
     const requestProto = req.headers.get('x-forwarded-proto') ?? 'https'
     const baseUrl = configuredUrl ?? `${requestProto}://${requestHost}`
 
-    // MP redirige al back_url y agrega ?preapproval_id=XXX automáticamente
-    const backUrl = `${baseUrl}/projects/${projectId}/checkout?mp_return=true`
+    // MP redirige al back_url y agrega ?preapproval_id=XXX automáticamente.
+    // Carry billing=annual back so the return/success screen shows the right
+    // amount and cadence (otherwise it falls back to monthly on the round trip).
+    const backUrl = `${baseUrl}/projects/${projectId}/checkout?mp_return=true${isAnnual ? '&billing=annual' : ''}`
 
     // Deliberately NO `start_date`: MercadoPago starts the billing cycle when
     // the payer authorises the subscription, which is what we want.

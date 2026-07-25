@@ -1600,7 +1600,20 @@ export async function POST(req: NextRequest) {
         // Recovery. Restores billing state only — no content is touched, so a
         // site that comes back is the same site it was before.
         const { count } = await prisma.project.updateMany({
-          where: { id: project.id, billingStatus: { in: ['grace', 'suspended'] } },
+          // A DELIBERATE cancellation must not be undone by a later approved
+          // charge (a final settled payment can land after the owner cancelled).
+          // Only payment_failed suspensions recover automatically on payment.
+          // Matched POSITIVELY (grace, or suspended-for-payment_failed) rather
+          // than "NOT cancelled": a `NOT: { suspendedReason: 'cancelled' }` filter
+          // excludes rows where suspendedReason IS NULL (SQL three-valued logic),
+          // which would fail to recover a grace project whose reason is null.
+          where: {
+            id: project.id,
+            OR: [
+              { billingStatus: 'grace' },
+              { billingStatus: 'suspended', suspendedReason: 'payment_failed' },
+            ],
+          },
           data: {
             billingStatus: 'active',
             graceUntil: null,

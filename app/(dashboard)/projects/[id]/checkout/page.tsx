@@ -861,7 +861,7 @@ function CheckoutContent() {
                 </p>
               ) : (
                 <p className="text-surface-400 text-xs mb-8">
-                  MercadoPago debitará {plan.price} automáticamente cada mes.
+                  MercadoPago debitará {chargedToday} automáticamente cada {isAnnual ? 'año' : 'mes'}.
                   Podés gestionar o cancelar desde tu cuenta MP.
                 </p>
               )}

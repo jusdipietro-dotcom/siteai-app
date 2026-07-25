@@ -62,9 +62,17 @@ export function checkRateLimit(
  * Get client IP from request headers.
  */
 export function getClientIp(req: Request): string {
+  // X-Real-IP is set by our own Traefik and is not client-controllable — prefer
+  // it. X-Forwarded-For is client-APPENDABLE at the first position (Traefik adds
+  // the real IP AFTER the caller's value), so taking split(',')[0] let anyone
+  // forge their rate-limit key with a random XFF and empty every bucket. If we
+  // ever fall back to XFF, use the LAST hop — the one our proxy added.
+  const realIp = req.headers.get('x-real-ip')
+  if (realIp) return realIp.trim()
   const forwarded = req.headers.get('x-forwarded-for')
   if (forwarded) {
-    return forwarded.split(',')[0].trim()
+    const hops = forwarded.split(',').map((s) => s.trim()).filter(Boolean)
+    return hops[hops.length - 1] || 'unknown'
   }
-  return req.headers.get('x-real-ip') || 'unknown'
+  return 'unknown'
 }
