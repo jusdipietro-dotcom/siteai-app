@@ -98,7 +98,9 @@ describe('serializeProjectFromClient — billing fields are stripped', () => {
     }) as Record<string, unknown>
 
     expect(result.name).toBe('Panaderia')
-    expect(result.slug).toBe('panaderia')
+    // slug is NOT client-writable — stripped so a client cannot PUT their slug to
+    // another project's value and hijack that public URL. Generated server-side.
+    expect(result.slug).toBeUndefined()
     expect(result.template).toBe('modern')
     expect(result.thumbnail).toBe('thumb.png')
     expect(result.coverImageId).toBe('cover-1')
@@ -195,7 +197,8 @@ describe('serializeProjectFromClient — prototype-pollution payloads', () => {
     ) as Record<string, unknown>
 
     expect(result.name).toBe('from-prototype')
-    expect(result.slug).toBe('from-prototype')
+    // slug is no longer an allowed field, so it is not read even via the prototype.
+    expect(result.slug).toBeUndefined()
   })
 
   /**

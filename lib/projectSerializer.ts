@@ -24,7 +24,10 @@ import { parseJSON } from '@/lib/published-site'
  */
 const CLIENT_WRITABLE_FIELDS = [
   'name',
-  'slug',
+  // `slug` is NOT here: it is the public URL key (/s/{slug}). Client-writable +
+  // no unique index let a client PUT their slug to another project's value and
+  // hijack that public URL. It is now generated server-side at creation (see
+  // app/api/projects POST) and never changes.
   'template',
   'businessData',
   'sections',

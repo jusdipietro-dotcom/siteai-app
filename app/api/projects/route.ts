@@ -10,6 +10,7 @@ import {
   InvalidStatusError,
 } from '@/lib/projectSerializer'
 import { isSubdomainConflict } from '@/lib/prismaErrors'
+import { slugify } from '@/lib/utils'
 
 export async function GET() {
   const session = await getServerSession(authOptions)
@@ -56,11 +57,18 @@ export async function POST(req: NextRequest) {
     throw err
   }
 
+  // Slug is generated server-side, never taken from the client — see the note in
+  // CLIENT_WRITABLE_FIELDS. Derived from the name with a short unique suffix so
+  // the public URL is readable and collisions are effectively impossible.
+  const rawName = typeof (body as Record<string, unknown>)?.name === 'string' ? (body as { name: string }).name : ''
+  const slug = `${slugify(rawName) || 'sitio'}-${Date.now().toString(36)}`
+
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const row = await (prisma.project.create as any)({
       data: {
         ...serialized,
+        slug,
         ...(status !== undefined && { status }),
         userId: session.user.id,
       },

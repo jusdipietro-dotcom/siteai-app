@@ -94,6 +94,19 @@ function forward(req: NextRequest, resolved: ResolvedRequestId): NextResponse {
   })
 }
 
+/**
+ * Request headers for a PUBLISHED-SITE route (/s, /sub, /d, /preview): the
+ * correlation id plus `x-published-site`, which the root layout reads to drop
+ * the platform chrome (Google Analytics, command palette, agency WhatsApp) from
+ * a client's site — otherwise the client's visitors land in our GA and the
+ * agency widgets show up on a site the client is paying for.
+ */
+function siteHeaders(req: NextRequest, resolved: ResolvedRequestId): Headers {
+  const h = withCorrelationHeaders(req.headers, resolved)
+  h.set('x-published-site', '1')
+  return h
+}
+
 async function route(req: NextRequest, resolved: ResolvedRequestId): Promise<NextResponse> {
   const hostname = req.headers.get('host') ?? ''
   const { pathname } = req.nextUrl
@@ -122,7 +135,7 @@ async function route(req: NextRequest, resolved: ResolvedRequestId): Promise<Nex
     const url = req.nextUrl.clone()
     url.pathname = pathname === '/' ? `/sub/${siteSubdomain}` : `/sub/${siteSubdomain}${pathname}`
     return NextResponse.rewrite(url, {
-      request: { headers: withCorrelationHeaders(req.headers, resolved) },
+      request: { headers: siteHeaders(req, resolved) },
     })
   }
 
@@ -145,7 +158,7 @@ async function route(req: NextRequest, resolved: ResolvedRequestId): Promise<Nex
       const url = req.nextUrl.clone()
       url.pathname = `/s/${pathname.slice(1)}`
       return NextResponse.rewrite(url, {
-        request: { headers: withCorrelationHeaders(req.headers, resolved) },
+        request: { headers: siteHeaders(req, resolved) },
       })
     }
 
@@ -168,8 +181,15 @@ async function route(req: NextRequest, resolved: ResolvedRequestId): Promise<Nex
     const url = req.nextUrl.clone()
     url.pathname = pathname === '/' ? `/d/${host}` : `/d/${host}${pathname}`
     return NextResponse.rewrite(url, {
-      request: { headers: withCorrelationHeaders(req.headers, resolved) },
+      request: { headers: siteHeaders(req, resolved) },
     })
+  }
+
+  // ── Owner preview: /preview/[id] renders PublishedSite too ──────────────────
+  // Not host-rewritten (it is a real path), but it must also drop the platform
+  // chrome so the editor's preview iframe shows the client site cleanly.
+  if (pathname.startsWith('/preview/')) {
+    return NextResponse.next({ request: { headers: siteHeaders(req, resolved) } })
   }
 
   // ── Public routes that start with a protected prefix ────────────────────────

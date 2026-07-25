@@ -216,11 +216,10 @@ function RegisterForm() {
           <div className="relative">
             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30" />
             <input
-              {...register('password')}
+              {...register('password', { onChange: (e) => setPasswordValue(e.target.value) })}
               type={showPassword ? 'text' : 'password'}
               placeholder="••••••••"
               autoComplete="new-password"
-              onChange={(e) => setPasswordValue(e.target.value)}
               className={cn(
                 'w-full h-11 pl-10 pr-11 rounded-xl border bg-white/5 text-white text-sm placeholder:text-white/30 focus:outline-none focus:ring-2 transition-all',
                 errors.password ? 'border-danger-500/60 focus:ring-danger-500/20' : 'border-white/10 focus:border-brand-500/60 focus:ring-brand-500/20'

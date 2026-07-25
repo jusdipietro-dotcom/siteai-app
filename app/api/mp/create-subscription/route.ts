@@ -149,6 +149,17 @@ export async function POST(req: NextRequest) {
           { projectId, priorPreapprovalId: project.preapprovalId }
         )
       }
+      // Cancelling the prior preapproval leaves a PUBLISHED site unfunded until
+      // this new checkout is authorized. Move it into a short grace window: if the
+      // customer completes checkout the webhook restores 'active'; if they abandon
+      // it, grace lapses and the published-site gate treats the site as suspended.
+      // Without this, a paying user could POST a new checkout, abandon it, and stay
+      // published for free (their prior billing is already cancelled). Only touches
+      // published projects — a draft has no live billing to protect.
+      await prisma.project.updateMany({
+        where: { id: projectId, userId: session.user.id, status: 'published' },
+        data: { billingStatus: 'grace', graceUntil: new Date(Date.now() + 60 * 60 * 1000) },
+      })
     }
 
     log.info('Creating preapproval', { plan, projectId, payerEmail: payerEmail.toLowerCase() })

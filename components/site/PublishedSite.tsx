@@ -527,6 +527,9 @@ export function PublishedSite({ project: row }: { project: Project }) {
           .footer-social-link { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,0.08); color: #94a3b8; font-size: 0.9rem; transition: background .15s, color .15s; }
           .footer-social-link:hover { background: ${color}; color: #fff; }
           .footer-copy { font-size: 0.75rem; color: #475569; }
+          .footer-badge { display: inline-flex; align-items: center; gap: 0.35rem; margin-top: 0.9rem; font-size: 0.72rem; color: #64748b; padding: 0.35rem 0.8rem; border-radius: 9999px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.04); transition: color .15s, border-color .15s; }
+          .footer-badge:hover { color: #cbd5e1; border-color: rgba(255,255,255,0.22); }
+          .footer-badge strong { color: #94a3b8; font-weight: 700; }
           .whatsapp-float { position: fixed; bottom: 1.5rem; right: 1.5rem; background: #25D366; color: #fff; width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; box-shadow: 0 4px 16px rgba(37,211,102,.45); z-index: 200; transition: transform .15s; }
           .whatsapp-float:hover { transform: scale(1.08); }
         `}</style>
@@ -667,6 +670,18 @@ export function PublishedSite({ project: row }: { project: Project }) {
             <p className="footer-copy">
               © {new Date().getFullYear()} {name}. Todos los derechos reservados.
             </p>
+
+            {/* "Made with" badge — deliberate brand advertising, entry plan only.
+                Professional drops it (cleaner for the premium client + an upgrade
+                incentive). Unlike the platform chrome removed above, THIS is meant
+                to be here: it is the agency's own marketing on its own product. */}
+            {row.plan !== 'professional' && (
+              <div>
+                <a href="https://automaticialab.com" target="_blank" rel="noreferrer" className="footer-badge">
+                  Hecho con <strong>Automatic IA Lab</strong> →
+                </a>
+              </div>
+            )}
           </div>
         </footer>
 

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
+import { headers } from 'next/headers'
 import { Toaster } from 'sonner'
 import './globals.css'
 import { CommandPalette } from '@/components/shared/CommandPalette'
@@ -61,14 +62,23 @@ export const viewport = {
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  // A published client site must NOT carry the platform's chrome: its own
+  // Google Analytics (which would send the client's visitors to OUR account and
+  // pollute our data), the internal command palette, or the agency WhatsApp
+  // button. The middleware tags site routes (/s, /sub, /d, /preview) with this
+  // header; here we skip the platform chrome for them.
+  const isPublishedSite = headers().get('x-published-site') === '1'
+
   return (
     <html lang="es" suppressHydrationWarning className={inter.variable}>
       <head>
-        {/* Google Analytics — Reemplazar G-KW8GZ3S9DY con tu ID real */}
-        <script async src="https://www.googletagmanager.com/gtag/js?id=G-KW8GZ3S9DY" />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
+        {/* Google Analytics — platform only, never on a client's published site */}
+        {!isPublishedSite && (
+          <>
+            <script async src="https://www.googletagmanager.com/gtag/js?id=G-KW8GZ3S9DY" />
+            <script
+              dangerouslySetInnerHTML={{
+                __html: `
               window.dataLayer = window.dataLayer || [];
               function gtag(){dataLayer.push(arguments);}
               gtag('js', new Date());
@@ -80,15 +90,21 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 page_path: window.location.pathname,
               });
             `,
-          }}
-        />
+              }}
+            />
+          </>
+        )}
       </head>
       <body className="antialiased">
         <Providers>
           {children}
-          <CommandPalette />
-          <GlobalKeyboardShortcuts />
-          <WhatsAppButton />
+          {!isPublishedSite && (
+            <>
+              <CommandPalette />
+              <GlobalKeyboardShortcuts />
+              <WhatsAppButton />
+            </>
+          )}
           <Toaster
             position="bottom-right"
             toastOptions={{
