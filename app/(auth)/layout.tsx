@@ -1,16 +1,33 @@
 import Link from 'next/link'
 import { Metadata } from 'next'
+import { WEBSITE_PLANS, formatARS } from '@/lib/website-plans'
 
 export const metadata: Metadata = {
   robots: 'noindex, nofollow',
 }
 
+// Rubros as chips so a visitor recognises their own trade at a glance — "esto
+// es para mí". Short labels; the wizard has the full list.
+const RUBROS = [
+  'Abogados', 'Contadores', 'Consultorios', 'Gimnasios', 'Comercios',
+  'Inmobiliarias', 'Restaurantes', 'Peluquerías', 'Arquitectos', 'Fotógrafos',
+]
+
+const SITE_FEATURES = [
+  { icon: '⚡', text: 'Editor visual, sin programar' },
+  { icon: '🤖', text: 'Imágenes generadas con IA' },
+  { icon: '💬', text: 'Botón de WhatsApp integrado' },
+  { icon: '📱', text: 'Adaptado al celular' },
+]
+
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
+  const annual = WEBSITE_PLANS.essential.annual
+  const monthly = WEBSITE_PLANS.essential.monthly
+
   return (
     <div className="min-h-screen flex gradient-dark-hero">
-      {/* Left side – branding */}
+      {/* Left side – sales pitch (desktop) */}
       <div className="hidden lg:flex lg:w-[45%] relative flex-col justify-between p-12 overflow-hidden">
-        {/* Grid background */}
         <div className="absolute inset-0 bg-grid-pattern opacity-30" />
         <div className="absolute inset-0 bg-gradient-radial from-brand-600/20 via-transparent to-transparent" />
 
@@ -19,62 +36,83 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           <img src="/logo.png" alt="Automatic IA Lab" width={40} height={40} className="h-10 w-10 object-contain rounded-2xl group-hover:scale-105 transition-transform" />
           <div>
             <p className="text-lg font-bold text-white">Automatic IA Lab</p>
-            <p className="text-xs text-white/40">Automatizaciones con IA</p>
+            <p className="text-xs text-white/40">Sitios web con IA</p>
           </div>
         </Link>
 
         {/* Center content */}
-        <div className="relative space-y-8">
+        <div className="relative space-y-6">
           <div>
-            <h2 className="text-3xl font-extrabold text-white leading-tight mb-3">
-              Automatiza tu negocio{' '}
-              <span className="gradient-text">con inteligencia artificial.</span>
+            <span className="inline-block px-3 py-1 rounded-full bg-white/10 text-white/70 text-[11px] font-semibold tracking-wide uppercase mb-4">
+              Sitios web autogestionados
+            </span>
+            <h2 className="text-4xl font-extrabold text-white leading-[1.05] mb-3">
+              Tu sitio web, publicado{' '}
+              <span className="gradient-text">esta misma tarde.</span>
             </h2>
-            <p className="text-white/50 text-base leading-relaxed">
-              Sitios web profesionales, monitoreo judicial automatizado y herramientas de IA para tu negocio. Todo en una sola plataforma.
+            <p className="text-white/55 text-[15px] leading-relaxed max-w-md">
+              Sin diseñador, sin agencia y sin saber programar. Un asistente te hace las
+              preguntas de tu negocio y arma el sitio completo sobre una plantilla profesional.
+              Después lo editás vos, desde el navegador.
+            </p>
+          </div>
+
+          {/* Free-first */}
+          <div className="flex items-start gap-2.5 rounded-2xl border border-emerald-400/25 bg-emerald-400/10 p-4">
+            <span className="text-lg shrink-0">🆓</span>
+            <p className="text-white/80 text-sm leading-relaxed">
+              Armarlo, editarlo y verlo terminado <span className="font-semibold text-white">no cuesta nada</span>.
+              No pedimos tarjeta. Si no te convence, no pagás.
+            </p>
+          </div>
+
+          {/* Price */}
+          <div className="glass-dark rounded-2xl p-5">
+            <p className="text-xs text-white/40 uppercase tracking-wide font-semibold mb-1">Recién pagás cuando publicás</p>
+            <div className="flex items-baseline gap-2">
+              <span className="text-4xl font-extrabold gradient-text">{formatARS(annual)}</span>
+              <span className="text-white/50 text-sm">/mes · plan anual</span>
+            </div>
+            <p className="text-white/40 text-xs mt-1.5">
+              O {formatARS(monthly)}/mes pagando mes a mes. Incluye hosting, certificado SSL,
+              tu subdominio y ediciones ilimitadas.
             </p>
           </div>
 
           {/* Features */}
-          <div className="space-y-3">
-            {[
-              { icon: '🌐', title: 'Sitios web en minutos', desc: 'Creá tu sitio profesional sin programar' },
-              { icon: '⚖️', title: 'Monitoreo judicial', desc: 'Alertas automaticas de PJN y SCBA' },
-              { icon: '🤖', title: 'Automatizaciones IA', desc: 'Workflows inteligentes para tu negocio' },
-            ].map((feat) => (
-              <div key={feat.title} className="flex items-start gap-3 glass-dark rounded-xl p-3">
-                <span className="text-lg mt-0.5">{feat.icon}</span>
-                <div>
-                  <p className="text-white text-sm font-medium">{feat.title}</p>
-                  <p className="text-white/40 text-xs">{feat.desc}</p>
-                </div>
+          <div className="grid grid-cols-2 gap-2">
+            {SITE_FEATURES.map((feat) => (
+              <div key={feat.text} className="flex items-center gap-2 glass-dark rounded-xl px-3 py-2.5">
+                <span className="text-base shrink-0">{feat.icon}</span>
+                <p className="text-white/75 text-[12.5px] leading-snug">{feat.text}</p>
               </div>
             ))}
           </div>
 
-          {/* Stats */}
-          <div className="grid grid-cols-3 gap-4">
-            {[
-              { value: '500+', label: 'Clientes activos' },
-              { value: '24/7', label: 'Monitoreo' },
-              { value: '4.9 ★', label: 'Satisfaccion' },
-            ].map((stat) => (
-              <div key={stat.label} className="text-center">
-                <p className="text-xl font-extrabold text-white">{stat.value}</p>
-                <p className="text-xs text-white/40 mt-0.5">{stat.label}</p>
-              </div>
-            ))}
+          {/* Rubros */}
+          <div>
+            <p className="text-white/55 text-sm font-medium mb-2.5">
+              ¿Sos profesional, abogado, contador, tenés un gimnasio o un comercio? Es para vos.
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {RUBROS.map((r) => (
+                <span key={r} className="px-2.5 py-1 rounded-lg bg-white/[0.07] border border-white/10 text-white/60 text-xs">
+                  {r}
+                </span>
+              ))}
+              <span className="px-2.5 py-1 rounded-lg text-white/40 text-xs">y más…</span>
+            </div>
           </div>
         </div>
 
-        <p className="relative text-xs text-white/20">© {new Date().getFullYear()} Automatic IA Lab · Todos los derechos reservados</p>
+        <p className="relative text-xs text-white/20">⏱️ Minutos, no semanas · © {new Date().getFullYear()} Automatic IA Lab</p>
       </div>
 
       {/* Right side – form */}
       <div className="flex-1 flex items-center justify-center p-6 lg:p-12">
         <div className="w-full max-w-md">
           {/* Mobile logo */}
-          <Link href="/" className="flex items-center gap-2.5 mb-10 lg:hidden">
+          <Link href="/" className="flex items-center gap-2.5 mb-8 lg:hidden">
             <img src="/logo.png" alt="Automatic IA Lab" width={36} height={36} className="h-9 w-9 object-contain rounded-xl" />
             <p className="text-lg font-bold text-white">Automatic IA Lab</p>
           </Link>

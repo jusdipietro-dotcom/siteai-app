@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { resolveNextRoute } from '@/lib/next-routes'
 import { rememberWebsitePlanPreference } from '@/lib/plan-preference'
-import { getWebsitePlanConfig } from '@/lib/website-plans'
+import { getWebsitePlanConfig, WEBSITE_PLANS, formatARS } from '@/lib/website-plans'
 
 const registerSchema = z.object({
   name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
@@ -120,6 +120,30 @@ function RegisterForm() {
       transition={{ duration: 0.35 }}
       className="space-y-6"
     >
+      {/* Mobile sales hero — the desktop pitch panel is hidden on phones, so the
+          hook lives here too, right above the form. */}
+      <div className="lg:hidden rounded-2xl border border-white/10 bg-white/[0.03] p-5 space-y-3">
+        <span className="inline-block px-2.5 py-0.5 rounded-full bg-white/10 text-white/70 text-[10px] font-semibold tracking-wide uppercase">
+          Sitios web con IA
+        </span>
+        <h2 className="text-2xl font-extrabold text-white leading-tight">
+          Tu sitio web, publicado <span className="gradient-text">esta misma tarde.</span>
+        </h2>
+        <p className="text-white/55 text-sm leading-relaxed">
+          Sin programar. Un asistente lo arma según tu negocio y vos lo editás desde el navegador.
+        </p>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+          <span className="text-emerald-400 font-medium">🆓 Armarlo es gratis, sin tarjeta</span>
+          <span className="text-white/30">·</span>
+          <span className="text-white/70">desde <span className="font-bold text-white">{formatARS(WEBSITE_PLANS.essential.annual)}</span>/mes al publicar</span>
+        </div>
+        <div className="flex flex-wrap gap-1.5 pt-0.5">
+          {['Abogados', 'Contadores', 'Gimnasios', 'Comercios', 'Consultorios', 'y más'].map((r) => (
+            <span key={r} className="px-2 py-0.5 rounded-md bg-white/[0.06] border border-white/10 text-white/55 text-[11px]">{r}</span>
+          ))}
+        </div>
+      </div>
+
       <div>
         {chosenPlan && (
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-500/15 border border-brand-500/25 text-brand-300 text-xs font-medium mb-4">
