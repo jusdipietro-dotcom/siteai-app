@@ -59,8 +59,8 @@ export default function EditorPage() {
   const params = useParams()
   const router = useRouter()
   const id = params.id as string
-  const { projects, updateProject, toggleSection, reorderSections } = useProjectStore()
-  const { device, setDevice, selectedSection, selectSection, sidebarTab, setSidebarTab, isDirty, isSaving, setIsSaving, markSaved } = useEditorStore()
+  const { projects, isLoaded, updateProject, toggleSection, reorderSections } = useProjectStore()
+  const { device, setDevice, selectedSection, selectSection, sidebarTab, setSidebarTab, isDirty, isSaving, setIsSaving, setDirty, markSaved } = useEditorStore()
   const { files: mediaFiles, loadFiles, addFile } = useMediaStore()
   const galleryImages = mediaFiles.filter((f) => f.category === 'gallery').slice(0, 6)
 
@@ -82,10 +82,21 @@ export default function EditorPage() {
 
   useEffect(() => { loadFiles() }, [])
 
-  const handleSave = useCallback(async () => {
+  // Top-bar edits (name, colour, theme) and section reorder/toggle live in local
+  // state and only reach the store — and the server — on save. Everything below
+  // exists so those edits are never lost silently: `updateProject` for the right
+  // panel already persists on blur, but these did not.
+  const hasPending = !!project && (
+    localName !== project.businessData.name ||
+    localColor !== primaryColorOf(project.businessData) ||
+    localTheme !== project.businessData.branding.colorTheme ||
+    JSON.stringify(sections) !== JSON.stringify(project.sections)
+  )
+
+  // Writes the pending local state to the store (which syncs to the server).
+  // No artificial delay — used both by explicit save and by the navigation flush.
+  const persistLocal = useCallback(() => {
     if (!project) return
-    setIsSaving(true)
-    await new Promise((r) => setTimeout(r, 900))
     updateProject(id, {
       sections,
       businessData: {
@@ -95,8 +106,34 @@ export default function EditorPage() {
       },
     })
     markSaved()
+  }, [id, sections, localName, localColor, localTheme, project, updateProject, markSaved])
+
+  const handleSave = useCallback(async () => {
+    if (!project) return
+    setIsSaving(true)
+    await new Promise((r) => setTimeout(r, 600))
+    persistLocal()
     toast.success('Cambios guardados')
-  }, [id, sections, localName, localColor, localTheme, project, updateProject, setIsSaving, markSaved])
+  }, [project, setIsSaving, persistLocal])
+
+  // Persist before leaving via an in-app button (Preview / Publish / back). The
+  // PUT fires before router.push and a client-side navigation does not abort an
+  // in-flight fetch, so the write completes.
+  const flushPending = useCallback(() => {
+    if (hasPending) persistLocal()
+  }, [hasPending, persistLocal])
+
+  // Keep the "unsaved changes" dot honest — nothing set it before, so it never
+  // lit up even while local edits were pending.
+  useEffect(() => { setDirty(hasPending) }, [hasPending, setDirty])
+
+  // Native guard for the cases router-flush can't cover: tab close and refresh.
+  useEffect(() => {
+    if (!hasPending) return
+    const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = '' }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [hasPending])
 
   const handleColorChange = (theme: ColorTheme, color: string) => {
     setLocalColor(color)
@@ -104,19 +141,52 @@ export default function EditorPage() {
     setPreviewKey((k) => k + 1)
   }
 
-  if (!project) return (
-    <div className="flex items-center justify-center h-screen">
-      <p className="text-surface-400">Proyecto no encontrado</p>
-    </div>
-  )
+  if (!project) {
+    // A hard refresh straight to the editor hits this before fetchProjects()
+    // resolves. Show a loader while the store is still loading so we don't flash
+    // "Proyecto no encontrado" for a project that does in fact exist.
+    if (!isLoaded) return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="h-5 w-5 animate-spin text-surface-400" />
+      </div>
+    )
+    return (
+      <div className="flex flex-col items-center justify-center h-screen gap-3">
+        <p className="text-surface-400">Proyecto no encontrado</p>
+        <Link href="/dashboard" className="text-sm text-brand-600 hover:underline">← Volver al panel</Link>
+      </div>
+    )
+  }
 
   const enabledSections = sections.filter((s) => s.enabled)
 
   return (
-    <div className="flex flex-col h-screen bg-surface-100 overflow-hidden">
+    <>
+      {/* Mobile: the drag-and-drop editor is a desktop tool — a cramped 3-column
+          builder on a phone is worse than an honest hand-off. Offer the two
+          things that DO work on a phone: previewing and going back. */}
+      <div className="md:hidden flex flex-col items-center justify-center h-screen gap-4 p-8 text-center bg-surface-50">
+        <div className="h-12 w-12 rounded-2xl gradient-brand flex items-center justify-center text-white">
+          <Monitor className="h-6 w-6" />
+        </div>
+        <div className="space-y-1.5">
+          <p className="font-semibold text-surface-900">Editá desde una compu</p>
+          <p className="text-sm text-surface-500 max-w-xs">
+            El editor visual necesita una pantalla más grande. Abrí este sitio en una notebook o desktop para editarlo cómodo.
+          </p>
+        </div>
+        <div className="flex flex-col gap-2 w-full max-w-xs">
+          <Button variant="gradient" size="sm" leftIcon={<Eye className="h-3.5 w-3.5" />} onClick={() => router.push(`/projects/${id}/preview`)}>
+            Ver preview
+          </Button>
+          <Link href="/dashboard" className="text-sm text-surface-500 hover:text-surface-800">← Volver al panel</Link>
+        </div>
+      </div>
+
+    <div className="hidden md:flex md:flex-col h-screen bg-surface-100 overflow-hidden">
       {/* ── Top bar ── */}
       <header className="flex items-center gap-3 h-14 px-4 bg-white border-b border-surface-100 shrink-0 z-20">
-        <Link href="/dashboard" className="p-2 rounded-xl text-surface-400 hover:bg-surface-100 hover:text-surface-700 transition-colors" title="Volver">
+        <Link href="/dashboard" onClick={flushPending} className="p-2 rounded-xl text-surface-400 hover:bg-surface-100 hover:text-surface-700 transition-colors" title="Volver">
           <ArrowLeft className="h-4 w-4" />
         </Link>
 
@@ -157,7 +227,7 @@ export default function EditorPage() {
             variant="outline"
             size="sm"
             leftIcon={<Eye className="h-3.5 w-3.5" />}
-            onClick={() => router.push(`/projects/${id}/preview`)}
+            onClick={() => { flushPending(); router.push(`/projects/${id}/preview`) }}
           >
             Preview
           </Button>
@@ -174,7 +244,7 @@ export default function EditorPage() {
             variant="default"
             size="sm"
             leftIcon={<ExternalLink className="h-3.5 w-3.5" />}
-            onClick={() => router.push(`/projects/${id}/publish`)}
+            onClick={() => { flushPending(); router.push(`/projects/${id}/publish`) }}
           >
             Publicar
           </Button>
@@ -382,6 +452,7 @@ export default function EditorPage() {
         </AnimatePresence>
       </div>
     </div>
+    </>
   )
 }
 

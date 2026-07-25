@@ -174,7 +174,12 @@ async function route(req: NextRequest, resolved: ResolvedRequestId): Promise<Nex
   // already excludes platform hosts and malformed values, so a stray host falls
   // through to the app untouched.
   if (isCustomDomainHost(hostname)) {
-    if (isFrameworkPath(pathname) || (pathname !== '/' && STATIC_FILE_RE.test(pathname))) {
+    // Like the subdomain host, a custom domain serves exactly one client site,
+    // so the host root IS that site's root: a site-owned root file (`/robots.txt`,
+    // caught by both isFrameworkPath and STATIC_FILE_RE) must reach the /d route
+    // rather than fall through to the platform's public/robots.txt.
+    const siteOwned = SITE_OWNED_ROOT_PATHS.has(pathname)
+    if (!siteOwned && (isFrameworkPath(pathname) || (pathname !== '/' && STATIC_FILE_RE.test(pathname)))) {
       return forward(req, resolved)
     }
     const host = normalizeCustomDomain(hostname)

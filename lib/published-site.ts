@@ -136,8 +136,13 @@ export function recordPublishedSiteVisit(projectId: string): void {
     })
 }
 
-/** Metadata returned when the gate rejects the request. */
-export const SITE_NOT_FOUND_METADATA: Metadata = { title: 'Sitio no encontrado' }
+/**
+ * Metadata returned when the gate rejects the request. `absolute` so it never
+ * inherits the platform's `%s · Automatic IA Lab` title template — this 404 is
+ * also served on client hosts (subdomains and custom domains), where leaking the
+ * platform brand into the tab title would be wrong.
+ */
+export const SITE_NOT_FOUND_METADATA: Metadata = { title: { absolute: 'Sitio no encontrado' } }
 
 /**
  * SEO metadata for a published project, shared by both addressing modes.
@@ -172,7 +177,11 @@ export function buildPublishedSiteMetadata(project: Project): Metadata {
     : null
 
   return {
-    title,
+    // `absolute` so the client's own site title is not suffixed with the
+    // platform's `%s · Automatic IA Lab` template from the root layout. A
+    // published site belongs to the client; its tab must read "Mi Negocio", not
+    // "Mi Negocio · Automatic IA Lab".
+    title: { absolute: title },
     description,
     ...(keywords.length > 0 && { keywords }),
     alternates: { canonical },
@@ -245,12 +254,13 @@ export function publishedSiteSitemapResponse(
  * pointing a crawler at a 404 is worse than saying nothing.
  *
  * KNOWN LIMIT, worth stating plainly: crawlers only read robots.txt at the ROOT
- * of a host. In subdomain mode the canonical URL IS the root
- * (`https://{sub}.{base}/robots.txt`) so this is fully effective. In path mode
- * the file lands at `https://{SITES_DOMAIN}/{slug}/robots.txt`, which no crawler
- * fetches — the host root belongs to the platform, not to any one client site.
- * It is served in both modes anyway so the two routes never diverge, and so a
- * project that later gains a subdomain needs no new code.
+ * of a host. In subdomain mode and custom-domain mode the canonical URL IS the
+ * root (`https://{sub}.{base}/robots.txt`, `https://cliente.com/robots.txt`) so
+ * this is fully effective. In path mode the file lands at
+ * `https://{SITES_DOMAIN}/{slug}/robots.txt`, which no crawler fetches — the host
+ * root belongs to the platform, not to any one client site. It is served in all
+ * three modes anyway so the routes never diverge, and so a project that later
+ * gains a subdomain or custom domain needs no new code.
  */
 export function publishedSiteRobotsResponse(
   project: Project | null
