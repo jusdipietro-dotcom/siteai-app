@@ -15,7 +15,7 @@ import { parseJSON } from '@/lib/published-site'
 import { resolveSiteFonts } from '@/lib/site-fonts'
 import { safeImg } from '@/lib/site-images'
 import { publishedSiteUrl } from '@/lib/site-domain'
-import { heroVariantFor, servicesLayoutFor, FEATURES_LAYOUT } from '@/lib/site-layout'
+import { heroVariantFor, servicesLayoutFor, FEATURES_LAYOUT, resolveTemplateKey } from '@/lib/site-layout'
 import {
   absoluteSiteImageUrl,
   buildSiteStructuredData,
@@ -66,6 +66,9 @@ export function PublishedSite({ project: row }: { project: Project }) {
   const rawColor = bd.branding?.primaryColor || '#6366f1'
   const color = /^#[0-9a-fA-F]{3,8}$/.test(rawColor) ? rawColor : '#6366f1'
   const name = bd.name || row.name
+  // The design template to key layouts off. Resolves a dirty `template` column
+  // (e.g. a businessType id like 'profesional') to a real template via the rubro.
+  const templateKey = resolveTemplateKey(row.template, bd.businessType)
 
   // A section renders only when the owner actually supplied its content. Nav,
   // footer links and the section list all read this one predicate so they can
@@ -196,7 +199,7 @@ export function PublishedSite({ project: row }: { project: Project }) {
             heroImage={heroImg}
             showContact={showContact}
             showServices={shows('services')}
-            variant={heroVariantFor(row.template)}
+            variant={heroVariantFor(templateKey)}
           />
         )
 
@@ -212,7 +215,7 @@ export function PublishedSite({ project: row }: { project: Project }) {
             anchor={NAV_META.services!.anchor}
             services={bd.services}
             color={color}
-            layout={servicesLayoutFor(row.template)}
+            layout={servicesLayoutFor(templateKey)}
           />
         )
 

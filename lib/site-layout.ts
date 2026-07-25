@@ -12,6 +12,48 @@
 */
 
 import type { SectionType } from '@/types'
+import { businessTypes } from '@/data/mockBusinessTypes'
+
+/*
+  The `template` column is not reliable. Some projects store a real design
+  template ('legal', 'restaurant'); older/demo rows store a businessType id
+  ('profesional', 'abogado') in it instead — which is not a template at all, so
+  the per-template variants below silently fell back to the neutral default and
+  the site looked unchanged (exactly the "no veo cambios" report).
+
+  resolveTemplateKey fixes that at RENDER time, no data migration: a valid
+  template is used as-is; anything else is mapped through the rubro's
+  defaultTemplate. So an "abogado" site renders the legal layout even when its
+  template column says 'profesional'.
+*/
+const KNOWN_TEMPLATES = new Set([
+  'minimal', 'corporate', 'elegant', 'legal', 'medical',
+  'restaurant', 'boutique', 'fitness', 'realty', 'creative',
+])
+
+function normKey(s: string): string {
+  // businessType ids are plain ascii ('abogado', 'restaurante'); lowercasing the
+  // stored value ('Abogado') is enough to match them.
+  return s.trim().toLowerCase()
+}
+
+function templateFromBusinessType(businessType?: string | null): string | null {
+  if (!businessType) return null
+  const n = normKey(businessType)
+  const bt = businessTypes.find((b) => normKey(b.id) === n)
+  return bt?.defaultTemplate ?? null
+}
+
+/**
+ * The effective design template for a project. A valid template is used as-is;
+ * an invalid or missing one (e.g. a businessType id sitting in the column) is
+ * derived from the rubro's default template. Every per-template variant keys off
+ * this, so a site gets its rubro's layout regardless of how `template` was set.
+ */
+export function resolveTemplateKey(template?: string | null, businessType?: string | null): string {
+  if (template && KNOWN_TEMPLATES.has(template)) return template
+  return templateFromBusinessType(businessType) ?? template ?? ''
+}
 
 export type HeroVariant = 'centered' | 'fullphoto' | 'split' | 'sobrio'
 
