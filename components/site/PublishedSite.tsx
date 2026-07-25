@@ -14,7 +14,7 @@ import { parseJSON } from '@/lib/published-site'
 import { resolveSiteFonts } from '@/lib/site-fonts'
 import { safeImg } from '@/lib/site-images'
 import { publishedSiteUrl } from '@/lib/site-domain'
-import { heroVariantFor } from '@/lib/site-layout'
+import { heroVariantFor, servicesLayoutFor, FEATURES_LAYOUT } from '@/lib/site-layout'
 import {
   absoluteSiteImageUrl,
   buildSiteStructuredData,
@@ -200,9 +200,25 @@ export function PublishedSite({ project: row }: { project: Project }) {
         )
 
       case 'services':
+        return (
+          <ServicesSection
+            key="services"
+            anchor={NAV_META.services!.anchor}
+            services={bd.services}
+            color={color}
+            layout={servicesLayoutFor(row.template)}
+          />
+        )
+
       case 'features':
         return (
-          <ServicesSection key={section.id} anchor={NAV_META[section.id]!.anchor} services={bd.services} color={color} />
+          <ServicesSection
+            key="features"
+            anchor={NAV_META.features!.anchor}
+            services={bd.services}
+            color={color}
+            layout={FEATURES_LAYOUT}
+          />
         )
 
       case 'gallery':
@@ -410,6 +426,23 @@ export function PublishedSite({ project: row }: { project: Project }) {
           /* Services */
           .service-card { border-top: 3px solid ${color}; }
           .service-emoji { font-size: 2rem; margin-bottom: 1rem; }
+          /* Services — menu variant (gastronomía): name + price on a line */
+          .menu-list { max-width: 720px; margin: 0 auto; display: grid; gap: 1.25rem; }
+          .menu-item { border-bottom: 1px dashed #e2e8f0; padding-bottom: 1.25rem; }
+          .menu-item:last-child { border-bottom: none; padding-bottom: 0; }
+          .menu-item-head { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; }
+          .menu-item-name { font-weight: 700; font-size: 1.05rem; color: #0f172a; }
+          .menu-item-price { font-weight: 800; white-space: nowrap; }
+          .menu-item-desc { font-size: 0.9rem; margin-top: 0.35rem; }
+          /* Services — list variant (áreas de práctica): icon + text, two columns */
+          .svc-list { max-width: 860px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 1.75rem; }
+          .svc-list-item { display: flex; gap: 1rem; align-items: flex-start; }
+          .svc-list-icon { width: 42px; height: 42px; border-radius: 11px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.1rem; flex-shrink: 0; }
+          .svc-list-body { min-width: 0; }
+          .svc-list-name { font-weight: 700; font-size: 1rem; color: #0f172a; margin-bottom: 0.25rem; }
+          .svc-list-desc { font-size: 0.9rem; }
+          .svc-list-price { font-weight: 700; font-size: 0.9rem; margin-top: 0.4rem; }
+          @media (max-width: 768px) { .svc-list { grid-template-columns: 1fr; gap: 1.25rem; } }
           /* Gallery */
           .gallery-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 0.75rem; }
           .gallery-item { aspect-ratio: 1/1; border-radius: 0.75rem; overflow: hidden; background: #e2e8f0; }

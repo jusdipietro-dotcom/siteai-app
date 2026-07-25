@@ -101,6 +101,23 @@ exports[`PublishedSite — assembled document > matches the recorded markup for 
           /* Services */
           .service-card { border-top: 3px solid #c2410c; }
           .service-emoji { font-size: 2rem; margin-bottom: 1rem; }
+          /* Services — menu variant (gastronomía): name + price on a line */
+          .menu-list { max-width: 720px; margin: 0 auto; display: grid; gap: 1.25rem; }
+          .menu-item { border-bottom: 1px dashed #e2e8f0; padding-bottom: 1.25rem; }
+          .menu-item:last-child { border-bottom: none; padding-bottom: 0; }
+          .menu-item-head { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; }
+          .menu-item-name { font-weight: 700; font-size: 1.05rem; color: #0f172a; }
+          .menu-item-price { font-weight: 800; white-space: nowrap; }
+          .menu-item-desc { font-size: 0.9rem; margin-top: 0.35rem; }
+          /* Services — list variant (áreas de práctica): icon + text, two columns */
+          .svc-list { max-width: 860px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 1.75rem; }
+          .svc-list-item { display: flex; gap: 1rem; align-items: flex-start; }
+          .svc-list-icon { width: 42px; height: 42px; border-radius: 11px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.1rem; flex-shrink: 0; }
+          .svc-list-body { min-width: 0; }
+          .svc-list-name { font-weight: 700; font-size: 1rem; color: #0f172a; margin-bottom: 0.25rem; }
+          .svc-list-desc { font-size: 0.9rem; }
+          .svc-list-price { font-weight: 700; font-size: 0.9rem; margin-top: 0.4rem; }
+          @media (max-width: 768px) { .svc-list { grid-template-columns: 1fr; gap: 1.25rem; } }
           /* Gallery */
           .gallery-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 0.75rem; }
           .gallery-item { aspect-ratio: 1/1; border-radius: 0.75rem; overflow: hidden; background: #e2e8f0; }
@@ -280,9 +297,9 @@ exports[`PublishedSite — assembled document > matches the recorded markup for 
 </section>
 <section class="section-pad" id="caracteristicas" style="background:#fff">
 <div class="container">
-<p class="label" style="text-align:center">Nuestros servicios</p>
-<h2 class="heading-lg" style="text-align:center;margin-bottom:0.75rem">Todo lo que necesitás</h2>
-<p class="subtext" style="text-align:center;margin-bottom:3rem">Soluciones pensadas para tu negocio</p>
+<p class="label" style="text-align:center">Características</p>
+<h2 class="heading-lg" style="text-align:center;margin-bottom:0.75rem">Por qué elegirnos</h2>
+<p class="subtext" style="text-align:center;margin-bottom:3rem">Lo que nos hace diferentes</p>
 <div class="grid-3">
 <div class="card service-card">
 <div class="service-emoji">🥖</div>
