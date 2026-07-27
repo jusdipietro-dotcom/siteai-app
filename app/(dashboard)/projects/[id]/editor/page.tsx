@@ -20,6 +20,7 @@ import { ColorPresetSelector } from '@/components/shared/ColorPresetSelector'
 import { cn } from '@/lib/utils'
 import { resolveSiteFonts } from '@/lib/site-fonts'
 import { safeImg } from '@/lib/site-images'
+import { compressImage } from '@/lib/compress-image'
 import type { SectionConfig, SectionType, DevicePreview, ColorTheme } from '@/types'
 import { primaryColorOf } from '@/lib/project-branding'
 import { stockSuggestionsFor } from '@/data/stockQueries'
@@ -70,6 +71,8 @@ export default function EditorPage() {
   const [localColor, setLocalColor] = useState(primaryColorOf(project?.businessData))
   const [localTheme, setLocalTheme] = useState<ColorTheme>(project?.businessData.branding.colorTheme ?? 'indigo')
   const [previewKey, setPreviewKey] = useState(0)
+  // Left tools sidebar as a slide-over drawer on mobile (static column on desktop).
+  const [mobileNav, setMobileNav] = useState(false)
 
   useEffect(() => {
     if (project) {
@@ -81,6 +84,12 @@ export default function EditorPage() {
   }, [project?.id])
 
   useEffect(() => { loadFiles() }, [])
+
+  // On a phone the device switcher is hidden, so default the canvas to the mobile
+  // frame — otherwise the preview would render desktop grids squished to phone width.
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 768) setDevice('mobile')
+  }, [setDevice])
 
   // Top-bar edits (name, colour, theme) and section reorder/toggle live in local
   // state and only reach the store — and the server — on save. Everything below
@@ -161,34 +170,22 @@ export default function EditorPage() {
   const enabledSections = sections.filter((s) => s.enabled)
 
   return (
-    <>
-      {/* Mobile: the drag-and-drop editor is a desktop tool — a cramped 3-column
-          builder on a phone is worse than an honest hand-off. Offer the two
-          things that DO work on a phone: previewing and going back. */}
-      <div className="md:hidden flex flex-col items-center justify-center h-screen gap-4 p-8 text-center bg-surface-50">
-        <div className="h-12 w-12 rounded-2xl gradient-brand flex items-center justify-center text-white">
-          <Monitor className="h-6 w-6" />
-        </div>
-        <div className="space-y-1.5">
-          <p className="font-semibold text-surface-900">Editá desde una compu</p>
-          <p className="text-sm text-surface-500 max-w-xs">
-            El editor visual necesita una pantalla más grande. Abrí este sitio en una notebook o desktop para editarlo cómodo.
-          </p>
-        </div>
-        <div className="flex flex-col gap-2 w-full max-w-xs">
-          <Button variant="gradient" size="sm" leftIcon={<Eye className="h-3.5 w-3.5" />} onClick={() => router.push(`/projects/${id}/preview`)}>
-            Ver preview
-          </Button>
-          <Link href="/dashboard" className="text-sm text-surface-500 hover:text-surface-800">← Volver al panel</Link>
-        </div>
-      </div>
-
-    <div className="hidden md:flex md:flex-col h-screen bg-surface-100 overflow-hidden">
+    <div className="flex flex-col h-screen bg-surface-100 overflow-hidden">
       {/* ── Top bar ── */}
-      <header className="flex items-center gap-3 h-14 px-4 bg-white border-b border-surface-100 shrink-0 z-20">
+      <header className="flex items-center gap-1.5 md:gap-3 h-14 px-3 md:px-4 bg-white border-b border-surface-100 shrink-0 z-20">
         <Link href="/dashboard" onClick={flushPending} className="p-2 rounded-xl text-surface-400 hover:bg-surface-100 hover:text-surface-700 transition-colors" title="Volver">
           <ArrowLeft className="h-4 w-4" />
         </Link>
+        {/* Mobile: open the tools drawer (sections / styles / SEO / media). */}
+        <button
+          type="button"
+          onClick={() => setMobileNav(true)}
+          className="md:hidden p-2 rounded-xl text-surface-500 hover:bg-surface-100 hover:text-surface-700 transition-colors"
+          title="Herramientas"
+          aria-label="Abrir herramientas"
+        >
+          <Layers className="h-4 w-4" />
+        </button>
 
         <div className="flex-1 flex items-center gap-2 min-w-0">
           <input
@@ -202,8 +199,8 @@ export default function EditorPage() {
           {isDirty && <span className="h-1.5 w-1.5 rounded-full bg-warning-500 shrink-0" title="Cambios sin guardar" />}
         </div>
 
-        {/* Device switcher */}
-        <div className="flex items-center gap-0.5 bg-surface-100 rounded-xl p-1">
+        {/* Device switcher — hidden on mobile, where the viewport is already a phone */}
+        <div className="hidden md:flex items-center gap-0.5 bg-surface-100 rounded-xl p-1">
           {(Object.keys(DEVICE_CONFIG) as DevicePreview[]).map((d) => (
             <button
               key={d}
@@ -221,15 +218,15 @@ export default function EditorPage() {
           ))}
         </div>
 
-        {/* Actions */}
-        <div className="flex items-center gap-2">
+        {/* Actions — labels collapse to icons on mobile so all three fit */}
+        <div className="flex items-center gap-1.5 md:gap-2">
           <Button
             variant="outline"
             size="sm"
             leftIcon={<Eye className="h-3.5 w-3.5" />}
             onClick={() => { flushPending(); router.push(`/projects/${id}/preview`) }}
           >
-            Preview
+            <span className="hidden sm:inline">Preview</span>
           </Button>
           <Button
             variant="gradient"
@@ -238,7 +235,7 @@ export default function EditorPage() {
             leftIcon={isSaving ? undefined : <Save className="h-3.5 w-3.5" />}
             onClick={handleSave}
           >
-            {isSaving ? 'Guardando...' : 'Guardar'}
+            <span className="hidden sm:inline">{isSaving ? 'Guardando...' : 'Guardar'}</span>
           </Button>
           <Button
             variant="default"
@@ -246,14 +243,27 @@ export default function EditorPage() {
             leftIcon={<ExternalLink className="h-3.5 w-3.5" />}
             onClick={() => { flushPending(); router.push(`/projects/${id}/publish`) }}
           >
-            Publicar
+            <span className="hidden sm:inline">Publicar</span>
           </Button>
         </div>
       </header>
 
       <div className="flex flex-1 min-h-0">
-        {/* ── Left sidebar ── */}
-        <aside className="w-64 bg-white border-r border-surface-100 flex flex-col shrink-0 overflow-hidden">
+        {/* Mobile drawer backdrop */}
+        {mobileNav && (
+          <div className="fixed inset-0 bg-black/40 z-30 md:hidden" onClick={() => setMobileNav(false)} aria-hidden />
+        )}
+        {/* ── Left sidebar — slide-over drawer on mobile, static column on desktop ── */}
+        <aside className={cn(
+          'bg-white border-r border-surface-100 flex flex-col shrink-0 overflow-hidden',
+          'fixed inset-y-0 left-0 z-40 w-72 transition-transform duration-200 md:static md:z-auto md:w-64 md:translate-x-0',
+          mobileNav ? 'translate-x-0' : '-translate-x-full'
+        )}>
+          {/* Mobile drawer header with close */}
+          <div className="md:hidden flex items-center justify-between px-3 h-11 border-b border-surface-100 shrink-0">
+            <span className="text-sm font-semibold text-surface-700">Herramientas</span>
+            <button type="button" onClick={() => setMobileNav(false)} className="h-7 w-7 rounded-lg text-surface-400 hover:bg-surface-100 flex items-center justify-center text-xs" aria-label="Cerrar">✕</button>
+          </div>
           {/* Tabs */}
           <div className="flex border-b border-surface-100 shrink-0">
             {SIDEBAR_TABS.map((tab) => (
@@ -280,7 +290,7 @@ export default function EditorPage() {
               <SectionManager
                 sections={sections}
                 selectedSection={selectedSection}
-                onSelect={selectSection}
+                onSelect={(sid) => { selectSection(sid); setMobileNav(false) }}
                 onChange={setSections}
                 onToggle={(sectionId) => {
                   setSections((prev) =>
@@ -403,7 +413,7 @@ export default function EditorPage() {
 
         {/* ── Canvas ── */}
         <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
-          <div className="flex-1 overflow-auto p-6 flex justify-center">
+          <div className="flex-1 overflow-auto p-2 md:p-6 flex justify-center">
             <motion.div
               key={previewKey}
               animate={{ width: DEVICE_CONFIG[device].width }}
@@ -426,15 +436,15 @@ export default function EditorPage() {
           </div>
         </main>
 
-        {/* ── Right panel ── */}
+        {/* ── Right panel — full-screen overlay on mobile, static column on desktop ── */}
         <AnimatePresence>
           {selectedSection && (
             <motion.aside
-              initial={{ width: 0, opacity: 0 }}
-              animate={{ width: 280, opacity: 1 }}
-              exit={{ width: 0, opacity: 0 }}
-              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-              className="bg-white border-l border-surface-100 overflow-hidden shrink-0"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              className="bg-white overflow-hidden shrink-0 flex flex-col fixed inset-0 z-50 w-full md:static md:inset-auto md:z-auto md:w-[280px] md:border-l md:border-surface-100"
             >
               <RightPanel
                 section={sections.find((s) => s.id === selectedSection)}
@@ -452,7 +462,6 @@ export default function EditorPage() {
         </AnimatePresence>
       </div>
     </div>
-    </>
   )
 }
 
@@ -547,11 +556,13 @@ function ImagePicker({ value, onChange, mediaFiles, addFile, label = 'Imagen', b
   const suggestions = stockSuggestionsFor(businessType)
 
   const handleUpload = async (file: File) => {
-    if (!file.type.startsWith('image/')) return
+    if (!file.type.startsWith('image/') && !/\.(hei[cf]|jpe?g|png|webp|avif|gif)$/i.test(file.name)) return
     setUploading(true)
     try {
+      // Convert HEIC→JPEG and downscale on the client so phone photos upload.
+      const uploadFile = await compressImage(file)
       const formData = new FormData()
-      formData.append('file', file)
+      formData.append('file', uploadFile)
       formData.append('category', 'misc')
       const res = await fetch('/api/media', { method: 'POST', body: formData })
       if (!res.ok) throw new Error()

@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Upload, X, ImageIcon, AlertCircle } from 'lucide-react'
 import Image from 'next/image'
 import { cn } from '@/lib/utils'
+import { compressImage } from '@/lib/compress-image'
 import { useMediaStore } from '@/store/useMediaStore'
 import type { MediaCategory } from '@/types'
 import { toast } from 'sonner'
@@ -43,18 +44,21 @@ export function MediaUploader({
   const { addFile } = useMediaStore()
 
   const handleFile = useCallback(
-    async (file: File) => {
-      if (!file.type.startsWith('image/')) {
+    async (rawFile: File) => {
+      if (!rawFile.type.startsWith('image/') && !/\.(hei[cf]|jpe?g|png|webp|avif|gif)$/i.test(rawFile.name)) {
         toast.error('Solo se aceptan imágenes')
-        return
-      }
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error('La imagen no puede superar los 5MB')
         return
       }
 
       setIsLoading(true)
       try {
+        // Convert HEIC→JPEG and downscale on the client so phone photos upload.
+        const file = await compressImage(rawFile)
+        if (file.size > 10 * 1024 * 1024) {
+          toast.error('La imagen no puede superar los 10MB')
+          setIsLoading(false)
+          return
+        }
         const formData = new FormData()
         formData.append('file', file)
         const res = await fetch('/api/media', { method: 'POST', body: formData })

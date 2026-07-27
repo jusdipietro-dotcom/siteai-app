@@ -37,9 +37,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No se recibió archivo' }, { status: 400 })
     }
 
-    const MAX_SIZE = 5 * 1024 * 1024 // 5 MB
+    // Clients downscale/convert to JPEG before upload (lib/compress-image), so
+    // this ceiling is a safety margin, not the normal path. Raised from 5 MB so
+    // an un-compressed phone photo (or a browser that skipped compression) is
+    // not rejected outright.
+    const MAX_SIZE = 10 * 1024 * 1024 // 10 MB
     if (file.size > MAX_SIZE) {
-      return NextResponse.json({ error: 'El archivo supera los 5 MB' }, { status: 400 })
+      return NextResponse.json({ error: 'El archivo supera los 10 MB' }, { status: 400 })
     }
 
     await mkdir(UPLOAD_DIR, { recursive: true })

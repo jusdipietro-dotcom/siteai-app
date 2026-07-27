@@ -11,6 +11,7 @@ import Link from 'next/link'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
+import { compressImage } from '@/lib/compress-image'
 import { useWizardStore, TOTAL_WIZARD_STEPS } from '@/store/useWizardStore'
 import { useProjectStore } from '@/store/useProjectStore'
 import { useMediaStore } from '@/store/useMediaStore'
@@ -999,6 +1000,8 @@ function UploadSlot({ label, hint, aspect, selectedId, onSelect, gallery, catego
 
   const doUpload = async (file: File) => {
     setUploading(true)
+    // Convert HEIC→JPEG and downscale on the client so phone photos upload.
+    file = await compressImage(file)
 
     // 1. Mostrar preview inmediato via blob URL — no depende del store ni de la API
     const blobUrl = URL.createObjectURL(file)
