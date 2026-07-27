@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Globe, Search, Loader2, Gift, RotateCcw, ExternalLink, Tag, Trash2 } from 'lucide-react'
+import { Globe, Search, Loader2, Gift, RotateCcw, ExternalLink, Tag, Trash2, Eye } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
 import { toast } from 'sonner'
@@ -310,6 +310,19 @@ export default function AdminSitesClient() {
                         <Loader2 className="w-4 h-4 animate-spin text-surface-400 inline" />
                       ) : (
                         <div className="flex items-center justify-end gap-2">
+                          {/* Preview any site — including unpublished drafts —
+                              in a new tab. The /preview route grants admins
+                              access to any project, not just published ones. */}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => window.open(`/preview/${p.id}`, '_blank', 'noopener')}
+                            className="gap-1.5"
+                            title="Previsualizar el sitio (incluso sin publicar)"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            Ver
+                          </Button>
                           {p.grantedAt || p.hasPaid ? (
                             <Button
                               variant="outline"

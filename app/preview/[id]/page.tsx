@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { isAdminEmail } from '@/lib/admin-emails'
 import { prisma } from '@/lib/prisma'
 import { PublishedSite } from '@/components/site/PublishedSite'
 
@@ -20,14 +21,19 @@ export const dynamic = 'force-dynamic'
  *
  * Scoped to the owner: `findFirst` on `{ id, userId }`. Someone else's id
  * resolves to nothing and 404s, so this cannot leak another account's draft.
+ *
+ * Admin exception: an admin (email allowlist) can preview ANY project, including
+ * other users' unpublished drafts, for support and moderation from the admin
+ * panel. The check reads the email from the session — never a client flag.
  */
 export default async function OwnerPreviewPage({ params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) notFound()
 
-  const row = await prisma.project.findFirst({
-    where: { id: params.id, userId: session.user.id },
-  })
+  const isAdmin = !!session.user.email && isAdminEmail(session.user.email)
+  const row = isAdmin
+    ? await prisma.project.findUnique({ where: { id: params.id } })
+    : await prisma.project.findFirst({ where: { id: params.id, userId: session.user.id } })
   if (!row) notFound()
 
   return <PublishedSite project={row} />
